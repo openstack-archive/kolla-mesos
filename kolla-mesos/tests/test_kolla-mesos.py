@@ -19,10 +19,11 @@ test_kolla-mesos
 Tests for `kolla-mesos` module.
 """
 
-from kolla-mesos.tests import base
+
+from kolla_mesos.tests import base
 
 
-class TestKolla-mesos(base.TestCase):
+class TestKollaMesos(base.TestCase):
 
     def test_something(self):
         pass
