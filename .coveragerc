@@ -1,0 +1,7 @@
+[run]
+branch = True
+source = kolla-mesos
+omit = kolla-mesos/openstack/*
+
+[report]
+ignore_errors = True
