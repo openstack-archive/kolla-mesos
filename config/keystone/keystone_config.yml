@@ -1,0 +1,4 @@
+- name: Copying over config(s)
+  template:
+    src: "config/keystone/templates/wsgi-keystone.conf.j2"
+    dest: "{{ node_config_directory }}/keystone/wsgi-keystone.conf"
