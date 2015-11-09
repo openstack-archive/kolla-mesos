@@ -1,0 +1,4 @@
+- name: galera.conf
+  template:
+    src: "config/mariadb/templates/galera.cnf.j2"
+    dest: "{{ node_config_directory }}/mariadb/galera.cnf"
