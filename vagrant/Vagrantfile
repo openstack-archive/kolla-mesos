@@ -1,0 +1,39 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+PROVIDER = "libvirt"
+
+PROVIDER_DEFAULTS = {
+  libvirt: {
+    base_image: "centos/7",
+    bridge_interface: "virbr0",
+    vagrant_shared_folder: "/home/vagrant/sync",
+    sync_method: "nfs",
+  },
+  virtualbox: {
+    base_image: "puppetlabs/centos-7.0-64-puppet",
+    bridge_interface: "wlp3s0b1",
+    vagrant_shared_folder: "/vagrant",
+    sync_method: "virtualbox",
+  },
+}
+
+def get_default(setting)
+  PROVIDER_DEFAULTS[PROVIDER.to_sym][setting]
+end
+
+Vagrant.configure(2) do |config|
+  config.vm.box = get_default(:base_image)
+
+  config.vm.network "forwarded_port", guest: 4400, host: 4400
+  config.vm.network "forwarded_port", guest: 5050, host: 5050
+  config.vm.network "forwarded_port", guest: 5051, host: 5051
+  config.vm.network "forwarded_port", guest: 8080, host: 8080
+
+  config.vm.provider PROVIDER do |vm|
+    vm.memory = 4096
+  end
+
+  config.vm.provision :shell, path: "provision.sh"
+  config.vm.provision :shell, path: "../tools/bootstrap.sh", args: "start"
+end
