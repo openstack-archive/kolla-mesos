@@ -24,6 +24,7 @@ import tempfile
 import time
 import yaml
 
+from dcos import marathon
 import mock
 
 from kolla_mesos import render
@@ -47,6 +48,7 @@ class KollaWorker(object):
         self.image_prefix = self.base + '-' + config['install_type'] + '-'
         self.build_config = config
         self.profiles = profiles
+        self.marathon_client = marathon.create_client()
 
     def setup_working_dir(self):
         """Creates a working directory for use while building"""
