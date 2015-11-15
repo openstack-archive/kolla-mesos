@@ -9,5 +9,7 @@ enabled=1
 gpgcheck=1
 gpgkey=https://yum.dockerproject.org/gpg
 EOF
-yum -y install docker-engine
+yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+yum -y install docker-engine git python-pip
 systemctl start docker
+pip install /home/vagrant/kolla-mesos
