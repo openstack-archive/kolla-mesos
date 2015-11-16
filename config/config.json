@@ -1,0 +1,11 @@
+{
+    "command": "python /kolla_mesos_start.py",
+    "config_files": [
+        {
+            "source": "{{ container_config_directory }}/kolla_mesos_start.py",
+            "dest": "/kolla_mesos_start.py",
+            "owner": "root",
+            "perm": "0755"
+        }
+    ]
+}
