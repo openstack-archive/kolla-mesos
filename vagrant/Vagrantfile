@@ -30,6 +30,8 @@ Vagrant.configure(2) do |config|
   config.vm.network "forwarded_port", guest: 5051, host: 5051
   config.vm.network "forwarded_port", guest: 8080, host: 8080
 
+  config.vm.synced_folder "..", "/home/vagrant/kolla-mesos", type: get_default(:sync_method)
+
   config.vm.provider PROVIDER do |vm|
     vm.memory = 4096
   end
