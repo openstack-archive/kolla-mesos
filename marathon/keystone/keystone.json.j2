@@ -1,0 +1,15 @@
+{
+  "id": "keystone",
+  "cmd": "/usr/local/bin/kolla_extend_start",
+  "cpus": 1,
+  "mem": 32.0,
+  "container": {
+    "type": "DOCKER",
+    "docker": {
+      "image": "{{ mariadb_image_full }}",
+      "network": "HOST",
+      "env": {"KOLLA_CONFIG_STRATEGY": "{{ config_strategy }}",
+              "KOLLA_CONFIG": "{{ kolla_config }}"}
+    }
+  }
+}
