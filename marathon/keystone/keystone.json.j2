@@ -1,0 +1,14 @@
+{
+  "id": "keystone",
+  "cpus": 1,
+  "mem": 32.0,
+  "container": {
+    "type": "DOCKER",
+    "docker": {
+      "image": "{{ keystone_image }}:{{ keystone_tag }}",
+      "network": "HOST",
+      "env": {"KOLLA_CONFIG_STRATEGY": "{{ config_strategy }}",
+              "KOLLA_CONFIG": "{{ kolla_config }}"}
+    }
+  }
+}
