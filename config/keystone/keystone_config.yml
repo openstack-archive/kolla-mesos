@@ -1,0 +1,31 @@
+{% set keystone_cmd = 'apache2' if kolla_base_distro in ['ubuntu', 'debian'] else 'httpd' %}
+{% set keystone_dir = 'apache2/conf-enabled' if kolla_base_distro in ['ubuntu', 'debian'] else 'httpd/conf.d' %}
+config:
+  keystone:
+    keystone:
+      kolla_mesos_start.py:
+        source: config/kolla_mesos_start.py
+        dest: /kolla_mesos_start.py
+      wsgi-keystone.conf.j2:
+        source: config/keystone/templates/wsgi-keystone.conf.j2
+        dest: /etc/keystone/keystone.conf
+        owner: keystone
+        perm: "0600"
+      keystone.conf.j2:
+        source: ["/etc/kolla/config/global.conf",
+                 "/etc/kolla/config/database.conf",
+                 "/etc/kolla/config/messaging.conf",
+                 "config/keystone/templates/keystone.conf.j2",
+                 "/etc/kolla/config/keystone.conf"]
+        dest: /etc/{{ keystone_dir }}/keystone.conf
+        owner: keystone
+        perm: "0600"
+commands:
+  keystone:
+    keystone:
+      final:
+        requires: [/kolla/variables/keystone_database.done,
+                   /kolla/variables/keystone_database_user_create.done,
+                   /kolla/variables/keystone_bootstrap.done]
+        command: "/usr/sbin/{{ keystone_cmd }}"
+        run_once: False
