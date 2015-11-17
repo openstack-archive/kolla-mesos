@@ -1,0 +1,21 @@
+{
+  "name": "keystone-create-database",
+  "container": {
+    "type": "DOCKER",
+    "image": "kolla_ansible",
+    "network": "HOST",
+  },
+  "cpus": "0.5",
+  "mem": "512",
+  "uris": [],
+  "command": "/usr/bin/ansible localhost
+    -m mysql_user
+    -a "login_host='{{ hostvars[inventory_hostname]['ansible_' + api_interface]['ipv4']['address'] }}'
+        login_port='{{ mariadb_port }}'
+        login_user='{{ database_user }}'
+        login_password='{{ database_password }}'
+        name='haproxy'
+        password=''
+        host='%'"
+  register: haproxy_user
+}
