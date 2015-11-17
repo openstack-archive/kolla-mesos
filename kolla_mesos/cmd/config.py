@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import argparse
+import functools
 import logging
 import os
 
@@ -45,6 +46,21 @@ def merge_args_and_config(settings_from_config_file):
     parser.add_argument('path',
                         help='Zookeeper node path (try /kolla)')
     return vars(parser.parse_args())
+
+
+def read_kolla_mesos_config(f):
+    @functools.wraps(f)
+    def wrapper(*args, **kwargs):
+        kolla_mesos_config = configparser.SafeConfigParser()
+        kolla_mesos_config.read(file_utils.find_config_file(
+                                'kolla-mesos.conf'))
+        return f(kolla_mesos_config, *args, **kwargs)
+    return wrapper
+
+
+@read_kolla_mesos_config
+def read_chronos_config(kolla_mesos_config):
+    return dict(kolla_mesos_config.items('chronos'))
 
 
 def main():
