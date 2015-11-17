@@ -27,6 +27,7 @@ from six.moves import configparser
 from six.moves import cStringIO
 import yaml
 
+from kolla_mesos import chronos
 from kolla_mesos.common import file_utils
 from kolla_mesos.common import jinja_utils
 from kolla_mesos.common import zk_utils
@@ -59,6 +60,7 @@ class KollaWorker(object):
         LOG.debug("Kolla-Mesos base directory: " + self.base_dir)
         self.required_vars = {}
         self.marathon_client = marathon.create_client()
+        self.chronos_client = chronos.Client()
 
     def setup_working_dir(self):
         """Creates a working directory for use while building"""
@@ -252,6 +254,9 @@ class KollaWorker(object):
                 else:
                     cmd = 'curl -X POST "%s/scheduler/iso8601" -d @"%s" %s' % (
                         chronos_api, app_path, content_type)
+                    with open(app_path, 'r') as app_file:
+                        job_resource = json.load(app_file)
+                    self.chronos_client.add_job(job_resource)
                 LOG.info(cmd)
 
 
