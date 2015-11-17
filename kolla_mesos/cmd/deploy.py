@@ -27,6 +27,7 @@ from six.moves import cStringIO
 import yaml
 
 from kolla_mesos import chronos
+from kolla_mesos import marathon
 from kolla_mesos.common import config_utils
 from kolla_mesos.common import file_utils
 from kolla_mesos.common import jinja_utils
@@ -107,6 +108,7 @@ class KollaWorker(object):
         self.profiles = profiles
         self.required_vars = {}
         self.chronos_client = chronos.create_client()
+        self.marathon_client = marathon.create_client()
 
     def setup_working_dir(self):
         """Creates a working directory for use while building"""
@@ -285,6 +287,9 @@ class KollaWorker(object):
                 if 'marathon' in name:
                     cmd = 'curl -X POST "%s/v2/apps" -d @"%s" %s' % (
                         marathon_api, app_path, content_type)
+                    with open(app_path, 'r') as app_file:
+                        app_resource = json.load(app_file)
+                    self.marathon_client.add_app(app_resource)
                 else:
                     cmd = 'curl -X POST "%s/scheduler/iso8601" -d @"%s" %s' % (
                         chronos_api, app_path, content_type)

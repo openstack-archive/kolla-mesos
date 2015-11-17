@@ -13,6 +13,7 @@
 import functools
 import logging
 
+from dcos import config
 from six.moves import configparser
 
 from kolla_mesos.common import file_utils
@@ -40,6 +41,11 @@ def load_mesos_config(f):
         kolla_mesos_config = load('kolla-mesos.conf')
         return f(kolla_mesos_config, *args, **kwargs)
     return wrapper
+
+
+@load_mesos_config
+def load_marathon_config(kolla_mesos_config):
+    return dict(kolla_mesos_config.items('marathon'))
 
 
 @load_mesos_config
