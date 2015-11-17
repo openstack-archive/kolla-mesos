@@ -47,8 +47,8 @@ def merge_args_and_config(settings_from_config_file):
 
 
 def main():
-    cmd_opts, kolla_config = config_utils.load('kolla-build.conf',
-                                               merge_args_and_config)
+    cmd_opts, kolla_config = config_utils.load_and_merge('kolla-build.conf',
+                                                         merge_args_and_config)
 
     with zk_utils.connection(cmd_opts['zookeeper_host']) as zk:
         if cmd_opts['show']:
