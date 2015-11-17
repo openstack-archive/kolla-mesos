@@ -1,0 +1,19 @@
+{
+    "id": "/mariadb",
+    "instances": 1,
+    "mem": 128,
+    "taskRateLimit": 60.0,
+    "cpus": 0.3,
+    "constraints": [["hostname", "UNIQUE"]],
+    "container": {
+        "type": "DOCKER",
+        "docker": {
+            "image": "{{ mariadb_image }}:{{ mariadb_tag }}",
+            "network": "HOST",
+            "parameters": [
+                {"key": "env", "value": "KOLLA_CONFIG_STRATEGY={{ config_strategy }}"},
+                {"key": "env", "value": "KOLLA_CONFIG={{ kolla_config }}"}
+            ]
+        }
+    }
+}
