@@ -30,6 +30,7 @@ import yaml
 from kolla_mesos.common import file_utils
 from kolla_mesos.common import jinja_utils
 from kolla_mesos.common import zk_utils
+from kolla_mesos import marathon
 
 
 logging.basicConfig()
@@ -58,6 +59,7 @@ class KollaWorker(object):
         self.config_dir = os.path.join(self.base_dir, 'config')
         LOG.debug("Kolla-Mesos base directory: " + self.base_dir)
         self.required_vars = {}
+        self.marathon_client = marathon.create_client()
 
     def setup_working_dir(self):
         """Creates a working directory for use while building"""
@@ -171,6 +173,8 @@ class KollaWorker(object):
                     CONF.zookeeper.host)
                 jinja_vars['container_config_directory'] = cont_conf_dir
                 kolla_config = jinja_utils.jinja_render(kc_name, jinja_vars)
+                kolla_config = kolla_config.replace('""', '\\"').replace(
+                    '\n', '')
 
                 # 4. parse the marathon app file and add the KOLLA_CONFIG
                 values = {
@@ -242,6 +246,9 @@ class KollaWorker(object):
                 if 'marathon' in name:
                     cmd = 'curl -X POST "%s/v2/apps" -d @"%s" %s' % (
                         marathon_api, app_path, content_type)
+                    with open(app_path, 'r') as app_file:
+                        app_resource = json.load(app_file)
+                    self.marathon_client.add_app(app_resource)
                 else:
                     cmd = 'curl -X POST "%s/scheduler/iso8601" -d @"%s" %s' % (
                         chronos_api, app_path, content_type)
