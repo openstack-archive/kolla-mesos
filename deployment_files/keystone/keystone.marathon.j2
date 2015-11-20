@@ -1,0 +1,20 @@
+{
+    "id": "/keystone",
+    "instances": 1,
+    "mem": 32.0,
+    "cpus": 0.3,
+    "container": {
+        "type": "DOCKER",
+        "docker": {
+            "image": "{{ keystone_image }}:{{ keystone_tag }}",
+            "network": "HOST",
+        }
+    },
+    "env": {
+        "KOLLA_CONFIG_STRATEGY": "{{ config_strategy }}",
+        "KOLLA_CONFIG": "{{ kolla_config }}",
+	"KOLLA_GROUP": "keystone",
+	"KOLLA_ROLE": "keystone",
+	"KOLLA_ZK_HOSTS": "{{ zookeeper_hosts }}"
+    }
+}
