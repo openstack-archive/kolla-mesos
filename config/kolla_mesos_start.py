@@ -112,6 +112,7 @@ def register_group_and_hostvars(zk):
     zk.retry(zk.ensure_path, path)
     node_id = get_new_node_id(zk, path)
     data = "-".join([host, 'node', str(node_id)])
+    LOG.info('%s (%s) joining the %s party' % (host, node_id, GROUP))
     party.Party(zk, path, data).join()
 
 
@@ -321,10 +322,19 @@ def run_commands(zk, conf):
 def main():
     LOG.info('starting')
     with zk_connection(ZK_HOSTS) as zk:
-        register_group_and_hostvars(zk)
         service_conf_raw, stat = zk.get(os.path.join('kolla', 'config',
                                                      GROUP, GROUP))
         service_conf = json.loads(service_conf_raw)
+
+        # don't join a Party if this container is not running a daemon
+        # process.
+        register_group = False
+        for cmd in service_conf['commands'][GROUP][ROLE].values():
+            if cmd.get('daemon', False):
+                register_group = True
+        if register_group:
+            register_group_and_hostvars(zk)
+
         generate_config(zk, service_conf['config'][GROUP][ROLE])
         run_commands(zk, service_conf['commands'][GROUP][ROLE])
 
