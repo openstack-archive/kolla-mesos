@@ -1,0 +1,11 @@
+{
+    "command": "/usr/local/bin/kolla_mesos_start",
+    "config_files": [
+        {
+            "source": "{{ container_config_directory }}/kolla/config/mariadb/mariadb/kolla_mesos_start.py",
+            "dest": "/usr/local/bin/kolla_mesos_start",
+            "owner": "root",
+            "perm": "0755"
+        }
+    ]
+}

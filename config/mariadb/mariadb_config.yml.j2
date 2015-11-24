@@ -1,0 +1,26 @@
+{% set mysql_dir = 'mysql' if kolla_base_distro in ['ubuntu', 'debian'] else '' %}
+config:
+  mariadb:
+    mariadb:
+      kolla_mesos_start.py:
+        source: config/kolla_mesos_start.py
+        dest: /kolla_mesos_start.py
+      galera.cnf.j2:
+        source: config/mariadb/templates/galera.cnf.j2
+        dest: /etc/{{ mysql_dir }}/my.cnf
+        owner: mysql
+        perm: "0600"
+commands:
+  mariadb:
+    mariadb:
+      bootstrap:
+        command: kolla_extend_start
+        env:
+          KOLLA_BOOTSTRAP: "yes"
+          DB_ROOT_PASSWORD: "{{ database_password }}"
+        run_once: True
+        register: /kolla/variables/mariadb_bootstrap/.done
+      final:
+        command: /usr/bin/mysqld_safe --wsrep-new-cluster
+        run_once: False
+        requires: [/kolla/variables/mariadb_bootstrap/.done]
