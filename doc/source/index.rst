@@ -36,8 +36,9 @@ Contents:
 .. toctree::
    :maxdepth: 1
 
-   quickstart
-   contributing
+    quickstart
+    contributing
+    howto_add_new_service
 
 Indices and tables
 ==================
