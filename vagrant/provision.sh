@@ -15,6 +15,7 @@ EOF
 yum -y install docker-engine epel-release git python-pip
 
 # Start services
+systemctl enable docker
 systemctl start docker
 
 # Fetch and install pip packages
