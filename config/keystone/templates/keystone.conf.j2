@@ -1,0 +1,8 @@
+[DEFAULT]
+verbose = {{ keystone_logging_verbose }}
+debug = {{ keystone_logging_debug }}
+
+admin_token = {{ keystone_admin_token }}
+
+[database]
+connection = mysql://{{ keystone_database_user }}:{{ keystone_database_password }}@{{ keystone_database_address }}/{{ keystone_database_name }}
