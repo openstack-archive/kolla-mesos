@@ -52,6 +52,19 @@ def jinja_filter_bool(text):
     return False
 
 
+def jinja_regex_replace(value='', pattern='',
+                        replacement='', ignorecase=False):
+    if not isinstance(value, basestring):
+        value = str(value)
+
+    if ignorecase:
+        flags = re.I
+    else:
+        flags = 0
+    _re = re.compile(pattern, flags=flags)
+    return _re.sub(replacement, value)
+
+
 def jinja_render(name, content, global_config, extra=None):
     variables = global_config
     if extra:
@@ -59,11 +72,14 @@ def jinja_render(name, content, global_config, extra=None):
 
     myenv = jinja2.Environment(loader=jinja2.DictLoader({name: content}))
     myenv.filters['bool'] = jinja_filter_bool
+    myenv.filters['regex_replace'] = jinja_regex_replace
     return myenv.get_template(name).render(variables)
 
 
 def jinja_find_required_variables(name, content):
     myenv = jinja2.Environment(loader=jinja2.DictLoader({name: content}))
+    myenv.filters['bool'] = jinja_filter_bool
+    myenv.filters['regex_replace'] = jinja_regex_replace
     template_source = myenv.loader.get_source(myenv, name)[0]
     parsed_content = myenv.parse(template_source)
     return meta.find_undeclared_variables(parsed_content)
