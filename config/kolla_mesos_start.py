@@ -13,12 +13,14 @@
 # limitations under the License.
 
 import contextlib
+import fcntl
 import json
 import logging
 import os
 import pwd
 import re
 import socket
+import struct
 import subprocess
 import sys
 import tempfile
@@ -106,13 +108,22 @@ def get_new_node_id(zk, path):
 
 
 def register_group_and_hostvars(zk):
-    host = str(socket.gethostbyname(socket.gethostname()))
+    host = str(get_ip_address('eth1'))
     path = os.path.join('kolla', 'groups', GROUP)
     zk.retry(zk.ensure_path, path)
     node_id = get_new_node_id(zk, path)
     data = "-".join([host, 'node', str(node_id)])
     LOG.info('%s (%s) joining the %s party' % (host, node_id, GROUP))
     party.Party(zk, path, data).join()
+
+
+def get_ip_address(ifname):
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    return socket.inet_ntoa(fcntl.ioctl(
+        s.fileno(),
+        0x8915,  # SIOCGIFADDR
+        struct.pack('256s', ifname[:15])
+    )[20:24])
 
 
 def get_groups_and_hostvars(zk):
@@ -126,10 +137,11 @@ def get_groups_and_hostvars(zk):
         match = re.match("(\d+.\d+.\d+.\d+)-(\w+)-(\d+)", host)
         if match:
             ip = match.group(1)
-            hostvars[ip] = {'ansible_eth0': {'ipv4': {'address': ip}},
-                            'ansible_eth1': {'ipv4': {'address': ip}},
-                            'role': match.group(2),
-                            'id': match.group(3)}
+            hostvars[ip] = {
+                'ansible_eth0': {'ipv4': {'address': get_ip_address('eth0')}},
+                'ansible_eth1': {'ipv4': {'address': get_ip_address('eth1')}},
+                'role': match.group(2),
+                'id': match.group(3)}
             groups[GROUP].append(ip)
 
     return groups, hostvars
@@ -167,7 +179,7 @@ def write_file(conf, data):
 def generate_config(zk, conf):
     # render what ever templates we can given the variables that are
     # defined. If there is a variable that we need, wait for it to be defined.
-    host = str(socket.gethostbyname(socket.gethostname()))
+    host = str(get_ip_address('eth1'))
     groups, hostvars = get_groups_and_hostvars(zk)
     variables = {'hostvars': hostvars, 'groups': groups,
                  'inventory_hostname': host,

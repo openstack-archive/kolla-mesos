@@ -134,6 +134,7 @@ class CommandTest(base.BaseTestCase):
             self.assertEqual(0, len(mock_popen.procs))
 
 
+@mock.patch.object(start, 'get_ip_address')
 @mock.patch.object(start, 'get_groups_and_hostvars')
 @mock.patch.object(start, 'write_file')
 class GenerateConfigTest(base.BaseTestCase):
@@ -147,7 +148,7 @@ class GenerateConfigTest(base.BaseTestCase):
         start.GROUP = 'testg'
         start.ROLE = 'testr'
 
-    def test_no_rendering(self, m_wf, m_gar):
+    def test_no_rendering(self, m_wf, m_gar, m_gip):
         conf = {'afile': {
             'source': 'config/mariadb/templates/galera.cnf.j2',
             'dest': '/etc/mysql_dir/my.cnf',
@@ -159,7 +160,7 @@ class GenerateConfigTest(base.BaseTestCase):
         start.generate_config(self.client, conf)
         m_wf.assert_called_once_with(conf['afile'], 'xyz')
 
-    def test_simple_render(self, m_wf, m_gar):
+    def test_simple_render(self, m_wf, m_gar, m_gip):
         conf = {'afile': {
             'source': 'config/mariadb/templates/galera.cnf.j2',
             'dest': '/etc/mysql_dir/my.cnf',
@@ -172,7 +173,7 @@ class GenerateConfigTest(base.BaseTestCase):
         start.generate_config(self.client, conf)
         m_wf.assert_called_once_with(conf['afile'], 'yeah')
 
-    def test_missing_variable(self, m_wf, m_gar):
+    def test_missing_variable(self, m_wf, m_gar, m_gip):
         conf = {'afile': {
             'source': 'config/mariadb/templates/galera.cnf.j2',
             'dest': '/etc/mysql_dir/my.cnf',
