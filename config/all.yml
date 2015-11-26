@@ -51,7 +51,7 @@ docker_restart_policy: "always"
 docker_restart_policy_retry: "10"
 
 # kolla anisble image name
-kolla_ansible_image: "{{ docker_registry ~ '/' if docker_registry else '' }}{{ docker_namespace }}/{{ kolla_base_distro }}-{{ kolla_install_type }}-kolla_ansible"
+kolla_ansible_image: "{{ docker_registry ~ '/' if docker_registry else '' }}{{ docker_namespace }}/{{ kolla_base_distro }}-{{ kolla_install_type }}-kolla-ansible"
 kolla_ansible_tag: "{{ openstack_release }}"
 
 
