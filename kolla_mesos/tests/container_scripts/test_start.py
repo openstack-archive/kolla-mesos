@@ -15,6 +15,7 @@ import os.path
 import sys
 
 import fixtures
+import json
 import mock
 from oslotest import base
 from zake import fake_client
@@ -182,3 +183,64 @@ class GenerateConfigTest(base.BaseTestCase):
                            makepath=True)
         start.generate_config(self.client, conf)
         m_wf.assert_called_once_with(conf['afile'], '')
+
+
+@mock.patch.object(start, 'run_commands')
+@mock.patch.object(start, 'generate_config')
+@mock.patch.object(start, 'register_group_and_hostvars')
+class MainTest(base.BaseTestCase):
+
+    def setUp(self):
+        super(MainTest, self).setUp()
+        self.client = fake_client.FakeClient()
+        self.client.start()
+        self.addCleanup(self.client.stop)
+        self.addCleanup(self.client.close)
+        start.GROUP = 'testg'
+        start.ROLE = 'testr'
+
+    def test_no_register_if_no_daemon(self, m_rgah, m_gc, m_rc):
+        afile = {'source': 'bla/a.cnf.j2',
+                 'dest': '/etc/somewhere.foo',
+                 'owner': 'appy',
+                 'perm': '0600'}
+        acmd = {'command': 'true'}
+        tconf = {'config': {'testg': {'testr': {'afile': afile}}},
+                 'commands': {'testg': {'testr': {'thing': acmd}}}}
+
+        self.client.create('/kolla/config/testg/testg', json.dumps(tconf),
+                           makepath=True)
+
+        m_zk_c = mock.MagicMock()
+        with mock.patch.object(start, 'zk_connection', m_zk_c):
+            m_zk_c.return_value.__enter__.return_value = self.client
+
+            start.main()
+            m_gc.assert_called_once_with(self.client,
+                                         tconf['config']['testg']['testr'])
+            m_rc.assert_called_once_with(self.client,
+                                         tconf['commands']['testg']['testr'])
+            self.assertEqual([], m_rgah.mock_calls)
+
+    def test_register_if_daemon(self, m_rgah, m_gc, m_rc):
+        afile = {'source': 'bla/a.cnf.j2',
+                 'dest': '/etc/somewhere.foo',
+                 'owner': 'appy',
+                 'perm': '0600'}
+        acmd = {'command': 'true', 'daemon': True}
+        tconf = {'config': {'testg': {'testr': {'afile': afile}}},
+                 'commands': {'testg': {'testr': {'thing': acmd}}}}
+
+        self.client.create('/kolla/config/testg/testg', json.dumps(tconf),
+                           makepath=True)
+
+        m_zk_c = mock.MagicMock()
+        with mock.patch.object(start, 'zk_connection', m_zk_c):
+            m_zk_c.return_value.__enter__.return_value = self.client
+
+            start.main()
+            m_gc.assert_called_once_with(self.client,
+                                         tconf['config']['testg']['testr'])
+            m_rc.assert_called_once_with(self.client,
+                                         tconf['commands']['testg']['testr'])
+            self.assertEqual([mock.call(self.client)], m_rgah.mock_calls)
