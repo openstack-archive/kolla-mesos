@@ -17,7 +17,6 @@ import json
 import logging
 import os
 import pwd
-import Queue
 import re
 import socket
 import subprocess
@@ -30,6 +29,8 @@ from jinja2 import meta
 from kazoo import client as zk_client
 from kazoo import exceptions as kz_exceptions
 from kazoo.recipe import party
+import six
+from six.moves import queue
 
 
 ZK_HOSTS = os.environ.get('KOLLA_ZK_HOSTS')
@@ -44,9 +45,7 @@ LOG.setLevel(logging.INFO)
 def jinja_filter_bool(text):
     if not text:
         return False
-    if text.lower() == 'true':
-        return True
-    if text.lower() == 'yes':
+    if text.lower() in ('true', 'yes'):
         return True
     return False
 
@@ -174,7 +173,7 @@ def generate_config(zk, conf):
                  'ansible_hostname': host}
 
     conf_base_node = os.path.join('kolla', 'config', GROUP, ROLE)
-    for name, item in conf.iteritems():
+    for name, item in six.iteritems(conf):
         if name == 'kolla_mesos_start.py':
             continue
         raw_content, stat = zk.get(os.path.join(conf_base_node, name))
@@ -183,6 +182,7 @@ def generate_config(zk, conf):
         if not var_names:
             # not a template, doesn't need rendering.
             write_file(item, templ)
+            continue
 
         for var in var_names:
             if var not in variables:
@@ -190,97 +190,129 @@ def generate_config(zk, conf):
                     value, stat = zk.get(os.path.join('kolla', 'variables',
                                                       var))
                 except kz_exceptions.NoNodeError:
-                    variables[var] = None
+                    value = ''
                     LOG.error('missing required variable %s' % var)
 
                 if stat.dataLength == 0:
-                    # TODO(asalkeld) missing required variable!
-                    variables[var] = None
-                    LOG.error('missing required variable %s' % var)
-                else:
-                    variables[var] = value.encode('utf-8')
+                    value = ''
+                    LOG.warn('missing required variable value %s' % var)
+                variables[var] = value.encode('utf-8')
         content = jinja_render(name, templ, variables)
         write_file(item, content)
 
 
+class Command(object):
+    def __init__(self, name, cmd, zk):
+        self.name = name
+        self.zk = zk
+        self.command = cmd['command']
+        self.run_once = cmd.get('run_once', False)
+        self.daemon = cmd.get('daemon', False)
+        self.check_path = cmd.get('register')  # eg. /a/b/c/.done
+        self.requires = cmd.get('requires', [])
+        self.env = os.environ.copy()
+        for ek, ev in six.iteritems(cmd.get('env', {})):
+            # make sure they are strings
+            self.env[ek] = str(ev)
+        if self.check_path:
+            self.init_path = os.path.dirname(self.check_path)
+        else:
+            self.init_path = None
+        # the lowest valued entries are retrieved first
+        # so run the commands with least requirements and those
+        # that are not daemon are needed first.
+        self.priority = 0
+        self.time_slept = 0
+        self.requirements_fulfilled()
+
+    def requirements_fulfilled(self):
+        self.priority = min(self.time_slept, 50)
+        if self.daemon:
+            self.priority = self.priority + 100
+        fulfilled = True
+        for req in self.requires:
+            if not self.zk.retry(self.zk.exists, req):
+                LOG.warn('%s is waiting for %s' % (self.name, req))
+                fulfilled = False
+                self.priority = self.priority + 1
+        return fulfilled
+
+    def sleep(self, seconds):
+        self.time_slept = self.time_slept + seconds
+        time.sleep(seconds)
+
+    def __str__(self):
+        def get_true_attrs():
+            for attr in ['run_once', 'daemon']:
+                if getattr(self, attr):
+                    yield attr
+
+        extra = ', '.join(get_true_attrs())
+        if extra:
+            extra = ' (%s)' % extra
+        return '%s%s "%s"' % (
+            self.name, extra, self.command)
+
+    def __lt__(self, other):
+        return self.priority < other.priority
+
+    def __gt__(self, other):
+        return other.__lt__(self)
+
+    def run(self):
+        zk = self.zk
+        LOG.info('** > Running %s' % self.name)
+        if self.run_once:
+            def _init_done():
+                if not self.check_path:
+                    LOG.error('run_once is Ture set but no "register"')
+                    sys.exit(1)
+                return zk.retry(zk.exists, self.check_path)
+
+            if _init_done():
+                LOG.info("Path '%s' exists: skipping command" %
+                         self.check_path)
+            else:
+                LOG.info("Path '%s' does not exists: running command" %
+                         self.check_path)
+                zk.retry(zk.ensure_path, self.init_path)
+                lock = zk.Lock(self.init_path)
+                LOG.info("Acquiring lock '%s'" % self.init_path)
+                with lock:
+                    if not _init_done():
+                        self._run_command()
+                LOG.info("Releasing lock '%s'" % self.init_path)
+        else:
+            self._run_command()
+        LOG.info('** < Complete %s' % self.name)
+
+    def _run_command(self):
+        LOG.debug("Running command: %s" % self.command)
+        child_p = subprocess.Popen(self.command, shell=True,
+                                   env=self.env)
+        child_p.wait()
+        if child_p.returncode != 0:
+            LOG.error("Command %s non-zero code %s" % (
+                self, child_p.returncode))
+            sys.exit(1)
+        if self.check_path:
+            self.zk.retry(self.zk.ensure_path, self.check_path)
+            LOG.debug("Command '%s' marked as done" % self.name)
+
+
 def run_commands(zk, conf):
     LOG.info('run_commands')
-    cmdq = Queue.Queue()
-    for name, cmd in conf.iteritems():
-        cmd['name'] = name
-        cmdq.put(cmd)
+    cmdq = queue.PriorityQueue()
+    for name, cmd in six.iteritems(conf):
+        cmdq.put(Command(name, cmd, zk))
 
     while not cmdq.empty():
         cmd = cmdq.get()
-        # are requirments fulfilled?
-        for req in cmd.get('requires', []):
-            if not zk.retry(zk.exists, req):
-                LOG.warn('%s is waiting for %s' % (cmd['name'], req))
-                # re-queue
-                cmdq.put(cmd)
-                if cmdq.qsize() == 1:
-                    # avoid spinning
-                    time.sleep(10)
-                continue
-
-        command = cmd['command']
-        if cmd.get('run_once', False):
-            init_type = 'single'
+        if cmd.requirements_fulfilled():
+            cmd.run()
         else:
-            init_type = 'always'
-        print('*' * 80)
-        print("Running init '%s' (%s), command: %s" % (
-              name, init_type, command))
-        check_path = cmd.get('register')  # eg. /a/b/c/.done
-        if check_path:
-            init_path = os.path.dirname(check_path)
-        else:
-            init_path = None
-
-        def _run_init():
-            print("Running init command: %s" % command)
-            new_env = os.environ.copy()
-            for ek, ev in cmd.get('env', {}).iteritems():
-                # make sure they are strings
-                new_env[ek] = str(ev)
-
-            print("Running init command: %s env:%s" % (command, new_env))
-            child_p = subprocess.Popen(command, shell=True,
-                                       env=new_env)
-            child_p.wait()
-            if child_p.returncode != 0:
-                print("Init '%s' (%s), command '%s' non-zero code" % (
-                      name, init_type, command, child_p.returncode))
-                sys.exit(42)
-            if check_path:
-                print("Marking init '%s' as done" % name)
-                zk.retry(zk.ensure_path, check_path)
-                print("Init '%s' marked as done" % name)
-
-        if cmd.get('run_once', False):
-            def _init_done():
-                if not check_path:
-                    LOG.error('run_once set but no "register"')
-                    sys.exit(1)
-                return zk.retry(zk.exists, check_path)
-
-            if _init_done():
-                print("Path '%s' exists: init was already done" % check_path)
-                print("Skipping init command")
-            else:
-                print("Path '%s' not exists: run init" % check_path)
-                zk.retry(zk.ensure_path, init_path)
-                lock = zk.Lock(init_path)
-                print("Acquiring lock '%s'" % init_path)
-                with lock:
-                    if not _init_done():
-                        print("Path '%s' not exists: run init" % check_path)
-                        _run_init()
-                print("Releasing lock '%s'" % init_path)
-        else:
-            _run_init()
-
-        print('*' * 80)
+            cmd.sleep(20 / cmdq.qsize())
+            cmdq.put(cmd)
 
 
 def main():
