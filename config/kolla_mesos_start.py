@@ -163,17 +163,20 @@ def write_file(conf, data):
 
     dest = conf.get('dest')
     perm = int(conf.get('perm', 0))
-    with tempfile.NamedTemporaryFile(prefix='kolla-mesos') as tf:
+    with tempfile.NamedTemporaryFile(prefix='kolla-mesos',
+                                     delete=False) as tf:
         tf.write(data)
-        try:
-            inst_cmd = ' '.join(['sudo', 'install', '-v',
-                                 '--no-target-directory',
-                                 '--group=%s' % gid, '--mode=%s' % perm,
-                                 '--owner=%s' % uid, tf.name, dest])
-            subprocess.check_call(inst_cmd, shell=True)
-        except subprocess.CalledProcessError as exc:
-            LOG.error(exc)
-            LOG.exception(inst_cmd)
+        tf.flush()
+        tf_name = tf.name
+    try:
+        inst_cmd = ' '.join(['sudo', 'install', '-v',
+                             '--no-target-directory',
+                             '--group=%s' % gid, '--mode=%s' % perm,
+                             '--owner=%s' % uid, tf_name, dest])
+        subprocess.check_call(inst_cmd, shell=True)
+    except subprocess.CalledProcessError as exc:
+        LOG.error(exc)
+        LOG.exception(inst_cmd)
 
 
 def generate_config(zk, conf):
