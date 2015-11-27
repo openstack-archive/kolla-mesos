@@ -347,6 +347,16 @@ class KollaWorker(object):
                     with open(dest_file, 'w') as f:
                         f.write(content)
 
+    def write_openrc(self):
+        # write an openrc to the base_dir for convience.
+        openrc_file = os.path.join(self.base_dir,
+                                   'deployment_files',
+                                   'openrc.j2')
+        content = jinja_render(openrc_file, self.required_vars)
+        with open('openrc', 'w') as f:
+            f.write(content)
+        LOG.info('Written OpenStack env to "openrc"')
+
     def cleanup(self):
         """Remove temp files"""
         shutil.rmtree(self.temp_dir)
@@ -409,6 +419,7 @@ def main():
 
     kolla.setup_working_dir()
     kolla.write_to_zookeeper()
+    kolla.write_openrc()
     kolla.start()
 
     # kolla.cleanup()

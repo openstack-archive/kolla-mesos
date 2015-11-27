@@ -55,3 +55,6 @@ ChangeLog
 
 # Vagrant
 .vagrant
+
+# generated openrc
+openrc
