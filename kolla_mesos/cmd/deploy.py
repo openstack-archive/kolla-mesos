@@ -338,6 +338,7 @@ class KollaWorker(object):
                                             proj,
                                             '%s.%s.j2' % (service, app_type))
                     if not os.path.exists(app_file):
+                        LOG.debug('potentially missing file %s' % app_file)
                         continue
                     content = jinja_render(app_file, jinja_vars,
                                            extra=values)

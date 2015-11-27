@@ -1,0 +1,20 @@
+{
+    "id": "/glance-api",
+    "instances": 1,
+    "mem": 128,
+    "cpus": 0.3,
+    "container": {
+        "type": "DOCKER",
+        "docker": {
+            "image": "{{ glance_api_image }}:{{ glance_api_tag }}",
+            "network": "HOST"
+        }
+    },
+    "env": {
+        "KOLLA_CONFIG_STRATEGY": "{{ config_strategy }}",
+        "KOLLA_CONFIG": "{{ kolla_config }}",
+        "KOLLA_GROUP": "glance",
+        "KOLLA_ROLE": "glance-api",
+        "KOLLA_ZK_HOSTS": "{{ zookeeper_hosts }}"
+    }
+}

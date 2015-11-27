@@ -1,5 +1,5 @@
 {
-    "name": "keystone-ansible-tasks",
+    "name": "glance-ansible-tasks",
     "mem": 32.0,
     "cpus": 0.3,
     "command": "kolla_start",
@@ -11,7 +11,7 @@
     "environmentVariables": [
         {"name": "KOLLA_CONFIG_STRATEGY", "value": "{{ config_strategy }}"},
         {"name": "KOLLA_CONFIG", "value": "{{ kolla_config }}"},
-        {"name": "KOLLA_GROUP", "value": "keystone"},
-        {"name": "KOLLA_ROLE", "value": "keystone_ansible_tasks"},
+        {"name": "KOLLA_GROUP", "value": "glance"},
+        {"name": "KOLLA_ROLE", "value": "glance_ansible_tasks"},
         {"name": "KOLLA_ZK_HOSTS", "value": "{{ zookeeper_hosts }}"}]
 }
