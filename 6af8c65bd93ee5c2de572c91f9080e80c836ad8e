@@ -1,0 +1,9 @@
+Verified+2: Jenkins
+Code-Review+2: Swapnil Kulkarni (coolsvap) <me@coolsvap.net>
+Code-Review+2: Michal Rostecki <mrostecki@mirantis.com>
+Workflow+1: Michal Rostecki <mrostecki@mirantis.com>
+Submitted-by: Jenkins
+Submitted-at: Fri, 27 Nov 2015 07:23:58 +0000
+Reviewed-on: https://review.openstack.org/250144
+Project: openstack/kolla-mesos
+Branch: refs/heads/master
