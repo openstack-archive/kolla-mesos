@@ -17,8 +17,9 @@ import sys
 import fixtures
 import json
 import mock
-from oslotest import base
 from zake import fake_client
+
+from kolla_mesos.tests import base
 
 this_dir = os.path.dirname(sys.modules[__name__].__file__)
 kolla_mesos_start = os.path.abspath(

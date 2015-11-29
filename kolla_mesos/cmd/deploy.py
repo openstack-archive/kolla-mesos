@@ -13,24 +13,23 @@
 # limitations under the License.
 
 import argparse
-import ConfigParser
-import contextlib
 import datetime
-import errno
 import json
 import logging
 import os
-import shutil
 import signal
-import StringIO
-import sys
 import tempfile
 import time
+
+import shutil
+from six.moves import configparser
+from six.moves import cStringIO
 import yaml
 
-import jinja2
-from jinja2 import meta
-from kazoo import client
+from kolla_mesos.common import config_utils
+from kolla_mesos.common import file_utils
+from kolla_mesos.common import jinja_utils
+from kolla_mesos.common import zk_utils
 
 
 logging.basicConfig()
@@ -44,114 +43,6 @@ class KollaDirNotFoundException(Exception):
     pass
 
 
-def jinja_filter_bool(text):
-    if not text:
-        return False
-    if text.lower() in ['true', 'yes']:
-        return True
-    return False
-
-
-def jinja_render(fullpath, global_config, extra=None):
-    variables = global_config
-    if extra:
-        variables.update(extra)
-
-    if False:  # debug
-        needed = jinja_find_required_variables(fullpath)
-        for var in needed:
-            if var not in variables:
-                LOG.error('%s not in variables, rendering %s' % (
-                    var, fullpath))
-    myenv = jinja2.Environment(
-        loader=jinja2.FileSystemLoader(
-            os.path.dirname(fullpath)))
-    myenv.filters['bool'] = jinja_filter_bool
-    return myenv.get_template(os.path.basename(fullpath)).render(variables)
-
-
-def jinja_find_required_variables(fullpath):
-    myenv = jinja2.Environment(loader=jinja2.FileSystemLoader(
-        os.path.dirname(fullpath)))
-    myenv.filters['bool'] = jinja_filter_bool
-    template_source = myenv.loader.get_source(myenv,
-                                              os.path.basename(fullpath))[0]
-    parsed_content = myenv.parse(template_source)
-    return meta.find_undeclared_variables(parsed_content)
-
-
-def zk_copy_tree(zk, source_path, dest_path):
-    for src in os.listdir(source_path):
-        src_file = os.path.join(source_path, src)
-        if os.path.isdir(src_file):
-            zk_copy_tree(zk, src_file,
-                         os.path.join(dest_path, src))
-        else:
-            dest_node = os.path.join(dest_path, src)
-            LOG.info('Copying {} to {}'.format(
-                src_file, dest_node))
-            with open(src_file) as src_fp:
-                zk.ensure_path(dest_node)
-                zk.set(dest_node, src_fp.read())
-
-
-@contextlib.contextmanager
-def zk_connection(zk_hosts):
-    zk = client.KazooClient(hosts=zk_hosts)
-    try:
-        zk.start()
-        yield zk
-    finally:
-        zk.stop()
-
-
-def mkdir_p(path):
-    try:
-        os.makedirs(path)
-    except OSError as exc:  # Python >2.5
-        if exc.errno == errno.EEXIST and os.path.isdir(path):
-            pass
-        else:
-            raise
-
-
-def find_base_dir(project='kolla'):
-    def get_src_dir():
-        # import here to prevent recursive module loading.
-        if project == 'kolla':
-            import kolla
-            mod_path = os.path.abspath(kolla.__file__)
-        else:
-            import kolla_mesos
-            mod_path = os.path.abspath(kolla_mesos.__file__)
-        # remove the file and module to get to the base.
-        return os.path.dirname(os.path.dirname(mod_path))
-
-    script_path = os.path.dirname(os.path.realpath(sys.argv[0]))
-    if os.path.basename(script_path) == 'cmd':
-        return os.path.join(script_path, '..', '..')
-    if os.path.basename(script_path) == 'bin':
-        base_dir = '/usr/share/%s' % project
-        if os.path.exists(base_dir):
-            return base_dir
-        return get_src_dir()
-    if os.path.exists(os.path.join(script_path, 'tests')):
-        return script_path
-    raise KollaDirNotFoundException(
-        'I do not know where your Kolla directory is'
-    )
-
-
-def find_config_file(filename):
-    filepath = os.path.join('/etc/kolla', filename)
-    if os.access(filepath, os.R_OK):
-        config_file = filepath
-    else:
-        config_file = os.path.join(find_base_dir(),
-                                   'etc', 'kolla', filename)
-    return config_file
-
-
 def merge_args_and_config(settings_from_config_file):
     parser = argparse.ArgumentParser(description='Kolla build script')
 
@@ -162,7 +53,7 @@ def merge_args_and_config(settings_from_config_file):
         "base_tag": "latest",
         "install_type": "binary",
     }
-    defaults.update(settings_from_config_file)
+    defaults.update(settings_from_config_file.items('kolla-build'))
     parser.set_defaults(**defaults)
 
     parser.add_argument('-n', '--namespace',
@@ -192,7 +83,8 @@ def merge_args_and_config(settings_from_config_file):
                         help=('Build a pre-defined set of images, see '
                               '[profiles] section in '
                               '{}'.format(
-                                  find_config_file('kolla-build.conf'))),
+                                  file_utils.find_config_file(
+                                      'kolla-build.conf'))),
                         type=str,
                         action='append')
 
@@ -202,7 +94,8 @@ def merge_args_and_config(settings_from_config_file):
 class KollaWorker(object):
 
     def __init__(self, config, profiles):
-        self.base_dir = os.path.abspath(find_base_dir(project='kolla-mesos'))
+        self.base_dir = os.path.abspath(file_utils.find_base_dir(
+            project='kolla-mesos'))
         self.config_dir = os.path.join(self.base_dir, 'config')
         LOG.debug("Kolla-Mesos base directory: " + self.base_dir)
         self.namespace = config['namespace']
@@ -231,20 +124,21 @@ class KollaWorker(object):
         # 1. /etc/kolla/globals.yml and passwords.yml
         # 2. config/all.yml
         # 3. config/<project>/defaults/main.yml
-        with open(find_config_file('passwords.yml'), 'r') as gf:
+        with open(file_utils.find_config_file('passwords.yml'), 'r') as gf:
             global_vars = yaml.load(gf)
-        with open(find_config_file('globals.yml'), 'r') as gf:
+        with open(file_utils.find_config_file('globals.yml'), 'r') as gf:
             global_vars.update(yaml.load(gf))
 
         all_yml_name = os.path.join(self.config_dir, 'all.yml')
-        jvars = yaml.load(jinja_render(all_yml_name, global_vars))
+        jvars = yaml.load(jinja_utils.jinja_render(all_yml_name, global_vars))
         jvars.update(global_vars)
 
         for proj in self.get_projects():
             proj_yml_name = os.path.join(self.config_dir, proj,
                                          'defaults', 'main.yml')
             if os.path.exists(proj_yml_name):
-                proj_vars = yaml.load(jinja_render(proj_yml_name, jvars))
+                proj_vars = yaml.load(jinja_utils.jinja_render(proj_yml_name,
+                                                               jvars))
 
                 jvars.update(proj_vars)
             else:
@@ -255,7 +149,7 @@ class KollaWorker(object):
         return jvars
 
     def merge_ini_files(self, source_files):
-        config_p = ConfigParser.ConfigParser()
+        config_p = configparser.ConfigParser()
         for src_file in source_files:
             if not src_file.startswith('/'):
                 src_file = os.path.join(self.base_dir, src_file)
@@ -263,7 +157,7 @@ class KollaWorker(object):
                 LOG.warn('path missing %s' % src_file)
                 continue
             config_p.read(src_file)
-        merged_f = StringIO.StringIO()
+        merged_f = cStringIO.StringIO()
         config_p.write(merged_f)
         return merged_f.getvalue()
 
@@ -284,7 +178,7 @@ class KollaWorker(object):
 
             conf_path = os.path.join(self.config_dir, proj,
                                      '%s_config.yml.j2' % proj)
-            extra = yaml.load(jinja_render(conf_path, jinja_vars))
+            extra = yaml.load(jinja_utils.jinja_render(conf_path, jinja_vars))
 
             dest_node = os.path.join('kolla', 'config',
                                      proj, proj)  # TODO() should be service
@@ -325,7 +219,7 @@ class KollaWorker(object):
                 cont_conf_dir = 'zk://%s' % (
                     self.build_config['zookeeper_host'])
                 jinja_vars['container_config_directory'] = cont_conf_dir
-                kolla_config = jinja_render(kc_name, jinja_vars)
+                kolla_config = jinja_utils.jinja_render(kc_name, jinja_vars)
 
                 # 4. parse the marathon app file and add the KOLLA_CONFIG
                 values = {
@@ -339,11 +233,11 @@ class KollaWorker(object):
                                             '%s.%s.j2' % (service, app_type))
                     if not os.path.exists(app_file):
                         continue
-                    content = jinja_render(app_file, jinja_vars,
-                                           extra=values)
+                    content = jinja_utils.jinja_render(app_file, jinja_vars,
+                                                       extra=values)
                     dest_file = os.path.join(self.temp_dir, proj,
                                              '%s.%s' % (service, app_type))
-                    mkdir_p(os.path.dirname(dest_file))
+                    file_utils.mkdir_p(os.path.dirname(dest_file))
                     with open(dest_file, 'w') as f:
                         f.write(content)
 
@@ -352,7 +246,7 @@ class KollaWorker(object):
         openrc_file = os.path.join(self.base_dir,
                                    'deployment_files',
                                    'openrc.j2')
-        content = jinja_render(openrc_file, self.required_vars)
+        content = jinja_utils.jinja_render(openrc_file, self.required_vars)
         with open('openrc', 'w') as f:
             f.write(content)
         LOG.info('Written OpenStack env to "openrc"')
@@ -362,7 +256,7 @@ class KollaWorker(object):
         shutil.rmtree(self.temp_dir)
 
     def write_to_zookeeper(self):
-        with zk_connection(self.build_config['zookeeper_host']) as zk:
+        with zk_utils.connection(self.build_config['zookeeper_host']) as zk:
             # to clean these up, uncomment
             zk.delete('/kolla', recursive=True)
 
@@ -406,17 +300,11 @@ class KollaWorker(object):
 
 
 def main():
-    # need kolla-build, profiles, globals
-
-    kolla_config = ConfigParser.SafeConfigParser()
-    kolla_config.read(find_config_file('kolla-build.conf'))
-    build_config = merge_args_and_config(kolla_config.items('kolla-build'))
-    if build_config['debug']:
-        LOG.setLevel(logging.DEBUG)
+    cmd_opts, kolla_config = config_utils.load('kolla-build.conf',
+                                               merge_args_and_config)
     profiles = dict(kolla_config.items('profiles'))
 
-    kolla = KollaWorker(build_config, profiles)
-
+    kolla = KollaWorker(cmd_opts, profiles)
     kolla.setup_working_dir()
     kolla.write_to_zookeeper()
     kolla.write_openrc()
