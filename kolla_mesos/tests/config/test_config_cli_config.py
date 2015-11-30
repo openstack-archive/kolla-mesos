@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -12,31 +10,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import logging
-import sys
-
 from oslo_config import cfg
 
-from kolla_mesos.common import zk_utils
+from kolla_mesos.tests import base
 
-
-logging.basicConfig()
-LOG = logging.getLogger(__name__)
-LOG.setLevel(logging.INFO)
 
 CONF = cfg.CONF
-CONF.import_group('zookeeper', 'kolla_mesos.config.zookeeper')
 CONF.import_opt('path', 'kolla_mesos.config.config_cli')
 CONF.import_opt('show', 'kolla_mesos.config.config_cli')
 
 
-def main():
-    CONF(sys.argv[1:], project='kolla-mesos')
-    with zk_utils.connection(CONF.zookeeper.host) as zk:
-        if CONF.show:
-            zk_utils.cat(zk, CONF.path)
-        else:
-            zk_utils.tree(zk, CONF.path)
+class TestConfigCliConfig(base.BaseTestCase):
 
-if __name__ == '__main__':
-    main()
+    def test_config_cli(self):
+        argv = ['--path', 'test_path', '--show']
+        CONF(argv, project='kolla-mesos')
+        self.assertEqual(CONF.path, 'test_path')
+        self.assertTrue(CONF.show)

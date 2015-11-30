@@ -10,19 +10,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import logging
-
-from six.moves import configparser
-
-from kolla_mesos.common import file_utils
-
-LOG = logging.getLogger(__name__)
+from oslo_config import cfg
 
 
-def load(config_name, merge_args_and_config):
-    kolla_config = configparser.SafeConfigParser()
-    kolla_config.read(file_utils.find_config_file(config_name))
-    cmd_opts = merge_args_and_config(kolla_config)
-    if cmd_opts['debug']:
-        LOG.setLevel(logging.DEBUG)
-    return cmd_opts, kolla_config
+CONF = cfg.CONF
+chronos_opts = [
+    cfg.StrOpt('host',
+               default='localhost:4400'),
+    cfg.IntOpt('timeout',
+               default=5)
+]
+chronos_opt_group = cfg.OptGroup(name='chronos',
+                                 title='Options for Chronos')
+CONF.register_group(chronos_opt_group)
+CONF.register_cli_opts(chronos_opts, chronos_opt_group)
+CONF.register_opts(chronos_opts, chronos_opt_group)
