@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import argparse
 import logging
-import os
+import sys
 
-from kolla_mesos.common import config_utils
+from oslo_config import cfg
+
 from kolla_mesos.common import zk_utils
 
 
@@ -24,37 +24,19 @@ logging.basicConfig()
 LOG = logging.getLogger(__name__)
 LOG.setLevel(logging.INFO)
 
-
-def merge_args_and_config(settings_from_config_file):
-    parser = argparse.ArgumentParser(description='Kolla build script')
-    defaults = {
-        "zookeeper_host": os.environ.get('ZK_HOSTS', 'localhost:2181'),
-    }
-    defaults.update(settings_from_config_file.items('kolla-build'))
-    parser.set_defaults(**defaults)
-    parser.add_argument('--zookeeper-host',
-                        help='Zookeeper host:port',
-                        type=str)
-    parser.add_argument('-d', '--debug',
-                        help='Turn on debugging log level',
-                        action='store_true')
-    parser.add_argument('-s', '--show',
-                        help='Show node data',
-                        action='store_true')
-    parser.add_argument('path',
-                        help='Zookeeper node path (try /kolla)')
-    return vars(parser.parse_args())
+CONF = cfg.CONF
+CONF.import_group('zookeeper', 'kolla_mesos.config.zookeeper')
+CONF.import_opt('path', 'kolla_mesos.config.config_cli')
+CONF.import_opt('show', 'kolla_mesos.config.config_cli')
 
 
 def main():
-    cmd_opts, kolla_config = config_utils.load('kolla-build.conf',
-                                               merge_args_and_config)
-
-    with zk_utils.connection(cmd_opts['zookeeper_host']) as zk:
-        if cmd_opts['show']:
-            zk_utils.cat(zk, cmd_opts['path'])
+    CONF(sys.argv[1:], project='kolla-mesos')
+    with zk_utils.connection(CONF.zookeeper.host) as zk:
+        if CONF.show:
+            zk_utils.cat(zk, CONF.path)
         else:
-            zk_utils.tree(zk, cmd_opts['path'])
+            zk_utils.tree(zk, CONF.path)
 
 if __name__ == '__main__':
     main()
