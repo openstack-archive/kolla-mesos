@@ -10,19 +10,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import logging
+from oslo_config import cfg
 
-from six.moves import configparser
-
-from kolla_mesos.common import file_utils
-
-LOG = logging.getLogger(__name__)
+from kolla_mesos.tests import base
 
 
-def load(config_name, merge_args_and_config):
-    kolla_config = configparser.SafeConfigParser()
-    kolla_config.read(file_utils.find_config_file(config_name))
-    cmd_opts = merge_args_and_config(kolla_config)
-    if cmd_opts['debug']:
-        LOG.setLevel(logging.DEBUG)
-    return cmd_opts, kolla_config
+CONF = cfg.CONF
+CONF.import_opt('path', 'kolla_mesos.config.config_cli')
+CONF.import_opt('show', 'kolla_mesos.config.config_cli')
+
+
+class TestConfigCliConfig(base.BaseTestCase):
+
+    def test_config_cli(self):
+        argv = ['--path', 'test_path', '--show']
+        CONF(argv, project='kolla-mesos')
+        self.assertEqual(CONF.path, 'test_path')
+        self.assertTrue(CONF.show)
