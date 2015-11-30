@@ -18,15 +18,16 @@ import json
 import logging
 import os
 import signal
+import sys
 import tempfile
 import time
 
+from oslo_config import cfg
 import shutil
 from six.moves import configparser
 from six.moves import cStringIO
 import yaml
 
-from kolla_mesos.common import config_utils
 from kolla_mesos.common import file_utils
 from kolla_mesos.common import jinja_utils
 from kolla_mesos.common import zk_utils
@@ -38,72 +39,71 @@ LOG.setLevel(logging.INFO)
 
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 
+CONF = cfg.CONF
+kolla_opts = [
+    cfg.StrOpt('namespace',
+               default='kollaglue'),
+    cfg.StrOpt('tag',
+               default='latest'),
+    cfg.StrOpt('base',
+               default='centos'),
+    cfg.StrOpt('base-tag',
+               default='latest'),
+    cfg.StrOpt('install-type',
+               default='binary'),
+    cfg.StrOpt('profile',
+               default='default')
+]
+kolla_opt_group = cfg.OptGroup(name='kolla',
+                               title='Options for Kolla Docker images')
+CONF.register_group(kolla_opt_group)
+CONF.register_opts(kolla_opts, kolla_opt_group)
+profiles_opts = [
+    cfg.ListOpt('infra',
+                default=['ceph', 'data', 'mariadb', 'haproxy', 'keepalived',
+                         'kolla-ansible', 'memcached', 'mongodb',
+                         'openvswitch', 'rabbitmq', 'rsyslog']),
+    cfg.ListOpt('main',
+                default=['cinder', 'ceilometer', 'glance', 'heat', 'horizon',
+                         'keystone', 'neutron', 'nova', 'swift']),
+    cfg.ListOpt('aux',
+                default=['designate', 'gnocchi', 'ironic', 'magnum', 'zaqar']),
+    cfg.ListOpt('default',
+                default=['data', 'kolla-ansible', 'glance', 'haproxy', 'heat',
+                         'horizon', 'keepalived', 'keystone', 'memcached',
+                         'mariadb', 'neutron', 'nova', 'openvswitch',
+                         'rabbitmq', 'rsyslog']),
+    cfg.ListOpt('gate',
+                default=['ceph', 'cinder', 'data', 'dind', 'glance', 'haproxy',
+                         'heat', 'horizon', 'keepalived', 'keystone',
+                         'kolla-ansible', 'mariadb', 'memcached', 'neutron',
+                         'nova', 'openvswitch', 'rabbitmq', 'rsyslog'])
+]
+profiles_opt_group = cfg.OptGroup(name='profiles',
+                                  title='Common sets of images')
+CONF.register_group(profiles_opt_group)
+CONF.register_opts(profiles_opts, profiles_opt_group)
+zookeeper_opts = [
+    cfg.StrOpt('host',
+               default='localhost:2181')
+]
+zookeeper_opt_group = cfg.OptGroup(name='zookeeper',
+                                   title='Options for ZooKeeper')
+CONF.register_group(zookeeper_opt_group)
+CONF.register_opts(zookeeper_opts, zookeeper_opt_group)
+
 
 class KollaDirNotFoundException(Exception):
     pass
 
 
-def merge_args_and_config(settings_from_config_file):
-    parser = argparse.ArgumentParser(description='Kolla build script')
-
-    defaults = {
-        "namespace": "kollaglue",
-        "tag": "latest",
-        "base": "centos",
-        "base_tag": "latest",
-        "install_type": "binary",
-    }
-    defaults.update(settings_from_config_file.items('kolla-build'))
-    parser.set_defaults(**defaults)
-
-    parser.add_argument('-n', '--namespace',
-                        help='Set the Docker namespace name',
-                        type=str)
-    parser.add_argument('--tag',
-                        help='Set the Docker tag',
-                        type=str)
-    parser.add_argument('-b', '--base',
-                        help='The base distro to use when building',
-                        type=str)
-    parser.add_argument('--base-tag',
-                        help='The base distro image tag',
-                        type=str)
-    parser.add_argument('-t', '--type',
-                        help='The method of the Openstack install',
-                        type=str,
-                        dest='install_type')
-    parser.add_argument('--zookeeper-host',
-                        help='Zookeeper host:port (default localhost:2181)',
-                        default="localhost:2181",
-                        type=str)
-    parser.add_argument('-d', '--debug',
-                        help='Turn on debugging log level',
-                        action='store_true')
-    parser.add_argument('-p', '--profile',
-                        help=('Build a pre-defined set of images, see '
-                              '[profiles] section in '
-                              '{}'.format(
-                                  file_utils.find_config_file(
-                                      'kolla-build.conf'))),
-                        type=str,
-                        action='append')
-
-    return vars(parser.parse_args())
-
-
 class KollaWorker(object):
 
-    def __init__(self, config, profiles):
+    def __init__(self):
         self.base_dir = os.path.abspath(file_utils.find_base_dir(
             project='kolla-mesos'))
         self.config_dir = os.path.join(self.base_dir, 'config')
         LOG.debug("Kolla-Mesos base directory: " + self.base_dir)
-        self.namespace = config['namespace']
-        self.base = config['base']
-        self.install_type = config['install_type']
-        self.image_prefix = self.base + '-' + config['install_type'] + '-'
-        self.build_config = config
-        self.profiles = profiles
         self.required_vars = {}
 
     def setup_working_dir(self):
@@ -114,9 +114,7 @@ class KollaWorker(object):
         LOG.debug('Created output dir: {}'.format(self.temp_dir))
 
     def get_projects(self):
-        projects = set()
-        for prof in self.build_config.get('profiles', ['default']):
-            projects |= set(self.profiles[prof].split(','))
+        projects = set(getattr(CONF.profiles, CONF.kolla.profile))
         return projects
 
     def get_jinja_vars(self):
@@ -217,14 +215,14 @@ class KollaWorker(object):
                 kc_name = os.path.join(self.config_dir, 'config.json')
                 # override container_config_directory
                 cont_conf_dir = 'zk://%s' % (
-                    self.build_config['zookeeper_host'])
+                    CONF.zookeeper.host)
                 jinja_vars['container_config_directory'] = cont_conf_dir
                 kolla_config = jinja_utils.jinja_render(kc_name, jinja_vars)
 
                 # 4. parse the marathon app file and add the KOLLA_CONFIG
                 values = {
                     'kolla_config': kolla_config.replace('"', '\\"'),
-                    'zookeeper_hosts': self.build_config['zookeeper_host']
+                    'zookeeper_hosts': CONF.zookeeper.host
                 }
                 for app_type in ['marathon', 'chronos']:
                     app_file = os.path.join(self.base_dir,
@@ -256,7 +254,7 @@ class KollaWorker(object):
         shutil.rmtree(self.temp_dir)
 
     def write_to_zookeeper(self):
-        with zk_utils.connection(self.build_config['zookeeper_host']) as zk:
+        with zk_utils.connection(CONF.zookeeper.host) as zk:
             # to clean these up, uncomment
             zk.delete('/kolla', recursive=True)
 
@@ -281,10 +279,8 @@ class KollaWorker(object):
     def start(self):
         # find all marathon files and run.
         # find all cronos files and run.
-        marathon_api = self.build_config['zookeeper_host'].replace('2181',
-                                                                   '8080')
-        chronos_api = self.build_config['zookeeper_host'].replace('2181',
-                                                                  '4400')
+        marathon_api = CONF.zookeeper.host.replace('2181', '8080')
+        chronos_api = CONF.zookeeper.host.replace('2181', '4400')
         content_type = '-L -H "Content-type: application/json"'
         for root, dirs, names in os.walk(self.temp_dir):
             for name in names:
@@ -300,11 +296,8 @@ class KollaWorker(object):
 
 
 def main():
-    cmd_opts, kolla_config = config_utils.load('kolla-build.conf',
-                                               merge_args_and_config)
-    profiles = dict(kolla_config.items('profiles'))
-
-    kolla = KollaWorker(cmd_opts, profiles)
+    CONF(sys.argv[1:], project='kolla-mesos')
+    kolla = KollaWorker()
     kolla.setup_working_dir()
     kolla.write_to_zookeeper()
     kolla.write_openrc()
