@@ -3,8 +3,8 @@ config:
   mariadb:
     mariadb:
       kolla_mesos_start.py:
-        source: config/kolla_mesos_start.py
-        dest: /kolla_mesos_start.py
+        source: kolla_mesos/container_scripts/start.py
+        dest: /usr/local/bin/kolla_mesos_start
       galera.cnf.j2:
         source: config/mariadb/templates/galera.cnf.j2
         dest: /etc/{{ mysql_dir }}/my.cnf
