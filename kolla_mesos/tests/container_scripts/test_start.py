@@ -10,22 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import imp
-import os.path
-import sys
-
 import fixtures
 import json
 import mock
 from zake import fake_client
 
 from kolla_mesos.tests import base
-
-this_dir = os.path.dirname(sys.modules[__name__].__file__)
-kolla_mesos_start = os.path.abspath(
-    os.path.join(this_dir, '..', '..', '..',
-                 'config', 'kolla_mesos_start.py'))
-start = imp.load_source('kolla_mesos_start', kolla_mesos_start)
+from kolla_mesos.container_scripts import start
 
 
 class CommandTest(base.BaseTestCase):
