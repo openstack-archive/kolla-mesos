@@ -12,7 +12,7 @@ enabled=1
 gpgcheck=1
 gpgkey=https://yum.dockerproject.org/gpg
 EOF
-yum -y install docker-engine epel-release git python-pip
+yum -y install docker-engine epel-release git python-pip vim-enhanced
 
 # Start services
 systemctl enable docker
@@ -24,4 +24,4 @@ pip install ~vagrant/kolla
 pip install ~vagrant/kolla-mesos
 
 # Copy configuration
-cp -r ~vagrant/kolla/etc/kolla/ /etc/kolla
+cp -r ~vagrant/kolla-mesos/etc/kolla-mesos/ /etc/kolla-mesos

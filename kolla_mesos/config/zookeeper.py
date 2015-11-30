@@ -10,19 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import logging
-
-from six.moves import configparser
-
-from kolla_mesos.common import file_utils
-
-LOG = logging.getLogger(__name__)
+from oslo_config import cfg
 
 
-def load(config_name, merge_args_and_config):
-    kolla_config = configparser.SafeConfigParser()
-    kolla_config.read(file_utils.find_config_file(config_name))
-    cmd_opts = merge_args_and_config(kolla_config)
-    if cmd_opts['debug']:
-        LOG.setLevel(logging.DEBUG)
-    return cmd_opts, kolla_config
+CONF = cfg.CONF
+zookeeper_opts = [
+    cfg.StrOpt('host',
+               default='localhost:2181')
+]
+zookeeper_opt_group = cfg.OptGroup(name='zookeeper',
+                                   title='Options for ZooKeeper')
+CONF.register_group(zookeeper_opt_group)
+CONF.register_opts(zookeeper_opts, zookeeper_opt_group)
