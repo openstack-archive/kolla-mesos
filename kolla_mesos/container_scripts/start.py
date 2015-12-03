@@ -344,7 +344,7 @@ def run_commands(zk, conf):
         if cmd.requirements_fulfilled():
             cmd.run()
         else:
-            cmd.sleep(20 / cmdq.qsize())
+            cmd.sleep(20 / (1 + cmdq.qsize()))
             cmdq.put(cmd)
 
 
@@ -364,7 +364,8 @@ def main():
         if register_group:
             register_group_and_hostvars(zk)
 
-        generate_config(zk, service_conf['config'][GROUP][ROLE])
+        if ROLE in service_conf['config'][GROUP]:
+            generate_config(zk, service_conf['config'][GROUP][ROLE])
         run_commands(zk, service_conf['commands'][GROUP][ROLE])
 
 
