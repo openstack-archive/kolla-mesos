@@ -25,10 +25,8 @@ end
 Vagrant.configure(2) do |config|
   config.vm.box = get_default(:base_image)
 
-  config.vm.network "forwarded_port", guest: 4400, host: 4400
-  config.vm.network "forwarded_port", guest: 5050, host: 5050
-  config.vm.network "forwarded_port", guest: 5051, host: 5051
-  config.vm.network "forwarded_port", guest: 8080, host: 8080
+  config.vm.network "private_network", type: "dhcp"
+  config.vm.network "public_network", dev: get_default(:bridge_interface), mode: 'bridge', type: 'bridge'
 
   config.vm.synced_folder "..", "/home/vagrant/kolla-mesos", type: get_default(:sync_method)
 

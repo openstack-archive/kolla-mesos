@@ -10,20 +10,41 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import fcntl
-import socket
-import struct
+import netifaces
+from oslo_config import cfg
 
 
-# TODO(nihilifer): Autodetect networks and find a way to share commons between
-# kolla_mesos and kolla_mesos_start.py.
-def get_ip_address(ifname='eth0'):
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    try:
-        return socket.inet_ntoa(fcntl.ioctl(
-            s.fileno(),
-            0x8915,  # SIOCGIFADDR
-            struct.pack('256s', ifname[:15])
-        )[20:24])
-    except IOError:
-        return '127.0.0.1'
+CONF = cfg.CONF
+CONF.import_group('network', 'kolla_mesos.config.network')
+
+
+def _get_localhost():
+    """Get localhost IP address regarding the IP protocol version"""
+    if CONF.network.ipv6:
+        return '::1'
+    return '127.0.0.1'
+
+
+def get_ip_address(public=True):
+    """Get IP address of the interface connected to the public network.
+
+    If there is no such an interface, then localhost is returned.
+    """
+    if public:
+        iface = CONF.network.public_interface
+    else:
+        iface = CONF.network.private_interface
+
+    if iface not in netifaces.interfaces():
+        return _get_localhost()
+
+    if CONF.network.ipv6:
+        address_family = netifaces.AF_INET6
+    else:
+        address_family = netifaces.AF_INET
+
+    for ifaddress in netifaces.ifaddresses(iface)[address_family]:
+        if 'addr' in ifaddress:
+            return ifaddress['addr']
+
+    return _get_localhost()

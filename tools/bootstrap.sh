@@ -1,6 +1,12 @@
 #!/bin/bash
 
-HOST_IP=$(ip addr show eth0 | grep -Po 'inet \K[\d.]+')
+NET_IFACE=eth2
+
+function get_host_ip {
+    echo $(ip addr show $NET_IFACE | grep -Po 'inet \K[\d.]+')
+}
+
+HOST_IP=$(get_host_ip)
 
 function infra_start {
     docker run -d \
@@ -73,6 +79,7 @@ Usage: $0 COMMAND [options]
 
 Options:
     --host, -i <host_ip> Specify path to host ip
+    --net-iface, -n <nic> Specify NIC to use for host ip lookup
     --help, -h                       Show this usage information
 
 Commands:
@@ -81,13 +88,19 @@ Commands:
 EOF
 }
 
-ARGS=$(getopt -o hi: -l help,host: --name "$0" -- "$@") || { usage >&2; exit 2; }
+ARGS=$(getopt -o hin: -l help,host,net-iface: --name "$0" -- "$@") || { usage >&2; exit 2; }
 eval set -- "$ARGS"
 
 while [ "$#" -gt 0 ]; do
     case "$1" in
         (--host|-i)
             HOST_IP="$2"
+            shift 2
+            ;;
+
+        (--net-iface|-n)
+            NET_IFACE="$2"
+            HOST_IP=$(get_host_ip)
             shift 2
             ;;
 
