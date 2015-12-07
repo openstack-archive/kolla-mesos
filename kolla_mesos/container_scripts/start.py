@@ -38,10 +38,10 @@ from six.moves import queue
 ZK_HOSTS = os.environ.get('KOLLA_ZK_HOSTS')
 GROUP = os.environ.get('KOLLA_GROUP', 'mariadb')
 ROLE = os.environ.get('KOLLA_ROLE', 'mariadb')
+DEBUG = os.environ.get('KOLLA_DEBUG', 'no')
 
 logging.basicConfig()
-LOG = logging.getLogger('%s-%s.start' % (GROUP, ROLE))
-LOG.setLevel(logging.INFO)
+LOG = logging.getLogger(__file__)
 
 
 def jinja_filter_bool(text):
@@ -50,6 +50,12 @@ def jinja_filter_bool(text):
     if text.lower() in ('true', 'yes'):
         return True
     return False
+
+
+if jinja_filter_bool(DEBUG):
+    LOG.setLevel(logging.DEBUG)
+else:
+    LOG.setLevel(logging.INFO)
 
 
 def jinja_regex_replace(value='', pattern='',
