@@ -45,6 +45,9 @@ output/*/index.html
 # Sphinx
 doc/build
 
+# oslo-config-generator
+etc/*.sample
+
 # pbr generates these
 AUTHORS
 ChangeLog
