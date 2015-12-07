@@ -47,6 +47,13 @@ class CommandTest(base.BaseTestCase):
                             self.client)
         self.assertEqual('c (run_once, daemon) "true"', str(cmd))
 
+    def test_str_4(self):
+        cmd = start.Command('b', {'command': 'true',
+                                  'retries': '3',
+                                  'run_once': True},
+                            self.client)
+        self.assertEqual('b (run_once, retries) "true"', str(cmd))
+
     def test_defaults_1(self):
         data = {'command': 'true'}
         cmd = start.Command('a', data, None)
@@ -125,6 +132,42 @@ class CommandTest(base.BaseTestCase):
         with fixtures.FakePopen() as mock_popen:
             cmd1.run()
             self.assertEqual(0, len(mock_popen.procs))
+
+    def test_return_val(self):
+        cmd1 = start.Command('a', {'command': 'true'},
+                             self.client)
+        with fixtures.FakePopen(lambda _: {'returncode': 3}):
+            self.assertEqual(3, cmd1.run())
+
+    def test_sleep_0_q(self):
+        cmd = start.Command('a', {'command': 'true'},
+                            self.client)
+        with mock.patch('time.sleep') as m_sleep:
+            cmd.sleep(0)
+            m_sleep.assert_called_once_with(20)
+
+    def test_sleep_10_q(self):
+        cmd = start.Command('a', {'command': 'true'},
+                            self.client)
+        with mock.patch('time.sleep') as m_sleep:
+            cmd.sleep(10)
+            m_sleep.assert_called_once_with(2)
+
+    def test_sleep_retry_1(self):
+        cmd = start.Command('a', {'command': 'true'},
+                            self.client)
+        cmd.delay = 4
+        with mock.patch('time.sleep') as m_sleep:
+            cmd.sleep(10, retry=True)
+            m_sleep.assert_called_once_with(2)
+
+    def test_sleep_retry_2(self):
+        cmd = start.Command('a', {'command': 'true'},
+                            self.client)
+        cmd.delay = 4
+        with mock.patch('time.sleep') as m_sleep:
+            cmd.sleep(4, retry=True)
+            m_sleep.assert_called_once_with(4)
 
 
 @mock.patch.object(start, 'get_ip_address')

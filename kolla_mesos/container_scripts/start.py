@@ -16,6 +16,7 @@ import contextlib
 import fcntl
 import json
 import logging
+import math
 import os
 import pwd
 import re
@@ -252,6 +253,8 @@ class Command(object):
         self.daemon = cmd.get('daemon', False)
         self.check_path = cmd.get('register')  # eg. /a/b/c/.done
         self.requires = cmd.get('requires', [])
+        self.retries = int(cmd.get('retries', 0))
+        self.delay = int(cmd.get('delay', 5))
         self.env = os.environ.copy()
         for ek, ev in six.iteritems(cmd.get('env', {})):
             # make sure they are strings
@@ -279,13 +282,19 @@ class Command(object):
                 self.priority = self.priority + 1
         return fulfilled
 
-    def sleep(self, seconds):
+    def sleep(self, queue_size, retry=False):
+        seconds = math.ceil(20 / (1.0 + queue_size))
+
+        if retry:
+            seconds = min(seconds, self.delay)
+            LOG.info('Command %s failed, rescheduling, '
+                     '%d retries left' % (self.name, self.retries))
         self.time_slept = self.time_slept + seconds
         time.sleep(seconds)
 
     def __str__(self):
         def get_true_attrs():
-            for attr in ['run_once', 'daemon']:
+            for attr in ['run_once', 'daemon', 'retries']:
                 if getattr(self, attr):
                     yield attr
 
@@ -303,6 +312,7 @@ class Command(object):
 
     def run(self):
         zk = self.zk
+        result = 0
         LOG.info('** > Running %s' % self.name)
         if self.run_once:
             def _init_done():
@@ -322,21 +332,24 @@ class Command(object):
                 LOG.info("Acquiring lock '%s'" % self.init_path)
                 with lock:
                     if not _init_done():
-                        self._run_command()
+                        result = self._run_command()
                 LOG.info("Releasing lock '%s'" % self.init_path)
         else:
-            self._run_command()
-        LOG.info('** < Complete %s' % self.name)
+            result = self._run_command()
+        LOG.info('** < Complete %s result: %s' % (self.name, result))
+        return result
 
     def _run_command(self):
         LOG.debug("Running command: %s" % self.command)
+        # decrement the retries
+        self.retries = self.retries - 1
         child_p = subprocess.Popen(self.command, shell=True,
                                    env=self.env)
         child_p.wait()
         if child_p.returncode != 0:
             LOG.error("Command %s non-zero code %s" % (
                 self, child_p.returncode))
-            sys.exit(1)
+            return child_p.returncode
         if self.check_path:
             self.zk.retry(self.zk.ensure_path, self.check_path)
             LOG.debug("Command '%s' marked as done" % self.name)
@@ -356,10 +369,16 @@ def run_commands(zk, service_conf):
             if not first_ready:
                 if ROLE in service_conf['config'][GROUP]:
                     generate_config(zk, service_conf['config'][GROUP][ROLE])
-            first_ready = True
-            cmd.run()
+                first_ready = True
+            if cmd.run() != 0:
+                if cmd.retries > 0:
+                    cmd.sleep(cmdq.qsize(), retry=True)
+                    cmdq.put(cmd)
+                else:
+                    # command failed and no retries, so exit.
+                    sys.exit(1)
         else:
-            cmd.sleep(20 / (1 + cmdq.qsize()))
+            cmd.sleep(cmdq.qsize())
             cmdq.put(cmd)
 
 
