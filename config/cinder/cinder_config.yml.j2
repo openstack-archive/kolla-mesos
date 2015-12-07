@@ -62,22 +62,30 @@ commands:
         command: kolla_extend_start
       cinder_api:
         daemon: True
-        requires: [/kolla/variables/cinder_setup/.done]
+        requires: [/kolla/variables/cinder_user/.done,
+                   /kolla/variables/keystone_running/.done,
+                   /kolla/variables/rabbitmq_bootstrap/.done]
         command: /usr/bin/cinder-api
     cinder-backup:
       cinder_backup:
         daemon: True
-        requires: [/kolla/variables/cinder_setup/.done]
+        requires: [/kolla/variables/cinder_user/.done,
+                   /kolla/variables/keystone_running/.done,
+                   /kolla/variables/rabbitmq_bootstrap/.done]
         command: /usr/bin/cinder-backup
     cinder-scheduler:
       cinder_scheduler:
         daemon: True
-        requires: [/kolla/variables/cinder_setup/.done]
+        requires: [/kolla/variables/cinder_user/.done,
+                   /kolla/variables/keystone_running/.done,
+                   /kolla/variables/rabbitmq_bootstrap/.done]
         command: /usr/bin/cinder-scheduler
     cinder-volume:
       cinder_volume:
         daemon: True
-        requires: [/kolla/variables/cinder_setup/.done]
+        requires: [/kolla/variables/cinder_user/.done,
+                   /kolla/variables/keystone_running/.done,
+                   /kolla/variables/rabbitmq_bootstrap/.done]
         command: /usr/bin/cinder-volume
     cinder_ansible_tasks:
       create_database:
@@ -108,7 +116,8 @@ commands:
               append_privs='yes'"
       register_endpoint:
         run_once: True
-        requires: [/kolla/variables/cinder_setup/.done]
+        requires: [/kolla/variables/cinder_setup/.done,
+                   /kolla/variables/keystone_running/.done]
         register: /kolla/variables/cinder_api_registered/.done
         command: /usr/bin/ansible localhost
           -m kolla_keystone_service
@@ -124,7 +133,8 @@ commands:
           -e "{'openstack_cinder_auth':{{ openstack_cinder_auth }}}"
       create_cinder_user:
         run_once: True
-        requires: [/kolla/variables/cinder_setup/.done]
+        requires: [/kolla/variables/cinder_setup/.done,
+                   /kolla/variables/keystone_running/.done]
         register: /kolla/variables/cinder_user/.done
         command: /usr/bin/ansible localhost
           -m kolla_keystone_user
