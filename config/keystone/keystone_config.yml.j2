@@ -63,3 +63,19 @@ commands:
               host='%'
               priv='{{ keystone_database_name }}.*:ALL'
               append_privs='yes'"
+      sanity_check:
+        run_once: True
+        retries: 10
+        delay: 5
+        requires: [/kolla/variables/keystone_setup/.done]
+        register: /kolla/variables/keystone_running/.done
+        command: /usr/bin/ansible localhost
+          -m kolla_sanity
+          -a "service=keystone
+              project=service
+              user=admin
+              password={{ glance_keystone_password }}
+              role=admin
+              region_name={{ openstack_region_name }}
+              auth={{ '{{ openstack_glance_auth }}' }}"
+          -e "{'openstack_glance_auth':{{ openstack_glance_auth }}}"
