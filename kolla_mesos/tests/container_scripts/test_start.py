@@ -210,8 +210,7 @@ class MainTest(base.BaseTestCase):
             m_zk_c.return_value.__enter__.return_value = self.client
 
             start.main()
-            m_rc.assert_called_once_with(self.client,
-                                         tconf['commands']['testg']['testr'])
+            m_rc.assert_called_once_with(self.client, tconf)
             self.assertEqual([], m_rgah.mock_calls)
 
     def test_register_if_daemon(self, m_rgah, m_gc, m_rc):
@@ -231,8 +230,7 @@ class MainTest(base.BaseTestCase):
             m_zk_c.return_value.__enter__.return_value = self.client
 
             start.main()
-            m_rc.assert_called_once_with(self.client,
-                                         tconf['commands']['testg']['testr'])
+            m_rc.assert_called_once_with(self.client, tconf)
             self.assertEqual([mock.call(self.client)], m_rgah.mock_calls)
 
 

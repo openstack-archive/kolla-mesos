@@ -342,8 +342,10 @@ class Command(object):
             LOG.debug("Command '%s' marked as done" % self.name)
 
 
-def run_commands(zk, conf):
+def run_commands(zk, service_conf):
     LOG.info('run_commands')
+    first_ready = False
+    conf = service_conf['commands'][GROUP][ROLE]
     cmdq = queue.PriorityQueue()
     for name, cmd in six.iteritems(conf):
         cmdq.put(Command(name, cmd, zk))
@@ -351,6 +353,10 @@ def run_commands(zk, conf):
     while not cmdq.empty():
         cmd = cmdq.get()
         if cmd.requirements_fulfilled():
+            if not first_ready:
+                if ROLE in service_conf['config'][GROUP]:
+                    generate_config(zk, service_conf['config'][GROUP][ROLE])
+            first_ready = True
             cmd.run()
         else:
             cmd.sleep(20 / (1 + cmdq.qsize()))
@@ -373,9 +379,7 @@ def main():
         if register_group:
             register_group_and_hostvars(zk)
 
-        if ROLE in service_conf['config'][GROUP]:
-            generate_config(zk, service_conf['config'][GROUP][ROLE])
-        run_commands(zk, service_conf['commands'][GROUP][ROLE])
+        run_commands(zk, service_conf)
 
 
 if __name__ == '__main__':
