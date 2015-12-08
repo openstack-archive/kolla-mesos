@@ -45,6 +45,7 @@ CONF.import_group('profiles', 'kolla_mesos.config.profiles')
 CONF.import_group('zookeeper', 'kolla_mesos.config.zookeeper')
 CONF.import_group('marathon', 'kolla_mesos.config.marathon')
 CONF.import_group('chronos', 'kolla_mesos.config.chronos')
+CONF.import_opt('force', 'kolla_mesos.config.deploy_cli')
 
 
 class KollaDirNotFoundException(Exception):
@@ -58,7 +59,7 @@ class KollaWorker(object):
         self.config_dir = os.path.join(self.base_dir, 'config')
         LOG.debug("Kolla-Mesos base directory: " + self.base_dir)
         self.required_vars = {}
-        self.marathon_client = marathon.create_client()
+        self.marathon_client = marathon.Client()
 
     def setup_working_dir(self):
         """Creates a working directory for use while building"""
