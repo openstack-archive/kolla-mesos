@@ -30,6 +30,7 @@ import yaml
 from kolla_mesos.common import file_utils
 from kolla_mesos.common import jinja_utils
 from kolla_mesos.common import zk_utils
+from kolla_mesos import exception
 from kolla_mesos import marathon
 
 
@@ -45,6 +46,8 @@ CONF.import_group('profiles', 'kolla_mesos.config.profiles')
 CONF.import_group('zookeeper', 'kolla_mesos.config.zookeeper')
 CONF.import_group('marathon', 'kolla_mesos.config.marathon')
 CONF.import_group('chronos', 'kolla_mesos.config.chronos')
+CONF.import_opt('update', 'kolla_mesos.config.deploy_cli')
+CONF.import_opt('force', 'kolla_mesos.config.deploy_cli')
 
 
 class KollaDirNotFoundException(Exception):
@@ -58,7 +61,7 @@ class KollaWorker(object):
         self.config_dir = os.path.join(self.base_dir, 'config')
         LOG.debug("Kolla-Mesos base directory: " + self.base_dir)
         self.required_vars = {}
-        self.marathon_client = marathon.create_client()
+        self.marathon_client = marathon.Client()
 
     def setup_working_dir(self):
         """Creates a working directory for use while building"""
@@ -206,14 +209,19 @@ class KollaWorker(object):
             f.write(content)
         LOG.info('Written OpenStack env to "openrc"')
 
-    def cleanup(self):
+    def cleanup_temp_files(self):
         """Remove temp files"""
         shutil.rmtree(self.temp_dir)
 
+    def cleanup(self):
+        with zk_utils.connection() as zk:
+            zk_utils.clean(zk)
+        self.marathon_client.remove_all_apps()
+        # TODO(nihilifer): Remove chronos apps too.
+
     def write_to_zookeeper(self):
-        with zk_utils.connection(CONF.zookeeper.host) as zk:
-            # to clean these up, uncomment
-            zk.delete('/kolla', recursive=True)
+        with zk_utils.connection() as zk:
+            zk_utils.clean(zk)
 
             self.write_config_to_zookeeper(zk)
 
@@ -233,26 +241,34 @@ class KollaWorker(object):
                 except Exception as te:
                     LOG.error('%s=%s -> %s' % (var_path, var_value, te))
 
+    def _start_marathon_app(self, app_path):
+        with open(app_path, 'r') as app_file:
+            app_resource = json.load(app_file)
+        if CONF.update:
+            LOG.info('Applications upgrade is not implemented '
+                     'yet!')
+        else:
+            try:
+                self.marathon_client.add_app(app_resource)
+            except exception.MarathonRollback:
+                self.cleanup()
+                self.start()
+
     def start(self):
         # find all marathon files and run.
         # find all cronos files and run.
-        marathon_api = CONF.marathon.host
         chronos_api = CONF.chronos.host
         content_type = '-L -H "Content-type: application/json"'
         for root, dirs, names in os.walk(self.temp_dir):
             for name in names:
                 app_path = os.path.join(root, name)
-                # this is lazy, I could use requests or the native client.
                 if 'marathon' in name:
-                    cmd = 'curl -X POST "%s/v2/apps" -d @"%s" %s' % (
-                        marathon_api, app_path, content_type)
-                    with open(app_path, 'r') as app_file:
-                        app_resource = json.load(app_file)
-                    self.marathon_client.add_app(app_resource)
+                    self._start_marathon_app(app_path)
                 else:
-                    cmd = 'curl -X POST "%s/scheduler/iso8601" -d @"%s" %s' % (
-                        chronos_api, app_path, content_type)
-                LOG.info(cmd)
+                    LOG.info(
+                        'curl -X POST "%s/scheduler/iso8601" -d @"%s" %s' % (
+                            chronos_api, app_path, content_type)
+                    )
 
 
 def main():
