@@ -22,6 +22,7 @@ import tempfile
 import time
 
 from oslo_config import cfg
+import retrying
 import shutil
 from six.moves import configparser
 from six.moves import cStringIO
@@ -31,6 +32,7 @@ from kolla_mesos import chronos
 from kolla_mesos.common import file_utils
 from kolla_mesos.common import jinja_utils
 from kolla_mesos.common import zk_utils
+from kolla_mesos import exception
 from kolla_mesos import marathon
 
 
@@ -46,6 +48,8 @@ CONF.import_group('profiles', 'kolla_mesos.config.profiles')
 CONF.import_group('zookeeper', 'kolla_mesos.config.zookeeper')
 CONF.import_group('marathon', 'kolla_mesos.config.marathon')
 CONF.import_group('chronos', 'kolla_mesos.config.chronos')
+CONF.import_opt('update', 'kolla_mesos.config.deploy_cli')
+CONF.import_opt('force', 'kolla_mesos.config.deploy_cli')
 
 
 class KollaDirNotFoundException(Exception):
@@ -59,7 +63,7 @@ class KollaWorker(object):
         self.config_dir = os.path.join(self.base_dir, 'config')
         LOG.debug("Kolla-Mesos base directory: " + self.base_dir)
         self.required_vars = {}
-        self.marathon_client = marathon.create_client()
+        self.marathon_client = marathon.Client()
         self.chronos_client = chronos.Client()
 
     def setup_working_dir(self):
@@ -208,14 +212,19 @@ class KollaWorker(object):
             f.write(content)
         LOG.info('Written OpenStack env to "openrc"')
 
-    def cleanup(self):
+    def cleanup_temp_files(self):
         """Remove temp files"""
         shutil.rmtree(self.temp_dir)
 
+    def cleanup(self):
+        with zk_utils.connection() as zk:
+            zk_utils.clean(zk)
+        self.marathon_client.remove_all_apps()
+        self.chronos_client.remove_all_jobs()
+
     def write_to_zookeeper(self):
-        with zk_utils.connection(CONF.zookeeper.host) as zk:
-            # to clean these up, uncomment
-            zk.delete('/kolla', recursive=True)
+        with zk_utils.connection() as zk:
+            zk_utils.clean(zk)
 
             self.write_config_to_zookeeper(zk)
 
@@ -235,29 +244,40 @@ class KollaWorker(object):
                 except Exception as te:
                     LOG.error('%s=%s -> %s' % (var_path, var_value, te))
 
+    def _start_marathon_app(self, app_resource):
+        if CONF.update:
+            LOG.info('Applications upgrade is not implemented '
+                     'yet!')
+        else:
+            try:
+                return self.marathon_client.add_app(app_resource)
+            except exception.MarathonRollback as e:
+                self.cleanup()
+                raise e
+
+    def _start_chronos_job(self, job_resource):
+        if CONF.update:
+            LOG.info('Bootstrap tasks for upgrade are not implemented yet!')
+        else:
+            try:
+                return self.chronos_client.add_job(job_resource)
+            except exception.ChronosRollback as e:
+                self.cleanup()
+                raise e
+
+    @retrying.retry(stop_max_attempt_number=5)
     def start(self):
         # find all marathon files and run.
         # find all cronos files and run.
-        marathon_api = CONF.marathon.host
-        chronos_api = CONF.chronos.host
-        content_type = '-L -H "Content-type: application/json"'
         for root, dirs, names in os.walk(self.temp_dir):
             for name in names:
                 app_path = os.path.join(root, name)
-                # this is lazy, I could use requests or the native client.
+                with open(app_path, 'r') as app_file:
+                    app_resource = json.load(app_file)
                 if 'marathon' in name:
-                    cmd = 'curl -X POST "%s/v2/apps" -d @"%s" %s' % (
-                        marathon_api, app_path, content_type)
-                    with open(app_path, 'r') as app_file:
-                        app_resource = json.load(app_file)
-                    self.marathon_client.add_app(app_resource)
+                    self._start_marathon_app(app_resource)
                 else:
-                    cmd = 'curl -X POST "%s/scheduler/iso8601" -d @"%s" %s' % (
-                        chronos_api, app_path, content_type)
-                    with open(app_path, 'r') as app_file:
-                        job_resource = json.load(app_file)
-                    self.chronos_client.add_job(job_resource)
-                LOG.info(cmd)
+                    self._start_chronos_job(app_resource)
 
 
 def main():
@@ -268,7 +288,7 @@ def main():
     kolla.write_openrc()
     kolla.start()
 
-    # kolla.cleanup()
+    # kolla.cleanup_temp_files()
 
 
 if __name__ == '__main__':

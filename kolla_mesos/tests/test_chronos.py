@@ -10,10 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import mock
 from oslo_config import cfg
 import requests_mock
 
 from kolla_mesos import chronos
+from kolla_mesos import exception
 from kolla_mesos.tests import base
 
 
@@ -64,8 +66,32 @@ class TestClient(base.BaseTestCase):
 
     @requests_mock.mock()
     def test_add_job(self, req_mock):
+        req_mock.get('http://localhost:4400/scheduler/jobs', json=[])
         req_mock.post('http://localhost:4400/scheduler/iso8601')
         self.client.add_job(EXAMPLE_CHRONOS_JOB)
+
+    @mock.patch.object(chronos, 'LOG')
+    @requests_mock.mock()
+    def test_add_job_already_existing(self, log_mock, req_mock):
+        req_mock.get('http://localhost:4400/scheduler/jobs', json=[{
+            'name': '/keystone-bootstrap'
+        }])
+        req_mock.post('http://localhost:4400/scheduler/iso8601')
+        self.client.add_job(EXAMPLE_CHRONOS_JOB)
+        log_mock.info.assert_called_with('Job %s is already added. If you '
+                                         'want to replace it, please use '
+                                         '--force flag',
+                                         '/keystone-bootstrap')
+
+    @requests_mock.mock()
+    def test_add_job_already_existing_force(self, req_mock):
+        CONF.set_override('force', True)
+        req_mock.get('http://localhost:4400/scheduler/jobs', json=[{
+            'name': '/keystone-bootstrap'
+        }])
+        req_mock.post('http://localhost:4400/scheduler/iso8601')
+        self.assertRaises(exception.ChronosRollback, self.client.add_job,
+                          EXAMPLE_CHRONOS_JOB)
 
     @requests_mock.mock()
     def test_get_jobs(self, req_mock):
