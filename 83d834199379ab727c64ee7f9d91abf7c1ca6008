@@ -1,0 +1,8 @@
+Verified+2: Jenkins
+Code-Review+2: Proskurin Kirill <kproskurin@mirantis.com>
+Workflow+1: Proskurin Kirill <kproskurin@mirantis.com>
+Submitted-by: Jenkins
+Submitted-at: Tue, 08 Dec 2015 10:43:17 +0000
+Reviewed-on: https://review.openstack.org/254132
+Project: openstack/kolla-mesos
+Branch: refs/heads/master
