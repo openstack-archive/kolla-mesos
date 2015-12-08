@@ -1,7 +1,15 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-PROVIDER = "libvirt"
+# Vagrantfile.custom contains user customization for the Vagrantfile
+# You shouldn't have to edit the Vagrantfile, ever.
+vagrant_dir = File.expand_path(File.dirname(__FILE__))
+if File.exists?(File.join(vagrant_dir, 'Vagrantfile.custom'))
+  eval(IO.read(File.join(vagrant_dir, 'Vagrantfile.custom')), binding)
+end
+
+# Libvirt for Linux, virtualbox for Mac OS
+PROVIDER ||= "libvirt"
 
 PROVIDER_DEFAULTS = {
   libvirt: {
@@ -11,8 +19,8 @@ PROVIDER_DEFAULTS = {
     sync_method: "nfs",
   },
   virtualbox: {
-    base_image: "puppetlabs/centos-7.0-64-puppet",
-    bridge_interface: "wlp3s0b1",
+    base_image: "centos/7",
+    bridge_interface: "en0: Wi-Fi (AirPort)",
     vagrant_shared_folder: "/vagrant",
     sync_method: "virtualbox",
   },
@@ -26,7 +34,7 @@ Vagrant.configure(2) do |config|
   config.vm.box = get_default(:base_image)
 
   config.vm.network "private_network", type: "dhcp"
-  config.vm.network "public_network", dev: get_default(:bridge_interface), mode: 'bridge', type: 'bridge'
+  config.vm.network "public_network", dev: get_default(:bridge_interface), bridge: get_default(:bridge_interface), mode: 'bridge', type: 'bridge'
 
   config.vm.synced_folder "..", "/home/vagrant/kolla-mesos", type: get_default(:sync_method)
 

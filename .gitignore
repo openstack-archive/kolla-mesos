@@ -59,6 +59,7 @@ ChangeLog
 
 # Vagrant
 .vagrant
+vagrant/Vagrantfile.custom
 
 # generated openrc
 openrc
