@@ -22,5 +22,5 @@ class FindBaseDirTest(base.BaseTestCase):
     def test_when_is_a_test(self):
         mod_dir = os.path.dirname(sys.modules[__name__].__file__)
         project_dir = os.path.abspath(os.path.join(mod_dir, '..', '..', '..'))
-        tdir = file_utils.find_base_dir(project='kolla-mesos')
+        tdir = file_utils.find_base_dir()
         self.assertEqual(project_dir, tdir)
