@@ -10,13 +10,44 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
+
+from dcos import errors
 from dcos import marathon
 from oslo_config import cfg
+import retrying
 
+
+logging.basicConfig()
+LOG = logging.getLogger(__name__)
+LOG.setLevel(logging.INFO)
 
 CONF = cfg.CONF
+CONF.import_group('marathon', 'kolla_mesos.config.marathon')
 
 
-def create_client():
-    """Create Marathon client object with parameters from configuration"""
-    return marathon.Client(CONF.marathon.host, timeout=CONF.marathon.timeout)
+class Client(marathon.Client):
+    """Marathon client with parameters from configuration"""
+
+    def __init__(self, *args, **kwargs):
+        kwargs['timeout'] = CONF.marathon.timeout
+        super(Client, self).__init__(CONF.marathon.host, *args, **kwargs)
+
+    @retrying.retry(stop_max_attempt_number=5, wait_fixed=1000)
+    def add_app(self, app_resource):
+        app_id = app_resource['id']
+
+        # Check if the app already exists
+        try:
+            old_app = self.get_app(app_id)
+        except errors.DCOSException:
+            return super(Client, self).add_app(app_resource)
+        else:
+            if CONF.force:
+                self.remove_app(app_id, force=True)
+                return super(Client, self).add_app(app_resource)
+            else:
+                LOG.info('App %s is already deployed. If you want to '
+                         'replace it, please use --force flag.',
+                         app_resource['id'])
+                return old_app
