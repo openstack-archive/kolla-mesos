@@ -14,12 +14,23 @@
 # remove this module when possible.
 
 import json
+import logging
+import operator
+
 from oslo_config import cfg
 import requests
+import six
 from six.moves.urllib import parse
 
+from kolla_mesos.common import retry_utils
+from kolla_mesos import exception
+
+
+LOG = logging.getLogger(__name__)
+LOG.setLevel(logging.INFO)
 
 CONF = cfg.CONF
+CONF.import_group('chronos', 'kolla_mesos.config.chronos')
 
 
 class Client(object):
@@ -39,18 +50,45 @@ class Client(object):
         """
         return parse.urljoin(CONF.chronos.host, path)
 
+    @retry_utils.retry_if_not_rollback(stop_max_attempt_number=5,
+                                       wait_fixed=1000)
     def add_job(self, job_resource):
         """Add job to Chronos.
 
         :param job_resource: data about job to run on Chronos
         :type job_resource: dict
         """
-        url = self._create_url('scheduler/iso8601')
-        response = requests.post(url, data=json.dumps(job_resource),
-                                 timeout=CONF.chronos.timeout,
-                                 headers={'Content-Type': 'application/json'})
+        job_name = job_resource['name']
 
-        assert response.status_code in [200, 204]
+        old_job = self.get_job(job_name)
+        if old_job is None:
+            url = self._create_url('scheduler/iso8601')
+            response = requests.post(url, data=json.dumps(job_resource),
+                                     timeout=CONF.chronos.timeout,
+                                     headers={'Content-Type':
+                                              'application/json'})
+
+            if response.status_code not in [200, 204]:
+                raise exception.ChronosException('Failed to add job')
+        else:
+            if CONF.force:
+                LOG.info('Job %s is already added. The whole deployment will '
+                         'be rollbacked now and done again', job_name)
+                raise exception.ChronosRollback()
+            else:
+                LOG.info('Job %s is already added. If you want to replace it, '
+                         'please use --force flag', job_name)
+                return old_job
+
+    def get_job(self, job_name):
+        """Get job from Chronos by name.
+
+        :param job_name: id of job to get
+        :type job_name: str
+        """
+        jobs = self.get_jobs()
+
+        return next((job for job in jobs if job['name'] == job_name), None)
 
     def get_jobs(self):
         """Get list of running jobs in Chronos"""
@@ -58,3 +96,35 @@ class Client(object):
         response = requests.get(url, timeout=CONF.chronos.timeout)
 
         return response.json()
+
+    def remove_job(self, job_name):
+        """Remove job from Chronos.
+
+        :param job_name: name of job to delete
+        :type job_name: str
+        """
+        url = self._create_url('scheduler/job/{}'.format(job_name))
+        response = requests.delete(url, timeout=CONF.chronos.timeout)
+
+        if response.status_code not in [200, 204]:
+            raise exception.ChronosException('Failed to remove job')
+
+    def remove_job_tasks(self, job_name):
+        """Remove all tasks for a job.
+
+        :param job_name: name of job to delete tasks from
+        :type job_name: str
+        """
+        url = self._create_url('scheduler/task/kill/{}'.format(job_name))
+        response = requests.delete(url, timeout=CONF.chronos.timeout)
+
+        if response.status_code not in [200, 204]:
+            raise exception.ChronosException('Failed to remove tasks from job')
+
+    def remove_all_jobs(self, with_tasks=True):
+        job_names = six.moves.map(operator.itemgetter('name'), self.get_jobs())
+
+        for job_name in job_names:
+            if with_tasks:
+                self.remove_job_tasks(job_name)
+            self.remove_job(job_name)
