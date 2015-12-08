@@ -10,13 +10,53 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
+import operator
+
+from dcos import errors as dcos_exc
 from dcos import marathon
 from oslo_config import cfg
+import six
 
+from kolla_mesos.common import retry_utils
+from kolla_mesos import exception as kolla_mesos_exc
+
+
+LOG = logging.getLogger(__name__)
+LOG.setLevel(logging.INFO)
 
 CONF = cfg.CONF
+CONF.import_group('marathon', 'kolla_mesos.config.marathon')
 
 
-def create_client():
-    """Create Marathon client object with parameters from configuration"""
-    return marathon.Client(CONF.marathon.host, timeout=CONF.marathon.timeout)
+class Client(marathon.Client):
+    """Marathon client with parameters from configuration"""
+
+    def __init__(self, *args, **kwargs):
+        kwargs['timeout'] = CONF.marathon.timeout
+        super(Client, self).__init__(CONF.marathon.host, *args, **kwargs)
+
+    @retry_utils.retry_if_not_rollback(stop_max_attempt_number=5,
+                                       wait_fixed=1000)
+    def add_app(self, app_resource):
+        app_id = app_resource['id']
+
+        # Check if the app already exists
+        try:
+            old_app = self.get_app(app_id)
+        except dcos_exc.DCOSException:
+            return super(Client, self).add_app(app_resource)
+        else:
+            if CONF.force:
+                LOG.info('Deployment found and --force flag is used. '
+                         'Destroying previous deployment and re-creating it.')
+                raise kolla_mesos_exc.MarathonRollback()
+            else:
+                LOG.info('App %s is already deployed. If you want to '
+                         'replace it, please use --force flag.', app_id)
+                return old_app
+
+    def remove_all_apps(self):
+        apps_ids = six.moves.map(operator.itemgetter('id'), self.get_apps())
+        for app_id in apps_ids:
+            self.remove_app(app_id, force=True)

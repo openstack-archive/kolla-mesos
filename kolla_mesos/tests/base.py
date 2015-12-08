@@ -10,9 +10,21 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import testscenarios
+import contextlib
 
 from oslotest import base
+import six
+import testscenarios
+
+
+# Python 3, thank you for dropping contextlib.nested
+if six.PY3:
+    @contextlib.contextmanager
+    def nested(*contexts):
+        with contextlib.ExitStack() as stack:
+            yield [stack.enter_context(c) for c in contexts]
+else:
+    nested = contextlib.nested
 
 
 class BaseTestCase(testscenarios.WithScenarios,
