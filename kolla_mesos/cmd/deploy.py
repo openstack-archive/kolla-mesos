@@ -54,8 +54,7 @@ class KollaDirNotFoundException(Exception):
 class KollaWorker(object):
 
     def __init__(self):
-        self.base_dir = os.path.abspath(file_utils.find_base_dir(
-            project='kolla-mesos'))
+        self.base_dir = os.path.abspath(file_utils.find_base_dir())
         self.config_dir = os.path.join(self.base_dir, 'config')
         LOG.debug("Kolla-Mesos base directory: " + self.base_dir)
         self.required_vars = {}
@@ -150,7 +149,7 @@ class KollaWorker(object):
                     else:
                         src_file = item['source']
                         if not src_file.startswith('/'):
-                            src_file = os.path.join(self.base_dir, src_file)
+                            src_file = file_utils.find_file(src_file)
                         with open(src_file) as fp:
                             content = fp.read()
                     zk.set(dest_node, content)
