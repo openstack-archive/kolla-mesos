@@ -23,7 +23,7 @@ chronos_opts = [
                default=CHRONOS_URL,
                help='Chronos connection URL (http://host:port)'),
     cfg.IntOpt('timeout',
-               default=5,
+               default=30,
                help='Timeout for the request to the Chronos API')
 ]
 chronos_opt_group = cfg.OptGroup(name='chronos',
