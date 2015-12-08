@@ -110,7 +110,7 @@ class KollaWorker(object):
                 LOG.warn('path missing %s' % src_file)
                 continue
             config_p.read(src_file)
-        merged_f = cStringIO.StringIO()
+        merged_f = cStringIO()
         config_p.write(merged_f)
         return merged_f.getvalue()
 
