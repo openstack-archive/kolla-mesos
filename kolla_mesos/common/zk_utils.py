@@ -17,8 +17,12 @@ import os.path
 
 from kazoo import client
 from kazoo import exceptions
+from oslo_config import cfg
 
 LOG = logging.getLogger(__name__)
+
+CONF = cfg.CONF
+CONF.import_group('zookeeper', 'kolla_mesos.config.zookeeper')
 
 
 def tree(zk, path=None, level=0, pretty=None):
@@ -68,9 +72,13 @@ def copy_tree(zk, source_path, dest_path):
                 zk.set(dest_node, src_fp.read())
 
 
+def clean(zk, path='/kolla'):
+    zk.delete(path, recursive=True)
+
+
 @contextlib.contextmanager
-def connection(zk_hosts):
-    zk = client.KazooClient(hosts=zk_hosts)
+def connection():
+    zk = client.KazooClient(hosts=CONF.zookeeper.host)
     try:
         zk.start()
         yield zk

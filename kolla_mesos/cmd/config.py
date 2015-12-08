@@ -32,7 +32,7 @@ CONF.import_opt('show', 'kolla_mesos.config.config_cli')
 
 def main():
     CONF(sys.argv[1:], project='kolla-mesos')
-    with zk_utils.connection(CONF.zookeeper.host) as zk:
+    with zk_utils.connection() as zk:
         if CONF.show:
             zk_utils.cat(zk, CONF.path)
         else:
