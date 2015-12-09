@@ -12,6 +12,7 @@
 
 import fixtures
 import json
+from kazoo.recipe import party
 import logging
 import mock
 from zake import fake_client
@@ -210,8 +211,6 @@ class MainTest(base.BaseTestCase):
             m_zk_c.return_value.__enter__.return_value = self.client
 
             start.main()
-            m_gc.assert_called_once_with(self.client,
-                                         tconf['config']['testg']['testr'])
             m_rc.assert_called_once_with(self.client,
                                          tconf['commands']['testg']['testr'])
             self.assertEqual([], m_rgah.mock_calls)
@@ -233,8 +232,6 @@ class MainTest(base.BaseTestCase):
             m_zk_c.return_value.__enter__.return_value = self.client
 
             start.main()
-            m_gc.assert_called_once_with(self.client,
-                                         tconf['config']['testg']['testr'])
             m_rc.assert_called_once_with(self.client,
                                          tconf['commands']['testg']['testr'])
             self.assertEqual([mock.call(self.client)], m_rgah.mock_calls)
@@ -256,3 +253,60 @@ class LogLevelTest(base.BaseTestCase):
                                                      newvalue=self.level))
         start.set_loglevel()
         m_set_l.assert_called_once_with(self.expect)
+
+
+class HostvarsAndGroupsTest(base.BaseTestCase):
+
+    def setUp(self):
+        super(HostvarsAndGroupsTest, self).setUp()
+        self.client = fake_client.FakeClient()
+        self.client.start()
+        self.addCleanup(self.client.stop)
+        self.addCleanup(self.client.close)
+        start.GROUP = 'testg'
+        start.ROLE = 'testr'
+
+    @mock.patch('socket.gethostname')
+    @mock.patch.object(start, 'get_ip_address')
+    def test_reg_and_retieve_single(self, m_get_ip, m_gethost):
+        m_get_ip.return_value = '1.2.3.4'
+        m_gethost.return_value = 'test-hostname'
+        start.register_group_and_hostvars(self.client)
+        groups, hostvars = start.get_groups_and_hostvars(self.client)
+        self.assertEqual({'testg': ['1.2.3.4']}, groups)
+        exp = {'ansible_eth0': {'ipv4': {'address': '1.2.3.4'}},
+               'ansible_eth1': {'ipv4': {'address': '1.2.3.4'}},
+               'ansible_hostname': 'test-hostname',
+               'role': 'testr',
+               'id': '1'}
+        self.assertEqual(exp, hostvars['1.2.3.4'])
+
+    @mock.patch('socket.gethostname')
+    @mock.patch.object(start, 'get_ip_address')
+    def test_reg_and_retieve_multi(self, m_get_ip, m_gethost):
+        m_get_ip.return_value = '1.2.3.4'
+        m_gethost.return_value = 'test-hostname'
+
+        # register local host group.
+        start.register_group_and_hostvars(self.client)
+
+        # dummy external host registration.
+        remote = {'ansible_eth0': {'ipv4': {'address': '4.4.4.4'}},
+                  'ansible_eth1': {'ipv4': {'address': '4.4.4.4'}},
+                  'ansible_hostname': 'the-other-host',
+                  'role': 'testr',
+                  'id': '55'}
+        party.Party(self.client, '/kolla/groups/testg',
+                    json.dumps(remote)).join()
+
+        # make sure this function gets both hosts information.
+        groups, hostvars = start.get_groups_and_hostvars(self.client)
+        self.assertEqual(sorted(['1.2.3.4', '4.4.4.4']),
+                         sorted(groups['testg']))
+        exp_local = {'ansible_eth0': {'ipv4': {'address': '1.2.3.4'}},
+                     'ansible_eth1': {'ipv4': {'address': '1.2.3.4'}},
+                     'ansible_hostname': 'test-hostname',
+                     'role': 'testr',
+                     'id': '1'}
+        self.assertEqual(exp_local, hostvars['1.2.3.4'])
+        self.assertEqual(remote, hostvars['4.4.4.4'])

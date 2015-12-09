@@ -143,9 +143,15 @@ def register_group_and_hostvars(zk):
     path = os.path.join('kolla', 'groups', GROUP)
     zk.retry(zk.ensure_path, path)
     node_id = get_new_node_id(zk, path)
-    data = "-".join([host, 'node', str(node_id)])
+
+    data = {'ansible_eth0': {'ipv4': {'address': get_ip_address('eth0')}},
+            'ansible_eth1': {'ipv4': {'address': get_ip_address('eth1')}},
+            'ansible_hostname': socket.gethostname(),
+            'role': ROLE,
+            'id': str(node_id)}
+
     LOG.info('%s (%s) joining the %s party' % (host, node_id, GROUP))
-    party.Party(zk, path, data).join()
+    party.Party(zk, path, json.dumps(data)).join()
 
 
 def get_ip_address(ifname):
@@ -161,20 +167,17 @@ def get_groups_and_hostvars(zk):
     # this returns an odd structure but it so we can re-use the
     # ansible templates.
     hostvars = {}
-    groups = {GROUP: []}
-    path = os.path.join('kolla', 'groups', GROUP)
-    for host in party.Party(zk, path):
-        LOG.info('get_groups_and_hostvars %s' % host)
-        match = re.match("(\d+.\d+.\d+.\d+)-(\w+)-(\d+)", host)
-        if match:
-            ip = match.group(1)
-            hostvars[ip] = {
-                'ansible_eth0': {'ipv4': {'address': get_ip_address('eth0')}},
-                'ansible_eth1': {'ipv4': {'address': get_ip_address('eth1')}},
-                'ansible_hostname': socket.gethostname(),
-                'role': match.group(2),
-                'id': match.group(3)}
-            groups[GROUP].append(ip)
+    groups = {}
+    path = os.path.join('kolla', 'groups')
+    for group in zk.get_children(path):
+        groups[group] = []
+        g_path = os.path.join('kolla', 'groups', group)
+        for host_data in party.Party(zk, g_path):
+            data = json.loads(host_data)
+            host = data['ansible_eth1']['ipv4']['address']
+            LOG.info('get_groups_and_hostvars %s' % host)
+            groups[GROUP].append(host)
+            hostvars[host] = data
 
     return groups, hostvars
 
