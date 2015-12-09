@@ -12,6 +12,7 @@
 
 import fixtures
 import json
+import logging
 import mock
 from zake import fake_client
 
@@ -237,3 +238,21 @@ class MainTest(base.BaseTestCase):
             m_rc.assert_called_once_with(self.client,
                                          tconf['commands']['testg']['testr'])
             self.assertEqual([mock.call(self.client)], m_rgah.mock_calls)
+
+
+class LogLevelTest(base.BaseTestCase):
+    scenarios = [
+        ('info', dict(level='info', expect=logging.INFO)),
+        ('debug', dict(level='debug', expect=logging.DEBUG)),
+        ('error', dict(level='error', expect=logging.ERROR)),
+        ('DeBuG', dict(level='DeBuG', expect=logging.DEBUG)),
+        ('INFO', dict(level='INFO', expect=logging.INFO)),
+        ('huh', dict(level='huh', expect=logging.INFO)),
+    ]
+
+    @mock.patch.object(start.LOG, 'setLevel')
+    def test_set_loglevel(self, m_set_l):
+        self.useFixture(fixtures.EnvironmentVariable('KOLLA_LOGLEVEL',
+                                                     newvalue=self.level))
+        start.set_loglevel()
+        m_set_l.assert_called_once_with(self.expect)

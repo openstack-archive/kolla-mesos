@@ -40,8 +40,23 @@ GROUP = os.environ.get('KOLLA_GROUP', 'mariadb')
 ROLE = os.environ.get('KOLLA_ROLE', 'mariadb')
 
 logging.basicConfig()
-LOG = logging.getLogger('%s-%s.start' % (GROUP, ROLE))
-LOG.setLevel(logging.INFO)
+LOG = logging.getLogger(__file__)
+
+
+def set_loglevel():
+    ll = os.environ.get('KOLLA_LOGLEVEL', 'info')
+    try:
+        nll = getattr(logging, ll.upper(), None)
+    except ValueError:
+        LOG.exception('Invalid log level: %s' % ll)
+        nll = logging.INFO
+
+    if not isinstance(nll, int):
+        LOG.error('Invalid log level: %s' % ll)
+        nll = logging.INFO
+    LOG.setLevel(nll)
+
+set_loglevel()
 
 
 def jinja_filter_bool(text):
