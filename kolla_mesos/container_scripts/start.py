@@ -177,7 +177,7 @@ def get_groups_and_hostvars(zk):
             data = json.loads(host_data)
             host = data['ansible_eth1']['ipv4']['address']
             LOG.info('get_groups_and_hostvars %s' % host)
-            groups[GROUP].append(host)
+            groups[group].append(host)
             hostvars[host] = data
 
     return groups, hostvars
