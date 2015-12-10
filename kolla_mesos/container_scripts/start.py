@@ -147,6 +147,7 @@ def register_group_and_hostvars(zk):
 
     data = {'ansible_eth0': {'ipv4': {'address': get_ip_address('eth0')}},
             'ansible_eth1': {'ipv4': {'address': get_ip_address('eth1')}},
+            'ansible_eth2': {'ipv4': {'address': get_ip_address('eth2')}},
             'ansible_hostname': socket.gethostname(),
             'role': ROLE,
             'id': str(node_id)}
@@ -362,6 +363,7 @@ class Command(object):
         if self.check_path:
             self.zk.retry(self.zk.ensure_path, self.check_path)
             LOG.debug("Command '%s' marked as done" % self.name)
+        return child_p.returncode
 
 
 def run_commands(zk, service_conf):
