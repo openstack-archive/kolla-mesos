@@ -355,13 +355,10 @@ class Command(object):
         child_p = subprocess.Popen(self.command, shell=True,
                                    env=self.env)
         child_p.wait()
-        if child_p.returncode != 0:
-            LOG.error("Command %s non-zero code %s" % (
-                self, child_p.returncode))
-            return child_p.returncode
-        if self.check_path:
+        if child_p.returncode == 0 and self.check_path:
             self.zk.retry(self.zk.ensure_path, self.check_path)
             LOG.debug("Command '%s' marked as done" % self.name)
+        return child_p.returncode
 
 
 def run_commands(zk, service_conf):
