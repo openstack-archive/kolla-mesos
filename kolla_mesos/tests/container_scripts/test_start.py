@@ -134,11 +134,17 @@ class CommandTest(base.BaseTestCase):
             cmd1.run()
             self.assertEqual(0, len(mock_popen.procs))
 
-    def test_return_val(self):
+    def test_return_non_zero(self):
         cmd1 = start.Command('a', {'command': 'true'},
                              self.client)
         with fixtures.FakePopen(lambda _: {'returncode': 3}):
             self.assertEqual(3, cmd1.run())
+
+    def test_return_zero(self):
+        cmd1 = start.Command('a', {'command': 'true'},
+                             self.client)
+        with fixtures.FakePopen(lambda _: {'returncode': 0}):
+            self.assertEqual(0, cmd1.run())
 
     def test_sleep_0_q(self):
         cmd = start.Command('a', {'command': 'true'},
