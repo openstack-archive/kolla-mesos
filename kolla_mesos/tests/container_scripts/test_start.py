@@ -177,6 +177,69 @@ class CommandTest(base.BaseTestCase):
             m_sleep.assert_called_once_with(4)
 
 
+@mock.patch.object(start.Command, 'run')
+@mock.patch.object(start, 'generate_config')
+@mock.patch.object(start.sys, 'exit')
+class RunCommandsTest(base.BaseTestCase):
+    def setUp(self):
+        super(RunCommandsTest, self).setUp()
+        self.client = fake_client.FakeClient()
+        self.client.start()
+        self.addCleanup(self.client.stop)
+        self.addCleanup(self.client.close)
+        start.GROUP = 'testg'
+        start.ROLE = 'testr'
+
+    def test_one_good(self, m_exit, m_gc, m_run):
+        cmd = {'setup': {
+            'run_once': True,
+            'register': '/kolla/variables/action/.done',
+            'command': 'true'}}
+
+        conf = {'config': {'testg': {'testr': {}}},
+                'commands': {'testg': {'testr': cmd}}}
+        m_run.return_value = 0
+        start.run_commands(self.client, conf)
+        m_run.assert_called_once_with()
+        self.assertEqual([], m_exit.mock_calls)
+
+    def test_one_bad(self, m_exit, m_gc, m_run):
+        cmd = {'setup': {
+            'run_once': True,
+            'register': '/kolla/variables/action/.done',
+            'command': 'true'}}
+
+        conf = {'config': {'testg': {'testr': {}}},
+                'commands': {'testg': {'testr': cmd}}}
+        m_run.return_value = 3
+        start.run_commands(self.client, conf)
+        m_run.assert_called_once_with()
+        self.assertEqual([mock.call(1)], m_exit.mock_calls)
+
+    def test_one_bad_retry(self, m_exit, m_gc, m_run):
+        cmd = {'setup': {
+            'run_once': True,
+            'retries': 2,
+            'delay': 0,
+            'register': '/kolla/variables/action/.done',
+            'command': 'true'}}
+
+        conf = {'config': {'testg': {'testr': {}}},
+                'commands': {'testg': {'testr': cmd}}}
+
+        self.returns = 0
+
+        def run_effect():
+            if self.returns == 0:
+                self.returns = 1
+                return 3
+            return 0
+        m_run.side_effect = run_effect
+        start.run_commands(self.client, conf)
+        self.assertEqual([mock.call(), mock.call()], m_run.mock_calls)
+        self.assertEqual([], m_exit.mock_calls)
+
+
 @mock.patch.object(start, 'get_ip_address')
 @mock.patch.object(start, 'get_groups_and_hostvars')
 @mock.patch.object(start, 'write_file')
