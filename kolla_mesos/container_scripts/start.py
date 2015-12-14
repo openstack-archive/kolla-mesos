@@ -259,6 +259,10 @@ def generate_config(zk, conf):
 
 
 class Command(object):
+    MAX_PRIO_TIME = 50
+    MAX_PRIO_REQ = 50
+    MAX_PRIO_DAEMON = MAX_PRIO_REQ + MAX_PRIO_TIME + 1
+
     def __init__(self, name, cmd, zk):
         self.name = name
         self.zk = zk
@@ -282,18 +286,26 @@ class Command(object):
         # that are not daemon are needed first.
         self.priority = 0
         self.time_slept = 0
+        self.num_requires_remaining = 0
         self.requirements_fulfilled()
 
-    def requirements_fulfilled(self):
-        self.priority = min(self.time_slept, 50)
+    def update_priority(self):
         if self.daemon:
-            self.priority = self.priority + 100
+            self.priority = self.MAX_PRIO_DAEMON
+        else:
+            self.priority = min(self.time_slept, self.MAX_PRIO_TIME)
+            self.priority = self.priority + min(self.num_requires_remaining,
+                                                self.MAX_PRIO_REQ)
+
+    def requirements_fulfilled(self):
         fulfilled = True
+        self.num_requires_remaining = 0
         for req in self.requires:
             if not self.zk.retry(self.zk.exists, req):
                 LOG.warning('%s is waiting for %s' % (self.name, req))
                 fulfilled = False
-                self.priority = self.priority + 1
+                self.num_requires_remaining = self.num_requires_remaining + 1
+        self.update_priority()
         return fulfilled
 
     def sleep(self, queue_size, retry=False):
@@ -303,8 +315,10 @@ class Command(object):
             seconds = min(seconds, self.delay)
             LOG.info('Command %s failed, rescheduling, '
                      '%d retries left' % (self.name, self.retries))
-        self.time_slept = self.time_slept + seconds
         time.sleep(seconds)
+
+        self.time_slept = self.time_slept + seconds
+        self.update_priority()
 
     def __str__(self):
         def get_true_attrs():

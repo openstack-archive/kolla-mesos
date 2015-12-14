@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
 import fixtures
 import json
 from kazoo.recipe import party
@@ -73,7 +74,7 @@ class CommandTest(base.BaseTestCase):
                              self.client)
         self.assertTrue(cmd2 > cmd1)
         self.assertEqual(0, cmd1.priority)
-        self.assertEqual(100, cmd2.priority)
+        self.assertEqual(101, cmd2.priority)
 
     def test_cmp_2(self):
         cmd1 = start.Command('a', {'command': 'true',
@@ -84,7 +85,7 @@ class CommandTest(base.BaseTestCase):
                              self.client)
         self.assertTrue(cmd2 > cmd1)
         self.assertEqual(2, cmd1.priority)
-        self.assertEqual(100, cmd2.priority)
+        self.assertEqual(101, cmd2.priority)
 
     def test_requirements_fulfilled_no(self):
         cmd1 = start.Command('a', {'command': 'true',
@@ -177,7 +178,32 @@ class CommandTest(base.BaseTestCase):
             m_sleep.assert_called_once_with(4)
 
 
-@mock.patch.object(start.Command, 'run')
+class CmdPriorityTest(base.BaseTestCase):
+    scenarios = [
+        ('00n0', dict(slept=0, req=0, daemon=False, exp_prio=0)),
+        ('90n9', dict(slept=9, req=0, daemon=False, exp_prio=9)),
+        ('22n4', dict(slept=2, req=2, daemon=False, exp_prio=4)),
+        ('00dd', dict(slept=0, req=0, daemon=True, exp_prio=101)),
+        ('bbn', dict(slept=200, req=200, daemon=False, exp_prio=100)),
+        ('bbd', dict(slept=200, req=200, daemon=True, exp_prio=101)),
+    ]
+
+    def setUp(self):
+        super(CmdPriorityTest, self).setUp()
+        self.client = fake_client.FakeClient()
+        self.client.start()
+        self.addCleanup(self.client.stop)
+        self.addCleanup(self.client.close)
+
+    def test_priority(self):
+        cmd = start.Command('a', {'command': 'true'},
+                            self.client)
+        cmd.time_slept = self.slept
+        cmd.num_requires_remaining = self.req
+        self.assertEqual(self.exp_prio, cmd.priority)
+
+
+@mock.patch.object(start.Command, 'run', autospec=True)
 @mock.patch.object(start, 'generate_config')
 @mock.patch.object(start.sys, 'exit')
 class RunCommandsTest(base.BaseTestCase):
@@ -200,7 +226,7 @@ class RunCommandsTest(base.BaseTestCase):
                 'commands': {'testg': {'testr': cmd}}}
         m_run.return_value = 0
         start.run_commands(self.client, conf)
-        m_run.assert_called_once_with()
+        m_run.assert_called_once_with(mock.ANY)
         self.assertEqual([], m_exit.mock_calls)
 
     def test_one_bad(self, m_exit, m_gc, m_run):
@@ -213,7 +239,7 @@ class RunCommandsTest(base.BaseTestCase):
                 'commands': {'testg': {'testr': cmd}}}
         m_run.return_value = 3
         start.run_commands(self.client, conf)
-        m_run.assert_called_once_with()
+        m_run.assert_called_once_with(mock.ANY)
         self.assertEqual([mock.call(1)], m_exit.mock_calls)
 
     def test_one_bad_retry(self, m_exit, m_gc, m_run):
@@ -229,14 +255,38 @@ class RunCommandsTest(base.BaseTestCase):
 
         self.returns = 0
 
-        def run_effect():
+        def run_effect(run_self):
             if self.returns == 0:
                 self.returns = 1
                 return 3
             return 0
         m_run.side_effect = run_effect
         start.run_commands(self.client, conf)
-        self.assertEqual([mock.call(), mock.call()], m_run.mock_calls)
+        self.assertEqual(2, len(m_run.mock_calls))
+        self.assertEqual([], m_exit.mock_calls)
+
+    def test_daemon_last_lots(self, m_exit, m_gc, m_run):
+        conf = {'config': {'testg': {'testr': {}}},
+                'commands': {'testg': {'testr': {}}}}
+        for cc in range(0, 200):
+            cmd = {'c-%d' % cc: {'command': 'true'}}
+            conf['commands']['testg']['testr'].update(cmd)
+
+        conf['commands']['testg']['testr'].update(
+            {'last': {'daemon': True, 'command': 'true'}})
+        exp = conf['commands']['testg']['testr']
+
+        def run_record(run_self):
+            print(run_self)
+            run_self.time_slept = 120
+            if run_self.daemon:
+                self.assertEqual(1, len(exp))
+            del exp[run_self.name]
+            return 0
+        m_run.side_effect = run_record
+
+        start.run_commands(self.client, conf)
+        self.assertEqual(201, len(m_run.mock_calls))
         self.assertEqual([], m_exit.mock_calls)
 
 
