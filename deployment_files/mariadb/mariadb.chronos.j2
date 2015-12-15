@@ -1,0 +1,17 @@
+{
+    "name": "mariadb-bootstrap",
+    "mem": 32.0,
+    "cpus": 1,
+    "command": "kolla_start",
+    "container": {
+        "type": "DOCKER",
+        "image": "{{ mariadb_image }}:{{ mariadb_tag }}",
+        "network": "HOST"
+    },
+    "environmentVariables": [
+        {"name": "KOLLA_CONFIG_STRATEGY", "value": "{{ config_strategy }}"},
+        {"name": "KOLLA_CONFIG", "value": "{{ kolla_config }}"},
+        {"name": "KOLLA_GROUP", "value": "mariadb"},
+        {"name": "KOLLA_ROLE", "value": "mariadb"},
+        {"name": "KOLLA_ZK_HOSTS", "value": "{{ zookeeper_hosts }}"}]
+}
