@@ -73,6 +73,7 @@ class TestClient(base.BaseTestCase):
     @mock.patch.object(chronos, 'LOG')
     @requests_mock.mock()
     def test_add_job_already_existing(self, log_mock, req_mock):
+        CONF.set_override('force', False)
         req_mock.get('http://localhost:4400/scheduler/jobs', json=[{
             'name': '/keystone-bootstrap'
         }])
