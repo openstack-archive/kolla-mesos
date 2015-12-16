@@ -29,6 +29,7 @@ from six.moves import cStringIO
 import yaml
 
 from kolla_mesos import chronos
+from kolla_mesos import cleanup
 from kolla_mesos.common import file_utils
 from kolla_mesos.common import jinja_utils
 from kolla_mesos.common import zk_utils
@@ -216,12 +217,6 @@ class KollaWorker(object):
         """Remove temp files"""
         shutil.rmtree(self.temp_dir)
 
-    def cleanup(self):
-        with zk_utils.connection() as zk:
-            zk_utils.clean(zk)
-        self.marathon_client.remove_all_apps()
-        self.chronos_client.remove_all_jobs()
-
     def write_to_zookeeper(self):
         with zk_utils.connection() as zk:
             zk_utils.clean(zk)
@@ -252,7 +247,7 @@ class KollaWorker(object):
             try:
                 return self.marathon_client.add_app(app_resource)
             except exception.MarathonRollback as e:
-                self.cleanup()
+                cleanup.cleanup()
                 self.write_to_zookeeper()
                 raise e
 
@@ -263,7 +258,7 @@ class KollaWorker(object):
             try:
                 return self.chronos_client.add_job(job_resource)
             except exception.ChronosRollback as e:
-                self.cleanup()
+                cleanup.cleanup()
                 self.write_to_zookeeper()
                 raise e
 
