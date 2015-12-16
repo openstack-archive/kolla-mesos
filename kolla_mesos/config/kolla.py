@@ -25,7 +25,7 @@ kolla_opts = [
                default='centos',
                help='The base distro which was used to build images'),
     cfg.StrOpt('base-tag',
-               default='latest',
+               default='1.0.0',
                help='The base distro image tag'),
     cfg.StrOpt('install-type',
                default='binary',
