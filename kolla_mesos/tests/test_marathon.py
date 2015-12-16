@@ -53,6 +53,7 @@ class TestMarathonClient(base.BaseTestCase):
 
     @mock.patch.object(marathon, 'LOG')
     def test_add_app_already_existing(self, log_mock):
+        CONF.set_override('force', False)
         with mock.patch.object(
             self.client, 'get_app', return_value={'id': 'my-app',
                                                   'other_param': 'the-old-one'}
