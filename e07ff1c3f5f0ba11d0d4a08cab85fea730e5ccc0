@@ -1,0 +1,9 @@
+Verified+2: Jenkins
+Code-Review+2: Ryan Hallisey <rhallise@redhat.com>
+Workflow+1: Ryan Hallisey <rhallise@redhat.com>
+Code-Review+2: Martin André <m.andre@redhat.com>
+Submitted-by: Jenkins
+Submitted-at: Wed, 16 Dec 2015 13:09:36 +0000
+Reviewed-on: https://review.openstack.org/257917
+Project: openstack/kolla-mesos
+Branch: refs/heads/master
