@@ -39,6 +39,7 @@ Vagrant.configure(2) do |config|
   config.vm.synced_folder "..", "/home/vagrant/kolla-mesos", type: get_default(:sync_method)
 
   config.vm.provider PROVIDER do |vm|
+    vm.cpus = 4
     vm.memory = 4096
   end
 
