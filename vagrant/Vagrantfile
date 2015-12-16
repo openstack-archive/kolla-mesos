@@ -1,6 +1,12 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
+class VagrantConfigMissing < StandardError
+end
+
+class KollaMesosNotImplemented < StandardError
+end
+
 # Vagrantfile.custom contains user customization for the Vagrantfile
 # You shouldn't have to edit the Vagrantfile, ever.
 vagrant_dir = File.expand_path(File.dirname(__FILE__))
@@ -26,8 +32,48 @@ PROVIDER_DEFAULTS ||= {
   },
 }
 
+MULTINODE = false unless self.class.const_defined?(:MULTINODE)
+
+NUMBER_OF_MESOS_MASTER_NODES ||= 3
+NUMBER_OF_CONTROLLER_NODES ||= 3
+NUMBER_OF_COMPUTE_NODES ||= 1
+NUMBER_OF_STORAGE_NODES ||= 1
+
+NODE_SETTINGS ||= {
+  aio: {
+    cpus: 4,
+    memory: 4096
+  },
+  mesos_master: {
+    cpus: 1,
+    memory: 1024
+  },
+  controller: {
+    cpus: 2,
+    memory: 2048
+  },
+  compute: {
+    cpus: 1,
+    memory: 1024
+  },
+  storage: {
+    cpus: 1,
+    memory: 1024
+  }
+}
+
 def get_default(setting)
   PROVIDER_DEFAULTS[PROVIDER.to_sym][setting]
+rescue
+  raise VagrantConfigMissing,
+    "Missing configuration for PROVIDER_DEFAULTS[#{PROVIDER}][#{setting}]"
+end
+
+def get_setting(node, setting)
+  NODE_SETTINGS[node][setting]
+rescue
+  raise VagrantConfigMissing,
+    "Missing configuration for NODE_SETTINGS[#{node}][#{setting}]"
 end
 
 Vagrant.configure(2) do |config|
@@ -36,12 +82,18 @@ Vagrant.configure(2) do |config|
   config.vm.network "private_network", type: "dhcp"
   config.vm.network "public_network", dev: get_default(:bridge_interface), bridge: get_default(:bridge_interface), mode: 'bridge', type: 'bridge'
 
-  config.vm.synced_folder "..", "/home/vagrant/kolla-mesos", type: get_default(:sync_method)
-
-  config.vm.provider PROVIDER do |vm|
-    vm.memory = 4096
+  if MULTINODE
+    # TODO(nihilifer): Implement multinode deployment.
+    raise KollaMesosNotImplemented,
+      "Multinode deployment is not implemented yet"
+  else
+    # All-in-one
+    config.vm.synced_folder "..", "/home/vagrant/kolla-mesos", type: get_default(:sync_method)
+    config.vm.provider PROVIDER do |vm|
+      vm.cpus = get_setting(:aio, :cpus)
+      vm.memory = get_setting(:aio, :memory)
+    end
+    config.vm.provision :shell, path: "provision.sh"
+    config.vm.provision :shell, path: "../tools/bootstrap.sh", args: "start"
   end
-
-  config.vm.provision :shell, path: "provision.sh"
-  config.vm.provision :shell, path: "../tools/bootstrap.sh", args: "start"
 end
