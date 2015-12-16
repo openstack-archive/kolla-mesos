@@ -19,7 +19,7 @@ kolla_opts = [
                default='kollaglue',
                help='The Docker namespace name'),
     cfg.StrOpt('tag',
-               default='latest',
+               default='1.0.0',
                help='The Docker tag'),
     cfg.StrOpt('base',
                default='centos',
