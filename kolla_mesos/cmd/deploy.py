@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
 import datetime
 import json
 import logging
@@ -88,8 +89,15 @@ class KollaWorker(object):
         with open(file_utils.find_config_file('globals.yml'), 'r') as gf:
             global_vars.update(yaml.load(gf))
 
+        # all.yml file uses some its variables to template itself by jinja2,
+        # so its raw content is used to template the file
         all_yml_name = os.path.join(self.config_dir, 'all.yml')
-        jvars = yaml.load(jinja_utils.jinja_render(all_yml_name, global_vars))
+        with open(all_yml_name) as af:
+            raw_vars = yaml.load(af)
+        temp_vars = copy.deepcopy(global_vars)
+        temp_vars.update(raw_vars)
+        jvars = yaml.load(jinja_utils.jinja_render(all_yml_name, temp_vars))
+
         jvars.update(global_vars)
 
         for proj in self.get_projects():
