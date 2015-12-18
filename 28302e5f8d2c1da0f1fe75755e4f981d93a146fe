@@ -1,0 +1,10 @@
+Code-Review+1: Steve Noyes <steve.noyes@oracle.com>
+Code-Review+2: Proskurin Kirill <kproskurin@mirantis.com>
+Code-Review+2: Jeff Peeler <jpeeler@redhat.com>
+Workflow+1: Jeff Peeler <jpeeler@redhat.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Fri, 18 Dec 2015 19:21:29 +0000
+Reviewed-on: https://review.openstack.org/258970
+Project: openstack/kolla-mesos
+Branch: refs/heads/master
