@@ -36,9 +36,20 @@ Contents:
 .. toctree::
    :maxdepth: 1
 
-    quickstart
-    contributing
-    howto_add_new_service
+   quickstart
+   contributing
+   howto_add_a_new_service
+   man/index
+
+Code documentation
+==================
+
+.. toctree::
+   :maxdepth: 1
+
+   deploy
+   chronos
+   marathon
 
 Indices and tables
 ==================
