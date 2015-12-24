@@ -193,7 +193,9 @@ class KollaWorker(object):
                 # 4. parse the marathon app file and add the KOLLA_CONFIG
                 values = {
                     'kolla_config': kolla_config,
-                    'zookeeper_hosts': CONF.zookeeper.host
+                    'zookeeper_hosts': CONF.zookeeper.host,
+                    'private_interface': CONF.network.private_interface,
+                    'public_interface': CONF.network.public_interface,
                 }
                 for app_type in ['marathon', 'chronos']:
                     app_file = os.path.join(self.base_dir,

@@ -14,5 +14,7 @@
         {"name": "KOLLA_GROUP", "value": "glance"},
         {"name": "KOLLA_ROLE", "value": "glance_ansible_tasks"},
         {"name": "KOLLA_ZK_HOSTS", "value": "{{ zookeeper_hosts }}"},
+        {"name": "KOLLA_PRIVATE_INTERFACE", "value": "{{ private_interface }}"},
+        {"name": "KOLLA_PUBLIC_INTERFACE", "value": "{{ public_interface }}"},
         {"name": "ANSIBLE_LIBRARY", "value": "/usr/share/ansible/"}]
 }
