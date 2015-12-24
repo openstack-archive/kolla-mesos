@@ -39,6 +39,10 @@ from six.moves import queue
 ZK_HOSTS = os.environ.get('KOLLA_ZK_HOSTS')
 GROUP = os.environ.get('KOLLA_GROUP', 'mariadb')
 ROLE = os.environ.get('KOLLA_ROLE', 'mariadb')
+PRIVATE_INTERFACE = os.environ.get('KOLLA_PRIVATE_INTERFACE', 'undefined')
+PUBLIC_INTERFACE = os.environ.get('KOLLA_PUBLIC_INTERFACE', 'undefined')
+ANSIBLE_PRIVATE = 'ansible_%s' % PRIVATE_INTERFACE
+ANSIBLE_PUBLIC = 'ansible_%s' % PUBLIC_INTERFACE
 
 logging.basicConfig()
 LOG = logging.getLogger(__file__)
@@ -140,13 +144,15 @@ def get_new_node_id(zk, path):
 
 
 def register_group_and_hostvars(zk):
-    host = str(get_ip_address('eth1'))
+    host = str(get_ip_address(PRIVATE_INTERFACE))
     path = os.path.join('kolla', 'groups', GROUP)
     zk.retry(zk.ensure_path, path)
     node_id = get_new_node_id(zk, path)
 
-    data = {'ansible_eth0': {'ipv4': {'address': get_ip_address('eth0')}},
-            'ansible_eth1': {'ipv4': {'address': get_ip_address('eth1')}},
+    data = {ANSIBLE_PUBLIC: {'ipv4': {'address':
+                                      get_ip_address(PUBLIC_INTERFACE)}},
+            ANSIBLE_PRIVATE: {'ipv4': {'address':
+                                       get_ip_address(PRIVATE_INTERFACE)}},
             'ansible_hostname': socket.gethostname(),
             'role': ROLE,
             'id': str(node_id)}
@@ -175,7 +181,7 @@ def get_groups_and_hostvars(zk):
         g_path = os.path.join('kolla', 'groups', group)
         for host_data in party.Party(zk, g_path):
             data = json.loads(host_data)
-            host = data['ansible_eth1']['ipv4']['address']
+            host = data[ANSIBLE_PRIVATE]['ipv4']['address']
             LOG.info('get_groups_and_hostvars %s' % host)
             groups[group].append(host)
             hostvars[host] = data
@@ -218,7 +224,7 @@ def write_file(conf, data):
 def generate_config(zk, conf):
     # render what ever templates we can given the variables that are
     # defined. If there is a variable that we need, wait for it to be defined.
-    host = str(get_ip_address('eth1'))
+    host = str(get_ip_address(PRIVATE_INTERFACE))
     groups, hostvars = get_groups_and_hostvars(zk)
     variables = {'hostvars': hostvars, 'groups': groups,
                  'inventory_hostname': host,

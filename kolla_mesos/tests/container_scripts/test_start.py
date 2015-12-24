@@ -312,6 +312,10 @@ class HostvarsAndGroupsTest(base.BaseTestCase):
         self.addCleanup(self.client.close)
         start.GROUP = 'testg'
         start.ROLE = 'testr'
+        start.PRIVATE_INTERFACE = 'eth1'
+        start.PUBLIC_INTERFACE = 'eth0'
+        start.ANSIBLE_PRIVATE = 'ansible_eth1'
+        start.ANSIBLE_PUBLIC = 'ansible_eth0'
 
     @mock.patch('socket.gethostname')
     @mock.patch.object(start, 'get_ip_address')
