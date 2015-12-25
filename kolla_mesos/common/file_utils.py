@@ -48,11 +48,14 @@ def get_src_dir():
 
 def find_base_dir():
     script_path = os.path.dirname(os.path.realpath(sys.argv[0]))
-    if os.path.basename(script_path) == 'cmd':
+    base_script_path = os.path.basename(script_path)
+    if base_script_path == 'kolla-mesos':
+        return script_path
+    if base_script_path == 'cmd':
         return os.path.join(script_path, '..', '..')
-    if os.path.basename(script_path) == 'subunit':
+    if base_script_path == 'subunit':
         return get_src_dir()
-    if os.path.basename(script_path) == 'bin':
+    if base_script_path == 'bin':
         base_dir = '/usr/share/kolla-mesos'
         if os.path.exists(base_dir):
             return base_dir
