@@ -30,6 +30,12 @@ kolla_opts = [
     cfg.StrOpt('install-type',
                default='binary',
                help='The method of the OpenStack install'),
+    cfg.StrOpt('deployment-id',
+               default='Undef',
+               help='Uniq name for deployment'),
+    cfg.StrOpt('deployment-id-prefix',
+               default='Undef',
+               help='Prefix for deployment'),
     cfg.StrOpt('profile',
                default='default',
                help='Build profile which was used to build images')
