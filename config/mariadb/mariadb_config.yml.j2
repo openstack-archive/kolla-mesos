@@ -19,9 +19,9 @@ commands:
           KOLLA_BOOTSTRAP: "yes"
           DB_ROOT_PASSWORD: "{{ database_password }}"
         run_once: True
-        register: /kolla/variables/mariadb_bootstrap/.done
+        register: /kolla/{{ deployment_id }}/variables/mariadb_bootstrap/.done
       mysqld:
         command: /usr/bin/mysqld_safe --wsrep-new-cluster
         daemon: True
         run_once: False
-        requires: [/kolla/variables/mariadb_bootstrap/.done]
+        requires: [/kolla/{{ deployment_id }}/variables/mariadb_bootstrap/.done]

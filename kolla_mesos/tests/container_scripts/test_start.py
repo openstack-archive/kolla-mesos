@@ -11,6 +11,7 @@
 # limitations under the License.
 
 import fixtures
+import functools
 import json
 from kazoo.recipe import party
 import logging
@@ -19,6 +20,23 @@ from zake import fake_client
 
 from kolla_mesos.container_scripts import start
 from kolla_mesos.tests import base
+from kolla_mesos.tests.fakes import environment as fake_environment
+
+
+# TODO(kproskurin/nihilifer): Make a possibility of decorating classes, not
+# only callables.
+def reload_start(f):
+    """Decorator which reloads start library.
+
+    In the tests below we're setting fake environment variables which are
+    used by the global variables in start module. That's why it's needed
+    to reload it after setting environment.
+    """
+    @functools.wraps(f)
+    def wrapper(*args, **kwargs):
+        reload(start)
+        return f(*args, **kwargs)
+    return wrapper
 
 
 class CommandTest(base.BaseTestCase):
@@ -177,9 +195,6 @@ class CommandTest(base.BaseTestCase):
             m_sleep.assert_called_once_with(4)
 
 
-@mock.patch.object(start.Command, 'run')
-@mock.patch.object(start, 'generate_config')
-@mock.patch.object(start.sys, 'exit')
 class RunCommandsTest(base.BaseTestCase):
     def setUp(self):
         super(RunCommandsTest, self).setUp()
@@ -190,7 +205,12 @@ class RunCommandsTest(base.BaseTestCase):
         start.GROUP = 'testg'
         start.ROLE = 'testr'
 
-    def test_one_good(self, m_exit, m_gc, m_run):
+    @fake_environment.FakeEnvironment('KOLLA_GROUP', 'testg')
+    @fake_environment.FakeEnvironment('KOLLA_ROLE', 'testr')
+    @reload_start
+    @mock.patch.object(start, 'generate_config')
+    @mock.patch.object(start.sys, 'exit')
+    def test_one_good(self, m_exit, m_gc):
         cmd = {'setup': {
             'run_once': True,
             'register': '/kolla/variables/action/.done',
@@ -198,11 +218,19 @@ class RunCommandsTest(base.BaseTestCase):
 
         conf = {'config': {'testg': {'testr': {}}},
                 'commands': {'testg': {'testr': cmd}}}
-        m_run.return_value = 0
-        start.run_commands(self.client, conf)
-        m_run.assert_called_once_with()
-        self.assertEqual([], m_exit.mock_calls)
+        # Mocking Command's method in decorator doesn't work
+        with mock.patch.object(start.Command, 'run') as m_run:
+            m_run.return_value = 0
+            start.run_commands(self.client, conf)
+            m_run.assert_called_once_with()
+            self.assertEqual([], m_exit.mock_calls)
 
+    @fake_environment.FakeEnvironment('KOLLA_GROUP', 'testg')
+    @fake_environment.FakeEnvironment('KOLLA_ROLE', 'testr')
+    @reload_start
+    @mock.patch.object(start.Command, 'run')
+    @mock.patch.object(start, 'generate_config')
+    @mock.patch.object(start.sys, 'exit')
     def test_one_bad(self, m_exit, m_gc, m_run):
         cmd = {'setup': {
             'run_once': True,
@@ -211,11 +239,19 @@ class RunCommandsTest(base.BaseTestCase):
 
         conf = {'config': {'testg': {'testr': {}}},
                 'commands': {'testg': {'testr': cmd}}}
-        m_run.return_value = 3
-        start.run_commands(self.client, conf)
-        m_run.assert_called_once_with()
-        self.assertEqual([mock.call(1)], m_exit.mock_calls)
+        # Mocking Command's method in decorator doesn't work
+        with mock.patch.object(start.Command, 'run') as m_run:
+            m_run.return_value = 3
+            start.run_commands(self.client, conf)
+            m_run.assert_called_once_with()
+            self.assertEqual([mock.call(1)], m_exit.mock_calls)
 
+    @fake_environment.FakeEnvironment('KOLLA_GROUP', 'testg')
+    @fake_environment.FakeEnvironment('KOLLA_ROLE', 'testr')
+    @reload_start
+    @mock.patch.object(start.Command, 'run')
+    @mock.patch.object(start, 'generate_config')
+    @mock.patch.object(start.sys, 'exit')
     def test_one_bad_retry(self, m_exit, m_gc, m_run):
         cmd = {'setup': {
             'run_once': True,
@@ -234,15 +270,14 @@ class RunCommandsTest(base.BaseTestCase):
                 self.returns = 1
                 return 3
             return 0
-        m_run.side_effect = run_effect
-        start.run_commands(self.client, conf)
-        self.assertEqual([mock.call(), mock.call()], m_run.mock_calls)
-        self.assertEqual([], m_exit.mock_calls)
+        # Mocking Command's method in decorator doesn't work
+        with mock.patch.object(start.Command, 'run') as m_run:
+            m_run.side_effect = run_effect
+            start.run_commands(self.client, conf)
+            self.assertEqual([mock.call(), mock.call()], m_run.mock_calls)
+            self.assertEqual([], m_exit.mock_calls)
 
 
-@mock.patch.object(start, 'get_ip_address')
-@mock.patch.object(start, 'get_groups_and_hostvars')
-@mock.patch.object(start, 'write_file')
 class GenerateConfigTest(base.BaseTestCase):
 
     def setUp(self):
@@ -254,6 +289,15 @@ class GenerateConfigTest(base.BaseTestCase):
         start.GROUP = 'testg'
         start.ROLE = 'testr'
 
+    @fake_environment.FakeEnvironment('DEPLOYMENT_ID', 'deploy_id')
+    @fake_environment.FakeEnvironment('KOLLA_PRIVATE_INTERFACE', 'eth1')
+    @fake_environment.FakeEnvironment('KOLLA_PUBLIC_INTERFACE', 'eth2')
+    @fake_environment.FakeEnvironment('KOLLA_GROUP', 'testg')
+    @fake_environment.FakeEnvironment('KOLLA_ROLE', 'testr')
+    @reload_start
+    @mock.patch.object(start, 'get_ip_address')
+    @mock.patch.object(start, 'get_groups_and_hostvars')
+    @mock.patch.object(start, 'write_file')
     def test_no_rendering(self, m_wf, m_gar, m_gip):
         conf = {'afile': {
             'source': 'config/mariadb/templates/galera.cnf.j2',
@@ -261,11 +305,20 @@ class GenerateConfigTest(base.BaseTestCase):
             'owner': 'mysql',
             'perm': "0600"}}
         m_gar.return_value = {}, {}
-        self.client.create('/kolla/config/testg/testr/afile', 'xyz',
+        self.client.create('/kolla/deploy_id/config/testg/testr/afile', 'xyz',
                            makepath=True)
         start.generate_config(self.client, conf)
         m_wf.assert_called_once_with(conf['afile'], 'xyz')
 
+    @fake_environment.FakeEnvironment('DEPLOYMENT_ID', 'deploy_id')
+    @fake_environment.FakeEnvironment('KOLLA_PRIVATE_INTERFACE', 'eth1')
+    @fake_environment.FakeEnvironment('KOLLA_PUBLIC_INTERFACE', 'eth2')
+    @fake_environment.FakeEnvironment('KOLLA_GROUP', 'testg')
+    @fake_environment.FakeEnvironment('KOLLA_ROLE', 'testr')
+    @reload_start
+    @mock.patch.object(start, 'get_ip_address')
+    @mock.patch.object(start, 'get_groups_and_hostvars')
+    @mock.patch.object(start, 'write_file')
     def test_simple_render(self, m_wf, m_gar, m_gip):
         conf = {'afile': {
             'source': 'config/mariadb/templates/galera.cnf.j2',
@@ -273,12 +326,22 @@ class GenerateConfigTest(base.BaseTestCase):
             'owner': 'mysql',
             'perm': "0600"}}
         m_gar.return_value = {}, {}
-        self.client.create('/kolla/variables/xyz', 'yeah', makepath=True)
-        self.client.create('/kolla/config/testg/testr/afile', '{{ xyz }}',
+        self.client.create('/kolla/deploy_id/variables/xyz', 'yeah',
                            makepath=True)
+        self.client.create('/kolla/deploy_id/config/testg/testr/afile',
+                           '{{ xyz }}', makepath=True)
         start.generate_config(self.client, conf)
         m_wf.assert_called_once_with(conf['afile'], 'yeah')
 
+    @fake_environment.FakeEnvironment('DEPLOYMENT_ID', 'deploy_id')
+    @fake_environment.FakeEnvironment('KOLLA_PRIVATE_INTERFACE', 'eth1')
+    @fake_environment.FakeEnvironment('KOLLA_PUBLIC_INTERFACE', 'eth2')
+    @fake_environment.FakeEnvironment('KOLLA_GROUP', 'testg')
+    @fake_environment.FakeEnvironment('KOLLA_ROLE', 'testr')
+    @reload_start
+    @mock.patch.object(start, 'get_ip_address')
+    @mock.patch.object(start, 'get_groups_and_hostvars')
+    @mock.patch.object(start, 'write_file')
     def test_missing_variable(self, m_wf, m_gar, m_gip):
         conf = {'afile': {
             'source': 'config/mariadb/templates/galera.cnf.j2',
@@ -286,15 +349,12 @@ class GenerateConfigTest(base.BaseTestCase):
             'owner': 'mysql',
             'perm': "0600"}}
         m_gar.return_value = {}, {}
-        self.client.create('/kolla/config/testg/testr/afile', '{{ xyz }}',
-                           makepath=True)
+        self.client.create('/kolla/deploy_id/config/testg/testr/afile',
+                           '{{ xyz }}', makepath=True)
         start.generate_config(self.client, conf)
         m_wf.assert_called_once_with(conf['afile'], '')
 
 
-@mock.patch.object(start, 'run_commands')
-@mock.patch.object(start, 'generate_config')
-@mock.patch.object(start, 'register_group_and_hostvars')
 class MainTest(base.BaseTestCase):
 
     def setUp(self):
@@ -306,6 +366,15 @@ class MainTest(base.BaseTestCase):
         start.GROUP = 'testg'
         start.ROLE = 'testr'
 
+    @fake_environment.FakeEnvironment('DEPLOYMENT_ID', 'deploy_id')
+    @fake_environment.FakeEnvironment('KOLLA_PRIVATE_INTERFACE', 'eth1')
+    @fake_environment.FakeEnvironment('KOLLA_PUBLIC_INTERFACE', 'eth2')
+    @fake_environment.FakeEnvironment('KOLLA_GROUP', 'testg')
+    @fake_environment.FakeEnvironment('KOLLA_ROLE', 'testr')
+    @reload_start
+    @mock.patch.object(start, 'run_commands')
+    @mock.patch.object(start, 'generate_config')
+    @mock.patch.object(start, 'register_group_and_hostvars')
     def test_no_register_if_no_daemon(self, m_rgah, m_gc, m_rc):
         afile = {'source': 'bla/a.cnf.j2',
                  'dest': '/etc/somewhere.foo',
@@ -315,8 +384,8 @@ class MainTest(base.BaseTestCase):
         tconf = {'config': {'testg': {'testr': {'afile': afile}}},
                  'commands': {'testg': {'testr': {'thing': acmd}}}}
 
-        self.client.create('/kolla/config/testg/testg', json.dumps(tconf),
-                           makepath=True)
+        self.client.create('/kolla/deploy_id/config/testg/testg',
+                           json.dumps(tconf), makepath=True)
 
         m_zk_c = mock.MagicMock()
         with mock.patch.object(start, 'zk_connection', m_zk_c):
@@ -326,6 +395,16 @@ class MainTest(base.BaseTestCase):
             m_rc.assert_called_once_with(self.client, tconf)
             self.assertEqual([], m_rgah.mock_calls)
 
+    @fake_environment.FakeEnvironment('KOLLA_ZK_HOSTS', 'localhost:2181')
+    @fake_environment.FakeEnvironment('DEPLOYMENT_ID', 'deploy_id')
+    @fake_environment.FakeEnvironment('KOLLA_PRIVATE_INTERFACE', 'eth1')
+    @fake_environment.FakeEnvironment('KOLLA_PUBLIC_INTERFACE', 'eth2')
+    @fake_environment.FakeEnvironment('KOLLA_GROUP', 'testg')
+    @fake_environment.FakeEnvironment('KOLLA_ROLE', 'testr')
+    @reload_start
+    @mock.patch.object(start, 'run_commands')
+    @mock.patch.object(start, 'generate_config')
+    @mock.patch.object(start, 'register_group_and_hostvars')
     def test_register_if_daemon(self, m_rgah, m_gc, m_rc):
         afile = {'source': 'bla/a.cnf.j2',
                  'dest': '/etc/somewhere.foo',
@@ -335,8 +414,8 @@ class MainTest(base.BaseTestCase):
         tconf = {'config': {'testg': {'testr': {'afile': afile}}},
                  'commands': {'testg': {'testr': {'thing': acmd}}}}
 
-        self.client.create('/kolla/config/testg/testg', json.dumps(tconf),
-                           makepath=True)
+        self.client.create('/kolla/deploy_id/config/testg/testg',
+                           json.dumps(tconf), makepath=True)
 
         m_zk_c = mock.MagicMock()
         with mock.patch.object(start, 'zk_connection', m_zk_c):
@@ -380,6 +459,12 @@ class HostvarsAndGroupsTest(base.BaseTestCase):
         start.ANSIBLE_PRIVATE = 'ansible_eth1'
         start.ANSIBLE_PUBLIC = 'ansible_eth0'
 
+    @fake_environment.FakeEnvironment('DEPLOYMENT_ID', 'deploy_id')
+    @fake_environment.FakeEnvironment('KOLLA_PRIVATE_INTERFACE', 'eth1')
+    @fake_environment.FakeEnvironment('KOLLA_PUBLIC_INTERFACE', 'eth2')
+    @fake_environment.FakeEnvironment('KOLLA_GROUP', 'testg')
+    @fake_environment.FakeEnvironment('KOLLA_ROLE', 'testr')
+    @reload_start
     @mock.patch('socket.gethostname')
     @mock.patch.object(start, 'get_ip_address')
     def test_reg_and_retieve_single(self, m_get_ip, m_gethost):
@@ -388,13 +473,19 @@ class HostvarsAndGroupsTest(base.BaseTestCase):
         start.register_group_and_hostvars(self.client)
         groups, hostvars = start.get_groups_and_hostvars(self.client)
         self.assertEqual({'testg': ['1.2.3.4']}, groups)
-        exp = {'ansible_eth0': {'ipv4': {'address': '1.2.3.4'}},
-               'ansible_eth1': {'ipv4': {'address': '1.2.3.4'}},
+        exp = {'ansible_eth1': {'ipv4': {'address': '1.2.3.4'}},
+               'ansible_eth2': {'ipv4': {'address': '1.2.3.4'}},
                'ansible_hostname': 'test-hostname',
                'role': 'testr',
                'id': '1'}
         self.assertEqual(exp, hostvars['1.2.3.4'])
 
+    @fake_environment.FakeEnvironment('DEPLOYMENT_ID', 'deploy_id')
+    @fake_environment.FakeEnvironment('KOLLA_PRIVATE_INTERFACE', 'eth1')
+    @fake_environment.FakeEnvironment('KOLLA_PUBLIC_INTERFACE', 'eth2')
+    @fake_environment.FakeEnvironment('KOLLA_GROUP', 'testg')
+    @fake_environment.FakeEnvironment('KOLLA_ROLE', 'testr')
+    @reload_start
     @mock.patch('socket.gethostname')
     @mock.patch.object(start, 'get_ip_address')
     def test_reg_and_retieve_multi(self, m_get_ip, m_gethost):
@@ -410,15 +501,15 @@ class HostvarsAndGroupsTest(base.BaseTestCase):
                   'ansible_hostname': 'the-other-host',
                   'role': 'testr',
                   'id': '55'}
-        party.Party(self.client, '/kolla/groups/testg',
+        party.Party(self.client, '/kolla/deploy_id/groups/testg',
                     json.dumps(remote)).join()
 
         # make sure this function gets both hosts information.
         groups, hostvars = start.get_groups_and_hostvars(self.client)
         self.assertEqual(sorted(['1.2.3.4', '4.4.4.4']),
                          sorted(groups['testg']))
-        exp_local = {'ansible_eth0': {'ipv4': {'address': '1.2.3.4'}},
-                     'ansible_eth1': {'ipv4': {'address': '1.2.3.4'}},
+        exp_local = {'ansible_eth1': {'ipv4': {'address': '1.2.3.4'}},
+                     'ansible_eth2': {'ipv4': {'address': '1.2.3.4'}},
                      'ansible_hostname': 'test-hostname',
                      'role': 'testr',
                      'id': '1'}
