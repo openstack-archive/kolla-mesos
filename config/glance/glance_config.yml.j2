@@ -32,26 +32,26 @@ commands:
     glance-api:
       db_sync:
         run_once: True
-        requires: [/kolla/variables/glance_database/.done,
-                   /kolla/variables/glance_database_user_create/.done]
-        register: /kolla/variables/glance_setup/.done
+        requires: [/kolla/{{ deployment_id }}/variables/glance_database/.done,
+                   /kolla/{{ deployment_id }}/variables/glance_database_user_create/.done]
+        register: /kolla/{{ deployment_id }}/variables/glance_setup/.done
         command: kolla_extend_start
       glance_api:
         daemon: True
-        requires: [/kolla/variables/glance_user/.done,
-                   /kolla/variables/keystone_running/.done]
+        requires: [/kolla/{{ deployment_id }}/variables/glance_user/.done,
+                   /kolla/{{ deployment_id }}/variables/keystone_running/.done]
         command: /usr/bin/glance-api
     glance-registry:
       glance-registry:
         daemon: True
-        requires: [/kolla/variables/glance_user/.done,
-                   /kolla/variables/keystone_running/.done]
+        requires: [/kolla/{{ deployment_id }}/variables/glance_user/.done,
+                   /kolla/{{ deployment_id }}/variables/keystone_running/.done]
         command: /usr/bin/glance-registry
     glance_ansible_tasks:
       create_database:
         run_once: True
-        requires: [/kolla/variables/mariadb_bootstrap/.done]
-        register: /kolla/variables/glance_database/.done
+        requires: [/kolla/{{ deployment_id }}/variables/mariadb_bootstrap/.done]
+        register: /kolla/{{ deployment_id }}/variables/glance_database/.done
         command: /usr/bin/ansible localhost
           -m mysql_db
           -a "login_host='{{ database_address }}'
@@ -61,8 +61,8 @@ commands:
               name='{{ glance_database_name }}'"
       database_user_create:
         run_once: True
-        requires: [/kolla/variables/glance_database/.done]
-        register: /kolla/variables/glance_database_user_create/.done
+        requires: [/kolla/{{ deployment_id }}/variables/glance_database/.done]
+        register: /kolla/{{ deployment_id }}/variables/glance_database_user_create/.done
         command: /usr/bin/ansible localhost
           -m mysql_user
           -a "login_host='{{ database_address }}'
@@ -76,9 +76,9 @@ commands:
               append_privs='yes'"
       register_endpoint:
         run_once: True
-        requires: [/kolla/variables/glance_setup/.done,
-                   /kolla/variables/keystone_running/.done]
-        register: /kolla/variables/glance_api_registered/.done
+        requires: [/kolla/{{ deployment_id }}/variables/glance_setup/.done,
+                   /kolla/{{ deployment_id }}/variables/keystone_running/.done]
+        register: /kolla/{{ deployment_id }}/variables/glance_api_registered/.done
         command: /usr/bin/ansible localhost
           -m kolla_keystone_service
           -a "service_name=glance
@@ -93,9 +93,9 @@ commands:
           -e "{'openstack_glance_auth':{{ openstack_glance_auth }}}"
       create_glance_user:
         run_once: True
-        requires: [/kolla/variables/glance_setup/.done,
-                   /kolla/variables/keystone_running/.done]
-        register: /kolla/variables/glance_user/.done
+        requires: [/kolla/{{ deployment_id }}/variables/glance_setup/.done,
+                   /kolla/{{ deployment_id }}/variables/keystone_running/.done]
+        register: /kolla/{{ deployment_id }}/variables/glance_user/.done
         command: /usr/bin/ansible localhost
           -m kolla_keystone_user
           -a "project=service
@@ -109,9 +109,9 @@ commands:
         run_once: True
         retries: 10
         delay: 5
-        requires: [/kolla/variables/glance_setup/.done,
-                   /kolla/variables/keystone_running/.done]
-        register: /kolla/variables/glance_running/.done
+        requires: [/kolla/{{ deployment_id }}/variables/glance_setup/.done,
+                   /kolla/{{ deployment_id }}/variables/keystone_running/.done]
+        register: /kolla/{{ deployment_id }}/variables/glance_running/.done
         command: /usr/bin/ansible localhost
           -m kolla_sanity
           -a "service=glance
