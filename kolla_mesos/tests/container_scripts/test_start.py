@@ -19,6 +19,7 @@ from zake import fake_client
 
 from kolla_mesos.container_scripts import start
 from kolla_mesos.tests import base
+from kolla_mesos.tests.fakes import environment as fake_environment
 
 
 class CommandTest(base.BaseTestCase):
@@ -191,6 +192,11 @@ class GenerateConfigTest(base.BaseTestCase):
         start.GROUP = 'testg'
         start.ROLE = 'testr'
 
+    @fake_environment.FakeEnvironment('DEPLOYMENT_ID', 'deploy_id')
+    @fake_environment.FakeEnvironment('KOLLA_PRIVATE_INTERFACE', 'eth1')
+    @fake_environment.FakeEnvironment('KOLLA_PUBLIC_INTERFACE', 'eth2')
+    @fake_environment.FakeEnvironment('KOLLA_GROUP', 'testg')
+    @fake_environment.FakeEnvironment('KOLLA_ROLE', 'testr')
     def test_no_rendering(self, m_wf, m_gar, m_gip):
         conf = {'afile': {
             'source': 'config/mariadb/templates/galera.cnf.j2',
@@ -198,11 +204,17 @@ class GenerateConfigTest(base.BaseTestCase):
             'owner': 'mysql',
             'perm': "0600"}}
         m_gar.return_value = {}, {}
-        self.client.create('/kolla/config/testg/testr/afile', 'xyz',
+        self.client.create('/kolla/deploy_id/config/testg/testr/afile', 'xyz',
                            makepath=True)
+        reload(start)
         start.generate_config(self.client, conf)
         m_wf.assert_called_once_with(conf['afile'], 'xyz')
 
+    @fake_environment.FakeEnvironment('DEPLOYMENT_ID', 'deploy_id')
+    @fake_environment.FakeEnvironment('KOLLA_PRIVATE_INTERFACE', 'eth1')
+    @fake_environment.FakeEnvironment('KOLLA_PUBLIC_INTERFACE', 'eth2')
+    @fake_environment.FakeEnvironment('KOLLA_GROUP', 'testg')
+    @fake_environment.FakeEnvironment('KOLLA_ROLE', 'testr')
     def test_simple_render(self, m_wf, m_gar, m_gip):
         conf = {'afile': {
             'source': 'config/mariadb/templates/galera.cnf.j2',
@@ -210,12 +222,19 @@ class GenerateConfigTest(base.BaseTestCase):
             'owner': 'mysql',
             'perm': "0600"}}
         m_gar.return_value = {}, {}
-        self.client.create('/kolla/variables/xyz', 'yeah', makepath=True)
-        self.client.create('/kolla/config/testg/testr/afile', '{{ xyz }}',
+        self.client.create('/kolla/deploy_id/variables/xyz', 'yeah',
                            makepath=True)
+        self.client.create('/kolla/deploy_id/config/testg/testr/afile',
+                           '{{ xyz }}', makepath=True)
+        reload(start)
         start.generate_config(self.client, conf)
         m_wf.assert_called_once_with(conf['afile'], 'yeah')
 
+    @fake_environment.FakeEnvironment('DEPLOYMENT_ID', 'deploy_id')
+    @fake_environment.FakeEnvironment('KOLLA_PRIVATE_INTERFACE', 'eth1')
+    @fake_environment.FakeEnvironment('KOLLA_PUBLIC_INTERFACE', 'eth2')
+    @fake_environment.FakeEnvironment('KOLLA_GROUP', 'testg')
+    @fake_environment.FakeEnvironment('KOLLA_ROLE', 'testr')
     def test_missing_variable(self, m_wf, m_gar, m_gip):
         conf = {'afile': {
             'source': 'config/mariadb/templates/galera.cnf.j2',
@@ -223,8 +242,9 @@ class GenerateConfigTest(base.BaseTestCase):
             'owner': 'mysql',
             'perm': "0600"}}
         m_gar.return_value = {}, {}
-        self.client.create('/kolla/config/testg/testr/afile', '{{ xyz }}',
-                           makepath=True)
+        self.client.create('/kolla/deploy_id/config/testg/testr/afile',
+                           '{{ xyz }}', makepath=True)
+        reload(start)
         start.generate_config(self.client, conf)
         m_wf.assert_called_once_with(conf['afile'], '')
 
@@ -243,6 +263,11 @@ class MainTest(base.BaseTestCase):
         start.GROUP = 'testg'
         start.ROLE = 'testr'
 
+    @fake_environment.FakeEnvironment('DEPLOYMENT_ID', 'deploy_id')
+    @fake_environment.FakeEnvironment('KOLLA_PRIVATE_INTERFACE', 'eth1')
+    @fake_environment.FakeEnvironment('KOLLA_PUBLIC_INTERFACE', 'eth2')
+    @fake_environment.FakeEnvironment('KOLLA_GROUP', 'testg')
+    @fake_environment.FakeEnvironment('KOLLA_ROLE', 'testr')
     def test_no_register_if_no_daemon(self, m_rgah, m_gc, m_rc):
         afile = {'source': 'bla/a.cnf.j2',
                  'dest': '/etc/somewhere.foo',
@@ -252,17 +277,23 @@ class MainTest(base.BaseTestCase):
         tconf = {'config': {'testg': {'testr': {'afile': afile}}},
                  'commands': {'testg': {'testr': {'thing': acmd}}}}
 
-        self.client.create('/kolla/config/testg/testg', json.dumps(tconf),
-                           makepath=True)
+        self.client.create('/kolla/deploy_id/config/testg/testg',
+                           json.dumps(tconf), makepath=True)
 
         m_zk_c = mock.MagicMock()
         with mock.patch.object(start, 'zk_connection', m_zk_c):
             m_zk_c.return_value.__enter__.return_value = self.client
 
+            reload(start)
             start.main()
             m_rc.assert_called_once_with(self.client, tconf)
             self.assertEqual([], m_rgah.mock_calls)
 
+    @fake_environment.FakeEnvironment('DEPLOYMENT_ID', 'deploy_id')
+    @fake_environment.FakeEnvironment('KOLLA_PRIVATE_INTERFACE', 'eth1')
+    @fake_environment.FakeEnvironment('KOLLA_PUBLIC_INTERFACE', 'eth2')
+    @fake_environment.FakeEnvironment('KOLLA_GROUP', 'testg')
+    @fake_environment.FakeEnvironment('KOLLA_ROLE', 'testr')
     def test_register_if_daemon(self, m_rgah, m_gc, m_rc):
         afile = {'source': 'bla/a.cnf.j2',
                  'dest': '/etc/somewhere.foo',
@@ -272,13 +303,14 @@ class MainTest(base.BaseTestCase):
         tconf = {'config': {'testg': {'testr': {'afile': afile}}},
                  'commands': {'testg': {'testr': {'thing': acmd}}}}
 
-        self.client.create('/kolla/config/testg/testg', json.dumps(tconf),
-                           makepath=True)
+        self.client.create('/kolla/deploy_id/config/testg/testg',
+                           json.dumps(tconf), makepath=True)
 
         m_zk_c = mock.MagicMock()
         with mock.patch.object(start, 'zk_connection', m_zk_c):
             m_zk_c.return_value.__enter__.return_value = self.client
 
+            reload(start)
             start.main()
             m_rc.assert_called_once_with(self.client, tconf)
             self.assertEqual([mock.call(self.client)], m_rgah.mock_calls)
@@ -319,9 +351,15 @@ class HostvarsAndGroupsTest(base.BaseTestCase):
 
     @mock.patch('socket.gethostname')
     @mock.patch.object(start, 'get_ip_address')
+    @fake_environment.FakeEnvironment('DEPLOYMENT_ID', 'deploy_id')
+    @fake_environment.FakeEnvironment('KOLLA_PRIVATE_INTERFACE', 'eth1')
+    @fake_environment.FakeEnvironment('KOLLA_PUBLIC_INTERFACE', 'eth2')
+    @fake_environment.FakeEnvironment('KOLLA_GROUP', 'testg')
+    @fake_environment.FakeEnvironment('KOLLA_ROLE', 'testr')
     def test_reg_and_retieve_single(self, m_get_ip, m_gethost):
         m_get_ip.return_value = '1.2.3.4'
         m_gethost.return_value = 'test-hostname'
+        reload(start)
         start.register_group_and_hostvars(self.client)
         groups, hostvars = start.get_groups_and_hostvars(self.client)
         self.assertEqual({'testg': ['1.2.3.4']}, groups)
@@ -334,11 +372,17 @@ class HostvarsAndGroupsTest(base.BaseTestCase):
 
     @mock.patch('socket.gethostname')
     @mock.patch.object(start, 'get_ip_address')
+    @fake_environment.FakeEnvironment('DEPLOYMENT_ID', 'deploy_id')
+    @fake_environment.FakeEnvironment('KOLLA_PRIVATE_INTERFACE', 'eth1')
+    @fake_environment.FakeEnvironment('KOLLA_PUBLIC_INTERFACE', 'eth2')
+    @fake_environment.FakeEnvironment('KOLLA_GROUP', 'testg')
+    @fake_environment.FakeEnvironment('KOLLA_ROLE', 'testr')
     def test_reg_and_retieve_multi(self, m_get_ip, m_gethost):
         m_get_ip.return_value = '1.2.3.4'
         m_gethost.return_value = 'test-hostname'
 
         # register local host group.
+        reload(start)
         start.register_group_and_hostvars(self.client)
 
         # dummy external host registration.
@@ -347,7 +391,7 @@ class HostvarsAndGroupsTest(base.BaseTestCase):
                   'ansible_hostname': 'the-other-host',
                   'role': 'testr',
                   'id': '55'}
-        party.Party(self.client, '/kolla/groups/testg',
+        party.Party(self.client, '/kolla/deploy_id/groups/testg',
                     json.dumps(remote)).join()
 
         # make sure this function gets both hosts information.
