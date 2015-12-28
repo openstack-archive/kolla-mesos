@@ -32,6 +32,7 @@ from jinja2 import meta
 from kazoo import client as zk_client
 from kazoo import exceptions as kz_exceptions
 from kazoo.recipe import party
+import six
 from six.moves import queue
 
 
@@ -42,6 +43,7 @@ PRIVATE_INTERFACE = os.environ.get('KOLLA_PRIVATE_INTERFACE', 'undefined')
 PUBLIC_INTERFACE = os.environ.get('KOLLA_PUBLIC_INTERFACE', 'undefined')
 ANSIBLE_PRIVATE = 'ansible_%s' % PRIVATE_INTERFACE
 ANSIBLE_PUBLIC = 'ansible_%s' % PUBLIC_INTERFACE
+DEPLOYMENT_ID = os.environ.get('KOLLA_DEPLOYMENT_ID', 'undefined')
 
 logging.basicConfig()
 LOG = logging.getLogger(__file__)
@@ -144,7 +146,7 @@ def get_new_node_id(zk, path):
 
 def register_group_and_hostvars(zk):
     host = str(get_ip_address(PRIVATE_INTERFACE))
-    path = os.path.join('kolla', 'groups', GROUP)
+    path = os.path.join('kolla', DEPLOYMENT_ID, 'groups', GROUP)
     zk.retry(zk.ensure_path, path)
     node_id = get_new_node_id(zk, path)
 
@@ -174,10 +176,10 @@ def get_groups_and_hostvars(zk):
     # ansible templates.
     hostvars = {}
     groups = {}
-    path = os.path.join('kolla', 'groups')
+    path = os.path.join('kolla', DEPLOYMENT_ID, 'groups')
     for group in zk.get_children(path):
         groups[group] = []
-        g_path = os.path.join('kolla', 'groups', group)
+        g_path = os.path.join(path, group)
         for host_data in party.Party(zk, g_path):
             data = json.loads(host_data)
             host = data[ANSIBLE_PRIVATE]['ipv4']['address']
@@ -227,10 +229,12 @@ def generate_config(zk, conf):
     groups, hostvars = get_groups_and_hostvars(zk)
     variables = {'hostvars': hostvars, 'groups': groups,
                  'inventory_hostname': host,
-                 'ansible_hostname': host}
+                 'ansible_hostname': host,
+                 'deployment_id': DEPLOYMENT_ID}
 
-    conf_base_node = os.path.join('kolla', 'config', GROUP, ROLE)
-    for name, item in conf.items():
+    conf_base_node = os.path.join('kolla', DEPLOYMENT_ID, 'config', GROUP,
+                                  ROLE)
+    for name, item in six.iteritems(conf):
         if name == 'kolla_mesos_start.py':
             continue
         raw_content, stat = zk.get(os.path.join(conf_base_node, name))
@@ -244,8 +248,8 @@ def generate_config(zk, conf):
         for var in var_names:
             if var not in variables:
                 try:
-                    value, stat = zk.get(os.path.join('kolla', 'variables',
-                                                      var))
+                    value, stat = zk.get(os.path.join('kolla', DEPLOYMENT_ID,
+                                                      'variables', var))
                 except kz_exceptions.NoNodeError:
                     value = ''
                     LOG.error('missing required variable %s' % var)
@@ -396,7 +400,8 @@ def run_commands(zk, service_conf):
 def main():
     LOG.info('starting')
     with zk_connection(ZK_HOSTS) as zk:
-        service_conf_raw, stat = zk.get(os.path.join('kolla', 'config',
+        base_node = os.path.join('kolla', DEPLOYMENT_ID)
+        service_conf_raw, stat = zk.get(os.path.join(base_node, 'config',
                                                      GROUP, GROUP))
         service_conf = json.loads(service_conf_raw)
 
