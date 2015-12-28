@@ -67,11 +67,13 @@ class KollaWorker(object):
         self.required_vars = {}
         self.marathon_client = marathon.Client()
         self.chronos_client = chronos.Client()
+        self.start_time = time.time()
 
     def setup_working_dir(self):
         """Creates a working directory for use while building"""
-        ts = time.time()
-        ts = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d_%H-%M-%S_')
+        ts = datetime.datetime.fromtimestamp(
+            self.start_time
+        ).strftime('%Y-%m-%d_%H-%M-%S_')
         self.temp_dir = tempfile.mkdtemp(prefix='kolla-' + ts)
         LOG.debug('Created output dir: {}'.format(self.temp_dir))
 
@@ -111,6 +113,8 @@ class KollaWorker(object):
             else:
                 LOG.warning('path missing %s' % proj_yml_name)
 
+        # Add deployment_id
+        jvars.update({'deployment_id': self.deployment_id})
         # override node_config_directory to empty
         jvars.update({'node_config_directory': ''})
         return jvars
@@ -127,6 +131,20 @@ class KollaWorker(object):
         merged_f = cStringIO()
         config_p.write(merged_f)
         return merged_f.getvalue()
+
+    def gen_deployment_id(self):
+        uniq_name = CONF.kolla.deployment_id is not None
+        deploy_prefix = CONF.kolla.deployment_id_prefix is not None
+
+        if uniq_name:
+            self.deployment_id = CONF.kolla.deployment_id
+        else:
+            ts = datetime.datetime.fromtimestamp(
+                self.start_time
+            ).strftime('%Y-%m-%d-%H-%M-%S')
+            deployment_id = (CONF.kolla.deployment_id_prefix + '-' + ts
+                             if deploy_prefix else ts)
+            self.deployment_id = deployment_id
 
     def write_config_to_zookeeper(self, zk):
         jinja_vars = self.get_jinja_vars()
@@ -164,16 +182,16 @@ class KollaWorker(object):
                                      '%s_config.yml.j2' % proj)
             extra = yaml.load(jinja_utils.jinja_render(conf_path, jinja_vars))
 
-            dest_node = os.path.join('kolla', 'config',
-                                     proj, proj)  # TODO() should be service
+            base_node = os.path.join('kolla', self.deployment_id, 'config')
+            # TODO() should be proj, service, not proj, proj
+            dest_node = os.path.join(base_node, proj, proj)
             zk.ensure_path(dest_node)
             zk.set(dest_node, json.dumps(extra))
 
             for service in extra['config'][proj]:
                 # write the config files
                 for name, item in extra['config'][proj][service].iteritems():
-                    dest_node = os.path.join('kolla', 'config',
-                                             proj, service, name)
+                    dest_node = os.path.join(base_node, proj, service, name)
                     zk.ensure_path(dest_node)
 
                     if isinstance(item['source'], list):
@@ -188,22 +206,20 @@ class KollaWorker(object):
 
                 # write the commands
                 for name, item in extra['commands'][proj][service].iteritems():
-                    dest_node = os.path.join('kolla', 'commands',
-                                             proj, service, name)
+                    dest_node = os.path.join(base_node, proj, service, name)
                     zk.ensure_path(dest_node)
                     try:
                         zk.set(dest_node, json.dumps(item))
                     except Exception as te:
-                        LOG.error('%s=%s -> %s' % (dest_node,
-                                                   item, te))
+                        LOG.error('%s=%s -> %s' % (dest_node, item, te))
 
                 # 3. Add startup config
                 start_conf = os.path.join(self.config_dir,
                                           'common/kolla-start-config.json')
                 # override container_config_directory
-                cont_conf_dir = 'zk://%s' % (
-                    CONF.zookeeper.host)
+                cont_conf_dir = 'zk://%s' % (CONF.zookeeper.host)
                 jinja_vars['container_config_directory'] = cont_conf_dir
+                jinja_vars['deployment_id'] = self.deployment_id
                 kolla_config = jinja_utils.jinja_render(start_conf, jinja_vars)
                 kolla_config = kolla_config.replace('"', '\\"').replace(
                     '\n', '')
@@ -247,7 +263,11 @@ class KollaWorker(object):
 
     def write_to_zookeeper(self):
         with zk_utils.connection() as zk:
-            zk_utils.clean(zk)
+
+            base_node = os.path.join('kolla', self.deployment_id)
+            # FIXME - cleanup only if CONF.force ? And what about rollback?
+            if zk.exists(base_node):
+                zk.delete(base_node, recursive=True)
 
             self.write_config_to_zookeeper(zk)
 
@@ -260,7 +280,7 @@ class KollaWorker(object):
                 var_value = self.required_vars[var]
                 if isinstance(self.required_vars[var], dict):
                     var_value = json.dumps(self.required_vars[var])
-                var_path = os.path.join('kolla', 'variables', var)
+                var_path = os.path.join(base_node, 'variables', var)
                 zk.ensure_path(var_path)
                 try:
                     zk.set(var_path, var_value)
@@ -300,8 +320,17 @@ class KollaWorker(object):
                 with open(app_path, 'r') as app_file:
                     app_resource = json.load(app_file)
                 if 'marathon' in name:
+                    deployment_id = {'DEPLOYMENT_ID': self.deployment_id}
+                    app_resource['env'].update(deployment_id)
+                    app_resource['id'] = '/%s/%s' % (self.deployment_id,
+                                                     app_resource['id'])
                     self._start_marathon_app(app_resource)
                 else:
+                    deployment_id = {'name': 'DEPLOYMENT_ID',
+                                     'value': self.deployment_id}
+                    app_resource['name'] = '%s-%s' % (self.deployment_id,
+                                                      app_resource['name'])
+                    app_resource['environmentVariables'].append(deployment_id)
                     self._start_chronos_job(app_resource)
 
 
@@ -309,6 +338,7 @@ def main():
     CONF(sys.argv[1:], project='kolla-mesos')
     kolla = KollaWorker()
     kolla.setup_working_dir()
+    kolla.gen_deployment_id()
     kolla.write_to_zookeeper()
     kolla.write_openrc()
     kolla.start()
