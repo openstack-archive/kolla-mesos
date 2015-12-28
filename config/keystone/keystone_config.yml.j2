@@ -27,22 +27,22 @@ commands:
     keystone:
       setup:
         run_once: True
-        requires: [/kolla/variables/keystone_database/.done,
-                   /kolla/variables/keystone_database_user_create/.done]
-        register: /kolla/variables/keystone_setup/.done
-        command: bash kolla_mesos_extend_start
+        requires: [/kolla/{{ deployment_id }}/variables/keystone_database/.done,
+                   /kolla/{{ deployment_id }}/variables/keystone_database_user_create/.done]
+        register: /kolla/{{ deployment_id }}/variables/keystone_setup/.done
+        command: kolla_mesos_extend_start
       keystone_api:
         run_once: False
         daemon: True
-        requires: [/kolla/variables/keystone_setup/.done]
+        requires: [/kolla/{{ deployment_id }}/variables/keystone_setup/.done]
         command: "/usr/sbin/{{ keystone_cmd }} -DFOREGROUND"
     keystone_ansible_tasks:
       create_database:
         run_once: True
         retries: 3
         delay: 5
-        requires: [/kolla/variables/mariadb_bootstrap/.done]
-        register: /kolla/variables/keystone_database/.done
+        requires: [/kolla/{{ deployment_id }}/variables/mariadb_bootstrap/.done]
+        register: /kolla/{{ deployment_id }}/variables/keystone_database/.done
         command: /usr/bin/ansible localhost
           -m mysql_db
           -a "login_host='{{ database_address }}'
@@ -54,8 +54,8 @@ commands:
         run_once: True
         retries: 3
         delay: 5
-        requires: [/kolla/variables/keystone_database/.done]
-        register: /kolla/variables/keystone_database_user_create/.done
+        requires: [/kolla/{{ deployment_id }}/variables/keystone_database/.done]
+        register: /kolla/{{ deployment_id }}/variables/keystone_database_user_create/.done
         command: /usr/bin/ansible localhost
           -m mysql_user
           -a "login_host='{{ database_address }}'
@@ -71,8 +71,8 @@ commands:
         run_once: True
         retries: 10
         delay: 5
-        requires: [/kolla/variables/keystone_setup/.done]
-        register: /kolla/variables/keystone_running/.done
+        requires: [/kolla/{{ deployment_id }}/variables/keystone_setup/.done]
+        register: /kolla/{{ deployment_id }}/variables/keystone_running/.done
         command: /usr/bin/ansible localhost
           -m kolla_sanity
           -a "service=keystone
