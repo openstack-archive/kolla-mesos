@@ -25,8 +25,8 @@ commands:
           KOLLA_BOOTSTRAP: "yes"
           RABBITMQ_CLUSTER_COOKIE: "{{ rabbitmq_cluster_cookie }}"
         run_once: True
-        register: /kolla/variables/rabbitmq_bootstrap/.done
+        register: /kolla/{{ deployment_id }}/variables/rabbitmq_bootstrap/.done
       rabbitmq-server:
         command: /usr/sbin/rabbitmq-server
         daemon: True
-        requires: [/kolla/variables/rabbitmq_bootstrap/.done]
+        requires: [/kolla/{{ deployment_id }}/variables/rabbitmq_bootstrap/.done]
