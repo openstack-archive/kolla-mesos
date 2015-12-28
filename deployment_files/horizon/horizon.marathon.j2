@@ -1,5 +1,5 @@
 {
-    "id": "/horizon",
+    "id": "horizon",
     "instances": 1,
     "mem": 128,
     "cpus": 0.3,
@@ -17,6 +17,6 @@
         "KOLLA_ROLE": "horizon",
         "KOLLA_ZK_HOSTS": "{{ zookeeper_hosts }}",
         "KOLLA_PRIVATE_INTERFACE": "{{ private_interface }}",
-        "KOLLA_PUBLIC_INTERFACE": "{{ public_interface }}"      
+        "KOLLA_PUBLIC_INTERFACE": "{{ public_interface }}"
     }
 }
