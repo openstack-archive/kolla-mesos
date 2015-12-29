@@ -1,0 +1,5 @@
+---
+node_config_directory: "/etc/kolla"
+container_config_directory: "/var/lib/kolla/config_files"
+
+api_interface: "{{ network_interface }}"

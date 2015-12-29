@@ -1,0 +1,21 @@
+[master]
+localhost       ansible_connection=local
+
+[controller]
+localhost       ansible_connection=local
+
+[compute]
+localhost       ansible_connection=local
+
+[zookeeper:children]
+master
+
+[mesos-master:children]
+master
+
+[marathon:children]
+master
+
+[mesos-slave:children]
+controller
+compute
