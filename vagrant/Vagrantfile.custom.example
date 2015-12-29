@@ -17,7 +17,7 @@
 
 # MULTINODE = false
 
-# NUMBER_OF_MESOS_MASTER_NODES = 3
+# NUMBER_OF_MASTER_NODES = 3
 # NUMBER_OF_CONTROLLER_NODES = 3
 # NUMBER_OF_COMPUTE_NODES = 1
 # NUMBER_OF_STORAGE_NODES = 1
@@ -27,9 +27,9 @@
 #     cpus: 4,
 #     memory: 4096
 #   },
-#   mesos_master: {
+#   master: {
 #     cpus: 1,
-#     memory: 1024
+#     memory: 512
 #   },
 #   controller: {
 #     cpus: 2,
