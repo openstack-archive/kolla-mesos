@@ -1,0 +1,16 @@
+---
+- name: Starting Mesos master container
+  kolla_docker:
+    action: "start_container"
+    common_options: "{{ docker_common_options }}"
+    environment:
+      MESOS_HOSTNAME: "{{ inventory_hostname }}"
+      MESOS_IP: "{{ hostvars[inventory_hostname]['ansible_' + api_interface]['ipv4']['address'] }}"
+      MESOS_ZK: "zk://{% for host in groups['zookeeper'] %}{{ hostvars[host]['ansible_' + hostvars[host]['api_interface']]['ipv4']['address'] }}{% endfor %}:2181/mesos"
+      MESOS_PORT: "5050"
+      MESOS_LOG_DIR: "/var/log/mesos"
+      MESOS_QUORUM: "3"
+      MESOS_REGISTRY: "in_memory"
+      MESOS_WORK_DIR: "/var/lib/mesos"
+    image: "{{ mesos_master_image_full }}"
+    name: "mesos_master"

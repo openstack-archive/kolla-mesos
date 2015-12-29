@@ -1,0 +1,24 @@
+---
+- hosts:
+    - zookeeper
+  roles:
+    - { role: zookeeper,
+        tags: zookeeper }
+
+- hosts:
+    - mesos-master
+  roles:
+    - { role: mesos-master,
+        tags: mesos-master }
+
+- hosts:
+    - marathon
+  roles:
+    - { role: marathon,
+        tags: marathon }
+
+- hosts:
+    - mesos-slave
+  roles:
+    - { role: mesos-slave,
+        tags: mesos-slave }

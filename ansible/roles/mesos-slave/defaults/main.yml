@@ -1,0 +1,4 @@
+---
+mesos_slave_image: "{{ docker_registry ~ '/' if docker_registry else '' }}{{ docker_namespace }}/{{ kolla_base_distro }}-{{ kolla_install_type }}-mesos_slave"
+mesos_slave_tag: "{{ openstack_release }}"
+mesos_slave_image_full: "{{ mesos_slave_image }}:{{ mesos_slave_tag }}"
