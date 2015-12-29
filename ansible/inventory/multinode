@@ -1,0 +1,12 @@
+[master]
+master01
+master02
+master03
+
+[controller]
+controller01
+controller02
+controller03
+
+[compute]
+compute01

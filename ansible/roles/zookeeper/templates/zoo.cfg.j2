@@ -1,0 +1,4 @@
+{% for host in groups['zookeeper'] %}
+server.{{ loop.index }}={{ hostvars[host]['ansible_' + hostvars[host]['api_interface']]['ipv4']['address'] }}:2888:3888
+{% endfor %}
+dataDir = /var/zookeeper
