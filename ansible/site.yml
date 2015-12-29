@@ -1,0 +1,18 @@
+---
+- hosts:
+    - master
+  roles:
+    - { role: zookeeper,
+        tags: zookeeper }
+    - { role: mesos-master,
+        tags: mesos-master }
+    - { role: marathon,
+        tags: marathon }
+
+- hosts:
+    - controller
+    - compute
+    - storage
+  roles:
+    - { role: mesos-slave,
+        tags: mesos-slave }

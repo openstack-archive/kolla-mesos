@@ -1,0 +1,7 @@
+---
+- name: Starting ZooKeeper container
+  kolla_docker:
+    action: "start_container"
+    command_options: "{{ docker_common_options }}"
+    image: "{{ zookeeper_image_full }}"
+    name: "zookeeper"
