@@ -92,6 +92,14 @@ builds Docker images and pushes them to the local registry if the *push*
 option is enabled (in Vagrant this is the default behaviour).
 
 
+Setting up Mesos cluster
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+To set up Mesos cluster, call the ``kolla-mesos-ansible`` utility::
+
+    kolla-mesos-ansible
+
+
 Deploying OpenStack with Kolla-Mesos
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
