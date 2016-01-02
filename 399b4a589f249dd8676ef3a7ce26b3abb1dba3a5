@@ -1,0 +1,9 @@
+Code-Review+2: Proskurin Kirill <kproskurin@mirantis.com>
+Code-Review+2: Harm Weites <harm@weites.com>
+Workflow+1: Harm Weites <harm@weites.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Sat, 02 Jan 2016 22:52:13 +0000
+Reviewed-on: https://review.openstack.org/261947
+Project: openstack/kolla-mesos
+Branch: refs/heads/master
