@@ -1,0 +1,19 @@
+---
+- name: Ensuring config directory exists
+  file:
+    path: "{{ node_config_directory }}/zookeeper"
+    state: "directory"
+    recurse: yes
+
+- name: Copying config.json
+  template:
+    src: "zookeeper.json.j2"
+    dest: "{{ node_config_directory }}/zookeeper/config.json"
+
+- name: Copying ZooKeeper configuration files
+  template:
+    src: "{{ item }}.j2"
+    dest: "{{ node_config_directory }}/zookeeper/{{ item }}"
+  with_items:
+    - "zoo.cfg"
+    - "myid"

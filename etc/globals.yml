@@ -1,0 +1,8 @@
+---
+network_interface: "eth2"
+docker_registry: "operator.local:5000"
+docker_namespace: "kollaglue"
+kolla_base_distro: "centos"
+kolla_install_type: "binary"
+openstack_release: "2.0.0"
+config_strategy: "COPY_ONCE"
