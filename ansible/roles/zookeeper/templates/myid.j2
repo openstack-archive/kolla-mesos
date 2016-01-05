@@ -1,0 +1,2 @@
+{# TODO(nihilifer): Try to do this without making O(n) operation everytime #}
+{% for host in groups['zookeeper'] %}{% if host == ansible_hostname %}{{ loop.index }}{% endif %}{% endfor %}
