@@ -1,0 +1,17 @@
+{
+    "command": "/opt/mesosphere/zookeeper/bin/zkServer.sh start-foreground",
+    "config_files": [
+        {
+            "source": "{{ container_config_directory }}/zoo.cfg",
+            "dest": "/etc/zookeeper/conf/zoo.cfg",
+            "owner": "zookeeper",
+            "perm": "0600"
+        },
+        {
+            "source": "{{ container_config_directory }}/myid",
+            "dest": "/var/lib/zookeeper/myid",
+            "owner": "zookeeper",
+            "perm": "0600"
+        }
+    ]
+}

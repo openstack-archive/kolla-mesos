@@ -1,0 +1,4 @@
+---
+marathon_image: "{{ docker_registry ~ '/' if docker_registry else '' }}{{ docker_namespace }}/{{ kolla_base_distro }}-{{ kolla_install_type }}-marathon"
+marathon_tag: "{{ openstack_release }}"
+marathon_image_full: "{{ marathon_image }}:{{ marathon_tag }}"

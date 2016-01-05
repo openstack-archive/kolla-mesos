@@ -1,0 +1,21 @@
+---
+node_config_directory: "/etc/kolla"
+container_config_directory: "/var/lib/kolla/config_files"
+
+api_interface: "{{ network_interface }}"
+
+docker_registry_email:
+docker_registry:
+docker_namespace: "kollaglue"
+docker_registry_username:
+
+docker_restart_policy: "always"
+
+docker_common_options:
+    auth_email: "{{ docker_registry_email }}"
+    auth_password: "{{ docker_registry_password }}"
+    auth_registry: "{{ docker_registry }}"
+    auth_username: "{{ docker_registry_username }}"
+    environment:
+      KOLLA_CONFIG_STRATEGY: "{{ config_strategy }}"
+    restart_policy: "{{ docker_restart_policy }}"
