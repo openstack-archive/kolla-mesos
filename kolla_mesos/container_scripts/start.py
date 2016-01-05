@@ -253,7 +253,7 @@ def generate_config(zk, conf):
 
                 if stat.dataLength == 0:
                     value = ''
-                    LOG.warn('missing required variable value %s' % var)
+                    LOG.warning('missing required variable value %s' % var)
                 variables[var] = value.encode('utf-8')
         content = jinja_render(name, templ, variables)
         write_file(item, content)
@@ -292,7 +292,7 @@ class Command(object):
         fulfilled = True
         for req in self.requires:
             if not self.zk.retry(self.zk.exists, req):
-                LOG.warn('%s is waiting for %s' % (self.name, req))
+                LOG.warning('%s is waiting for %s' % (self.name, req))
                 fulfilled = False
                 self.priority = self.priority + 1
         return fulfilled
