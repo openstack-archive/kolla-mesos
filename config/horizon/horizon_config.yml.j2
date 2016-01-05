@@ -24,7 +24,7 @@ commands:
     horizon:
       setup:
         run_once: False
-        command: kolla_mesos_extend_start
+        command: bash kolla_mesos_extend_start
       horizon:
         command: /usr/sbin/{{ apache_cmd }} -DFOREGROUND
         daemon: True

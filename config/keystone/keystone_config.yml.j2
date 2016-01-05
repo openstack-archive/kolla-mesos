@@ -30,7 +30,7 @@ commands:
         requires: [/kolla/variables/keystone_database/.done,
                    /kolla/variables/keystone_database_user_create/.done]
         register: /kolla/variables/keystone_setup/.done
-        command: kolla_mesos_extend_start
+        command: bash kolla_mesos_extend_start
       keystone_api:
         run_once: False
         daemon: True
