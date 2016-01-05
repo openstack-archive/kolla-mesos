@@ -109,7 +109,7 @@ class KollaWorker(object):
 
                 jvars.update(proj_vars)
             else:
-                LOG.warn('path missing %s' % proj_yml_name)
+                LOG.warning('path missing %s' % proj_yml_name)
 
         # override node_config_directory to empty
         jvars.update({'node_config_directory': ''})
@@ -121,7 +121,7 @@ class KollaWorker(object):
             if not src_file.startswith('/'):
                 src_file = os.path.join(self.base_dir, src_file)
             if not os.path.exists(src_file):
-                LOG.warn('path missing %s' % src_file)
+                LOG.warning('path missing %s' % src_file)
                 continue
             config_p.read(src_file)
         merged_f = cStringIO()
