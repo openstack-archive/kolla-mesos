@@ -39,6 +39,8 @@ commands:
     keystone_ansible_tasks:
       create_database:
         run_once: True
+        retries: 3
+        delay: 5
         requires: [/kolla/variables/mariadb_bootstrap/.done]
         register: /kolla/variables/keystone_database/.done
         command: /usr/bin/ansible localhost
@@ -50,6 +52,8 @@ commands:
               name='{{ keystone_database_name }}'"
       database_user_create:
         run_once: True
+        retries: 3
+        delay: 5
         requires: [/kolla/variables/keystone_database/.done]
         register: /kolla/variables/keystone_database_user_create/.done
         command: /usr/bin/ansible localhost
