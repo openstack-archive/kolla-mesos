@@ -83,13 +83,38 @@ like ``vagrant destroy``.
 Building images
 ^^^^^^^^^^^^^^^
 
-Once logged on the *operator* VM call the ``kolla-build`` utility::
+Log onto the *operator* VM and call the ``kolla-build`` utility. If you're
+doing the multinode installation, pushing built images to Docker Registry is
+mandatory and you can do this by::
 
-    kolla-build
+    sudo kolla-build --push --profile mesos
 
-``kolla-build`` accept arguments as documented in :doc:`image-building`. It
+Otherwise, if you're doing the all-in-one installation and don't want to use
+the registry::
+
+    sudo kolla-build --profile mesos
+
+``kolla-build`` accepts arguments as documented in :doc:`image-building`. It
 builds Docker images and pushes them to the local registry if the *push*
 option is enabled (in Vagrant this is the default behaviour).
+
+
+Setting up Mesos cluster
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+To set up a Mesos cluster, the ``kolla-mesos-ansible`` utility has to be used.
+In case of an all-in-one installation, you can just call it without any
+additional arguments::
+
+    sudo kolla-mesos-ansible deploy
+
+When you want to provide a custom inventory, you can use the ``--inventory``
+option. For example, to use the default multinode inventory (made for
+Vagrant)::
+
+    sudo kolla-mesos-ansible --i /usr/share/kolla-mesos/ansible/inventory/multinode deploy
+
+Of course you can use your custom inventory file for bare metal deployments.
 
 
 Deploying OpenStack with Kolla-Mesos
