@@ -34,12 +34,12 @@ profile = test_profile
 class TestKollaConfig(base.BaseTestCase):
 
     def _asserts(self):
-        self.assertEqual(CONF.kolla.namespace, 'test_namespace')
-        self.assertEqual(CONF.kolla.tag, 'test_tag')
-        self.assertEqual(CONF.kolla.base, 'test_base')
-        self.assertEqual(CONF.kolla.base_tag, 'test_base_tag')
-        self.assertEqual(CONF.kolla.install_type, 'test_install_type')
-        self.assertEqual(CONF.kolla.profile, 'test_profile')
+        self.assertEqual('test_namespace', CONF.kolla.namespace)
+        self.assertEqual('test_tag', CONF.kolla.tag)
+        self.assertEqual('test_base', CONF.kolla.base)
+        self.assertEqual('test_base_tag', CONF.kolla.base_tag)
+        self.assertEqual('test_install_type', CONF.kolla.install_type)
+        self.assertEqual('test_profile', CONF.kolla.profile)
 
     def test_cli_config(self):
         argv = ['--kolla-namespace', 'test_namespace', '--kolla-tag',

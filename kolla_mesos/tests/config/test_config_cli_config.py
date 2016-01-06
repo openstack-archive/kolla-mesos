@@ -25,5 +25,5 @@ class TestConfigCliConfig(base.BaseTestCase):
     def test_config_cli(self):
         argv = ['--path', 'test_path', '--show']
         CONF(argv, project='kolla-mesos')
-        self.assertEqual(CONF.path, 'test_path')
+        self.assertEqual('test_path', CONF.path)
         self.assertTrue(CONF.show)

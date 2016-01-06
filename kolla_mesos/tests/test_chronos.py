@@ -62,7 +62,7 @@ class TestClient(base.BaseTestCase):
 
     def test_create_url(self):
         url = self.client._create_url('test')
-        self.assertEqual(url, 'http://localhost:4400/test')
+        self.assertEqual('http://localhost:4400/test', url)
 
     @requests_mock.mock()
     def test_add_job(self, req_mock):

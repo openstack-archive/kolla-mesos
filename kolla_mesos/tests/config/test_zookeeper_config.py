@@ -29,7 +29,7 @@ host = test.local:2181
 class TestZookeeperConfig(base.BaseTestCase):
 
     def _asserts(self):
-        self.assertEqual(CONF.zookeeper.host, 'test.local:2181')
+        self.assertEqual('test.local:2181', CONF.zookeeper.host)
 
     def test_cli_config(self):
         argv = ['--zookeeper-host', 'test.local:2181']

@@ -30,8 +30,8 @@ timeout = 30
 class TestChronosConfig(base.BaseTestCase):
 
     def _asserts(self):
-        self.assertEqual(CONF.chronos.host, 'test.local:4400')
-        self.assertEqual(CONF.chronos.timeout, 30)
+        self.assertEqual('test.local:4400', CONF.chronos.host)
+        self.assertEqual(30, CONF.chronos.timeout)
 
     def test_cli_config(self):
         argv = ['--chronos-host', 'test.local:4400', '--chronos-timeout', '30']

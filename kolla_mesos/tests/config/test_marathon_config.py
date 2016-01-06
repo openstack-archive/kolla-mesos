@@ -33,11 +33,11 @@ class TestMarathonConfig(base.BaseTestCase):
         argv = ['--marathon-host', 'test.local:8080', '--marathon-timeout',
                 '30']
         CONF(argv, project='kolla-mesos')
-        self.assertEqual(CONF.marathon.host, 'test.local:8080')
-        self.assertEqual(CONF.marathon.timeout, 30)
+        self.assertEqual('test.local:8080', CONF.marathon.host)
+        self.assertEqual(30, CONF.marathon.timeout)
 
     @fake_config_file.FakeConfigFile(MARATHON_TEXT_CONFIG)
     def test_file_config(self):
         CONF([], project='kolla-mesos', default_config_files=['/dev/null'])
-        self.assertEqual(CONF.marathon.host, 'test.local:8080')
-        self.assertEqual(CONF.marathon.timeout, 30)
+        self.assertEqual('test.local:8080', CONF.marathon.host)
+        self.assertEqual(30, CONF.marathon.timeout)

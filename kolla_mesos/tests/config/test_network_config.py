@@ -30,8 +30,8 @@ public_interface = test_pub_iface
 class TestNetworkConfig(base.BaseTestCase):
 
     def _asserts(self):
-        self.assertEqual(CONF.network.private_interface, 'test_priv_iface')
-        self.assertEqual(CONF.network.public_interface, 'test_pub_iface')
+        self.assertEqual('test_priv_iface', CONF.network.private_interface)
+        self.assertEqual('test_pub_iface', CONF.network.public_interface)
 
     def test_cli_config(self):
         argv = ['--network-private-interface', 'test_priv_iface',

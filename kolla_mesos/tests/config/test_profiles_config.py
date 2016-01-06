@@ -33,13 +33,13 @@ gate = test1, test2, test3, test4
 class TestProfilesConfig(base.BaseTestCase):
 
     def _asserts(self):
-        self.assertEqual(CONF.profiles.infra, ['test1', 'test2'])
-        self.assertEqual(CONF.profiles.main, ['test1'])
-        self.assertEqual(CONF.profiles.aux, ['test1', 'test2', 'test3'])
-        self.assertEqual(CONF.profiles.default, ['test1', 'test2', 'test3',
-                                                 'test4', 'test5'])
-        self.assertEqual(CONF.profiles.gate, ['test1', 'test2', 'test3',
-                                              'test4'])
+        self.assertEqual(['test1', 'test2'], CONF.profiles.infra)
+        self.assertEqual(['test1'], CONF.profiles.main)
+        self.assertEqual(['test1', 'test2', 'test3'], CONF.profiles.aux)
+        self.assertEqual(['test1', 'test2', 'test3', 'test4',
+                         'test5'], CONF.profiles.default)
+        self.assertEqual(['test1', 'test2', 'test3',
+                         'test4'], CONF.profiles.gate)
 
     def test_cli_config(self):
         argv = ['--profiles-infra', 'test1,test2',

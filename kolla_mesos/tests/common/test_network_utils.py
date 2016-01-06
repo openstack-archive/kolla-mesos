@@ -26,12 +26,12 @@ class TestNetworkUtils(base.BaseTestCase):
     def test_get_localhost_ipv4(self):
         CONF.set_override('ipv6', False, group='network')
         localhost = network_utils._get_localhost()
-        self.assertEqual(localhost, '127.0.0.1')
+        self.assertEqual('127.0.0.1', localhost)
 
     def test_get_localhost_ipv6(self):
         CONF.set_override('ipv6', True, group='network')
         localhost = network_utils._get_localhost()
-        self.assertEqual(localhost, '::1')
+        self.assertEqual('::1', localhost)
 
     @mock.patch('netifaces.interfaces')
     @mock.patch('netifaces.ifaddresses')
@@ -43,7 +43,7 @@ class TestNetworkUtils(base.BaseTestCase):
             netifaces.AF_INET: [{'addr': '10.0.0.1'}]
         }
         ip_address = network_utils.get_ip_address()
-        self.assertEqual(ip_address, '10.0.0.1')
+        self.assertEqual('10.0.0.1', ip_address)
 
     @mock.patch('netifaces.interfaces')
     @mock.patch('netifaces.ifaddresses')
@@ -55,7 +55,7 @@ class TestNetworkUtils(base.BaseTestCase):
             netifaces.AF_INET: [{'addr': '10.0.0.1'}]
         }
         ip_address = network_utils.get_ip_address(public=False)
-        self.assertEqual(ip_address, '10.0.0.1')
+        self.assertEqual('10.0.0.1', ip_address)
 
     @mock.patch('netifaces.interfaces')
     @mock.patch('netifaces.ifaddresses')
@@ -67,7 +67,7 @@ class TestNetworkUtils(base.BaseTestCase):
             netifaces.AF_INET6: [{'addr': 'fe80::5054:ff:fe80:e42b%eth2'}]
         }
         ip_address = network_utils.get_ip_address()
-        self.assertEqual(ip_address, 'fe80::5054:ff:fe80:e42b%eth2')
+        self.assertEqual('fe80::5054:ff:fe80:e42b%eth2', ip_address)
 
     @mock.patch('netifaces.interfaces')
     @mock.patch('netifaces.ifaddresses')
@@ -79,4 +79,4 @@ class TestNetworkUtils(base.BaseTestCase):
             netifaces.AF_INET6: [{'addr': 'fe80::5054:ff:fefc:273e%eth1'}]
         }
         ip_address = network_utils.get_ip_address(public=False)
-        self.assertEqual(ip_address, 'fe80::5054:ff:fefc:273e%eth1')
+        self.assertEqual('fe80::5054:ff:fefc:273e%eth1', ip_address)
