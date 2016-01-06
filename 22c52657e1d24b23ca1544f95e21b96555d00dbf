@@ -1,0 +1,11 @@
+Code-Review+2: Paul Bourke <paul.bourke@oracle.com>
+Code-Review+1: Eric Lemoine <elemoine@mirantis.com>
+Code-Review+1: Steve Noyes <steve.noyes@oracle.com>
+Code-Review+2: Jeff Peeler <jpeeler@redhat.com>
+Workflow+1: Jeff Peeler <jpeeler@redhat.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Wed, 06 Jan 2016 14:54:53 +0000
+Reviewed-on: https://review.openstack.org/264111
+Project: openstack/kolla-mesos
+Branch: refs/heads/master
