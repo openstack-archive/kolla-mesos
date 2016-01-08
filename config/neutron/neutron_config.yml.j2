@@ -1,0 +1,95 @@
+config:
+  neutron:
+    neutron-server:
+      neutron.conf.j2:
+        source: ["config/neutron/templates/neutron.conf.j2"]
+        dest: /etc/neutron/neutron.conf
+        owner: neutron
+        perm: "0600"
+    neutron-agents:
+      neutron.conf.j2:
+        source: ["config/neutron/templates/neutron.conf.j2"]
+        dest: /etc/neutron/neutron.conf
+        owner: neutron
+        perm: "0600"
+      dhcp_agent.ini.j2:
+        source: ["config/neutron/templates/dhcp_agent.ini.j2"]
+        dest: /etc/neutron/dhcp_agent.ini
+        owner: neutron
+        perm: "0600"
+      dnsmasq.conf.j2:
+        source: ["config/neutron/templates/dnsmasq.conf.j2"]
+        dest: /etc/neutron/dnsmasq.conf
+        owner: neutron
+        perm: "0600"
+      l3_agent.ini.j2:
+        source: ["config/neutron/templates/l3_agent.ini.j2"]
+        dest: /etc/neutron/l3_agent.ini
+        owner: neutron
+        perm: "0600"
+      ml2_conf.ini.j2:
+        source: ["config/neutron/templates/ml2_conf.ini.j2"]
+        dest: /etc/neutron/ml2_conf.ini
+        owner: neutron
+        perm: "0600"
+      metadata_agent.ini.j2:
+        source: ["config/neutron/templates/metadata_agent.ini.j2"]
+        dest: /etc/neutron/metadata_agent.ini
+        owner: neutron
+        perm: "0600"
+commands:
+  neutron:
+    openvswitch-db:
+      openvswitch_db:
+        daemon: True
+        command: /usr/sbin/ovsdb-server
+    openvswitch-vswitchd:
+      openvswitch_vswitchd:
+        daemon: True
+        command: /usr/sbin/ovs-vswitchd
+    neutron-server:
+      db_sync:
+        run_once: True
+        requires: [/kolla/variables/neutron_database/.done,
+                   /kolla/variables/neutron_database_user_create/.done]
+        register: /kolla/variables/neutron_setup/.done
+        command: kolla_extend_start
+      neutron_server:
+        daemon: True
+        requires: [/kolla/variables/keystone_running/.done,
+                   /kolla/variables/rabbitmq_bootstrap/.done]
+        command: /usr/bin/neutron-server
+    neutron-openvswitch-agent:
+      neutron_openvswitch_agent:
+        daemon: True
+        command: /usr/bin/neutron-openvswitch-agent
+    neutron-agents:
+      neutron_agents:
+        daemon: True
+    neutron_ansible_tasks:
+      create_database:
+        run_once: True
+        requires: [/kolla/variables/mariadb_bootstrap/.done]
+        register: /kolla/variables/glance_database/.done
+        command: /usr/bin/ansible localhost
+          -m mysql_db
+          -a "login_host='{{ database_address }}'
+              login_port='{{ mariadb_port }}'
+              login_user='{{ database_user }}'
+              login_password='{{ database_password }}'
+              name='{{ neutron_database_name }}'"
+      database_user_create:
+        run_once: True
+        requires: [/kolla/variables/neutron_database/.done]
+        register: /kolla/variables/neutron_database_user_create/.done
+        command: /usr/bin/ansible localhost
+          -m mysql_user
+          -a "login_host='{{ database_address }}'
+              login_port='{{ mariadb_port }}'
+              login_user='{{ database_user }}'
+              login_password='{{ database_password }}'
+              name='{{ neutron_database_name }}'
+              password='{{ neutron_database_password }}'
+              host='%'
+              priv='{{ glance_database_name }}.*:ALL'
+              append_privs='yes'"
