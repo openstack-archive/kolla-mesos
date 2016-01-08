@@ -6,4 +6,6 @@ cd "$(dirname "$REAL_PATH")/.."
 find . -name '*.json' -print0 |
     xargs -0 python tools/validate-json.py || exit 1
 find . -name '*.marathon.j2' -print0 |
-    xargs -0 python tools/validate-json.py || exit 1
+    xargs -0 python tools/validate-config.py || exit 1
+find . -name '*.chronos.j2' -print0 |
+    xargs -0 python tools/validate-config.py || exit 1
