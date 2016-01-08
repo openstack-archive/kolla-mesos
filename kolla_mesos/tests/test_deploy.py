@@ -59,6 +59,11 @@ config:
       openstack-horizon.conf:
         source: "/config/horizon/templates/openstack-dashboard.conf.j2"
         dest: /etc/horizon/openstack-dashboard.conf
+  neutron:
+    neutron-server:
+      neutron.conf:
+        source: "config/neutron/templates/neutron.conf.j2"
+        dest: /etc/neutron/neutron.conf
 commands:
   source: "/etc/test2.yaml"
   glance:
@@ -96,6 +101,11 @@ commands:
       apache:
         daemon: False
         command: service apache2 start
+  neutron:
+    neutron-server:
+      neutron-server:
+        daemon: True
+        command: /usr/bin/neutron-server
 """
 
 
