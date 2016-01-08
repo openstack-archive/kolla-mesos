@@ -1,0 +1,220 @@
+config:
+  nova:
+    nova-api:
+      nova-api.conf.j2:
+        source: ["config/nova/templates/nova.conf.j2",
+                 "/etc/kolla/config/global.conf",
+                 "/etc/kolla/config/database.conf",
+                 "/etc/kolla/config/messaging.conf",
+                 "/etc/kolla/config/nova.conf",
+                 "/etc/kolla/config/nova/nova-api.conf"]
+        dest: /etc/nova/nova.conf
+        owner: nova
+        perm: "0600"
+    nova-compute:
+      nova-compute.conf.j2:
+        source: ["config/nova/templates/nova.conf.j2",
+                 "/etc/kolla/config/global.conf",
+                 "/etc/kolla/config/database.conf",
+                 "/etc/kolla/config/messaging.conf",
+                 "/etc/kolla/config/nova.conf",
+                 "/etc/kolla/config/nova/nova-compute.conf"]
+        dest: /etc/nova/nova.conf
+        owner: nova
+        perm: "0600"
+    nova-conductor:
+      nova-conductor.conf.j2:
+        source: ["config/nova/templates/nova.conf.j2",
+                 "/etc/kolla/config/global.conf",
+                 "/etc/kolla/config/database.conf",
+                 "/etc/kolla/config/messaging.conf",
+                 "/etc/kolla/config/nova.conf",
+                 "/etc/kolla/config/nova/nova-conductor.conf"]
+        dest: /etc/nova/nova.conf
+        owner: nova
+        perm: "0600"
+    nova-libvirt:
+      libvirtd.conf.j2:
+        source: "config/nova/templates/libvirtd.conf.j2"
+        dest: /etc/libvirt/libvirtd.conf
+        owner: root
+        perm: "0644"
+    nova-scheduler:
+      nova-scheduler.conf.j2:
+        source: ["config/nova/templates/nova.conf.j2",
+                 "/etc/kolla/config/global.conf",
+                 "/etc/kolla/config/database.conf",
+                 "/etc/kolla/config/messaging.conf",
+                 "/etc/kolla/config/nova.conf",
+                 "/etc/kolla/config/nova/nova-scheduler.conf"]
+        dest: /etc/nova/nova.conf
+        owner: nova
+        perm: "0600"
+    nova-consoleauth:
+      nova-consoleauth.conf.j2:
+        source: ["config/nova/templates/nova.conf.j2",
+                 "/etc/kolla/config/global.conf",
+                 "/etc/kolla/config/database.conf",
+                 "/etc/kolla/config/messaging.conf",
+                 "/etc/kolla/config/nova.conf",
+                 "/etc/kolla/config/nova/nova-consoleauth.conf"]
+        dest: /etc/nova/nova.conf
+        owner: nova
+        perm: "0600"
+    nova-novncproxy:
+      nova-api.conf.j2:
+        source: ["config/nova/templates/nova.conf.j2",
+                 "/etc/kolla/config/global.conf",
+                 "/etc/kolla/config/database.conf",
+                 "/etc/kolla/config/messaging.conf",
+                 "/etc/kolla/config/nova.conf",
+                 "/etc/kolla/config/nova/nova-api.conf"]
+        dest: /etc/nova/nova.conf
+        owner: nova
+        perm: "0600"
+    nova-spicehtml5proxy:
+      nova-api.conf.j2:
+        source: ["config/nova/templates/nova.conf.j2",
+                 "/etc/kolla/config/global.conf",
+                 "/etc/kolla/config/database.conf",
+                 "/etc/kolla/config/messaging.conf",
+                 "/etc/kolla/config/nova.conf",
+                 "/etc/kolla/config/nova/nova-spicehtml5proxy.conf"]
+        dest: /etc/nova/nova.conf
+        owner: nova
+        perm: "0600"
+commands:
+  nova:
+    nova-api:
+      nova_api:
+        daemon: True
+        requires: [/kolla/variables/nova_user/.done,
+                   /kolla/variables/keystone_running/.done]
+        command: nova-api
+    nova-compute:
+      nova-compute:
+        daemon: True
+        requires: [/kolla/variables/nova_user/.done,
+                   /kolla/variables/keystone_running/.done]
+        command: nova-compute
+      disable-netfilter-4:
+        daemon: False
+        command: "sysctl net.bridge.bridge-nf-call-iptables=1"
+      disable-netfilter-6:
+        daemon: False
+        command: "sysctl net.bridge.bridge-nf-call-ip6tables=1"
+    nova-conductor:
+      extend_start:
+        run_once: True
+        requires: [/kolla/variables/nova_database/.done,
+                   /kolla/variables/nova_database_user_create/.done]
+        register: /kolla/variables/nova_setup/.done
+        command: bash kolla_extend_start
+      nova-conductor:
+        daemon: True
+        requires: [/kolla/variables/nova_user/.done,
+                   /kolla/variables/keystone_running/.done]
+        command: nova-conductor
+    nova-libvirt:
+      libvirtd:
+        daemon: True
+        command: libvirtd --listen
+    nova-scheduler:
+      nova-scheduler:
+        daemon: True
+        requires: [/kolla/variables/nova_user/.done,
+                   /kolla/variables/keystone_running/.done]
+        command: nova-scheduler
+    nova-consoleauth:
+      nova-consoleauth:
+        daemon: True
+        requires: [/kolla/variables/nova_user/.done,
+                   /kolla/variables/keystone_running/.done]
+        command: nova-consoleauth
+    nova-novncproxy:
+      nova-novncproxy:
+        daemon: True
+        requires: [/kolla/variables/nova_user/.done,
+                   /kolla/variables/keystone_running/.done]
+        command: nova-novncproxy
+    nova-spicehtml5proxy:
+      nova-spicehtml5proxy:
+        daemon: True
+        requires: [/kolla/variables/nova_user/.done,
+                   /kolla/variables/keystone_running/.done]
+        command: nova-spicehtml5proxy
+    nova_ansible_tasks:
+      create_database:
+        run_once: True
+        requires: [/kolla/variables/mariadb_bootstrap/.done]
+        register: /kolla/variables/nova_database/.done
+        command: /usr/bin/ansible localhost
+          -m mysql_db
+          -a "login_host='{{ database_address }}'
+              login_port='{{ mariadb_port }}'
+              login_user='{{ database_user }}'
+              login_password='{{ database_password }}'
+              name='{{ nova_database_name }}'"
+      database_user_create:
+        run_once: True
+        requires: [/kolla/variables/nova_database/.done]
+        register: /kolla/variables/nova_database_user_create/.done
+        command: /usr/bin/ansible localhost
+          -m mysql_user
+          -a "login_host='{{ database_address }}'
+              login_port='{{ mariadb_port }}'
+              login_user='{{ database_user }}'
+              login_password='{{ database_password }}'
+              name='{{ nova_database_name }}'
+              password='{{ nova_database_password }}'
+              host='%'
+              priv='{{ nova_database_name }}.*:ALL'
+              append_privs='yes'"
+      register_endpoint:
+        run_once: True
+        requires: [/kolla/variables/nova_setup/.done,
+                   /kolla/variables/keystone_running/.done]
+        register: /kolla/variables/nova_api_registered/.done
+        command: /usr/bin/ansible localhost
+          -m kolla_keystone_service
+          -a "service_name=nova
+              service_type=image
+              description='Openstack Compute'
+              endpoint_region={{ openstack_region_name }}
+              admin_url='http://{{ kolla_internal_address }}:{{ nova_api_port }}/v2/%(tenant_id)s'
+              internal_url='http://{{ kolla_internal_address }}:{{ nova_api_port }}/v2/%(tenant_id)s'
+              public_url='http://{{ kolla_external_address }}:{{ nova_api_port }}/v2/%(tenant_id)s'
+              region_name={{ openstack_region_name }}
+              auth={{ '{{ openstack_nova_auth }}' }}"
+          -e "{'openstack_nova_auth':{{ openstack_nova_auth }}}"
+      create_nova_user:
+        run_once: True
+        requires: [/kolla/variables/nova_setup/.done,
+                   /kolla/variables/keystone_running/.done]
+        register: /kolla/variables/nova_user/.done
+        command: /usr/bin/ansible localhost
+          -m kolla_keystone_user
+          -a "project=service
+              user=nova
+              password={{ nova_keystone_password }}
+              role=admin
+              region_name={{ openstack_region_name }}
+              auth={{ '{{ openstack_nova_auth }}' }}"
+          -e "{'openstack_nova_auth':{{ openstack_nova_auth }}}"
+      sanity_check:
+        run_once: True
+        retries: 10
+        delay: 5
+        requires: [/kolla/variables/nova_setup/.done,
+                   /kolla/variables/keystone_running/.done]
+        register: /kolla/variables/nova_running/.done
+        command: /usr/bin/ansible localhost
+          -m kolla_sanity
+          -a "service=nova
+              project=service
+              user=nova
+              password={{ nova_keystone_password }}
+              role=admin
+              region_name={{ openstack_region_name }}
+              auth={{ '{{ openstack_nova_auth }}' }}"
+          -e "{'openstack_nova_auth':{{ openstack_nova_auth }}}"
