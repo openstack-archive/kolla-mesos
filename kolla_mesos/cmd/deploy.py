@@ -195,7 +195,8 @@ class KollaWorker(object):
 
             for service in extra['config'][proj]:
                 # write the config files
-                for name, item in extra['config'][proj][service].iteritems():
+                service_config = extra['config'][proj][service] or {}
+                for name, item in service_config.iteritems():
                     dest_node = os.path.join(base_node, 'config', proj,
                                              service, name)
                     zk.ensure_path(dest_node)
