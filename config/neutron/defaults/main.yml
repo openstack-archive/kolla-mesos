@@ -1,0 +1,54 @@
+---
+project_name: "neutron"
+
+####################
+# Database
+####################
+neutron_database_name: "neutron"
+neutron_database_user: "neutron"
+neutron_database_address: "{{ kolla_internal_address }}"
+
+
+####################
+# Docker
+####################
+neutron_server_image: "{{ docker_registry ~ '/' if docker_registry else '' }}{{ docker_namespace }}/{{ kolla_base_distro }}-{{ kolla_install_type }}-neutron-server"
+neutron_server_tag: "{{ openstack_release }}"
+neutron_server_image_full: "{{ neutron_server_image }}:{{ neutron_server_tag }}"
+
+neutron_agents_image: "{{ docker_registry ~ '/' if docker_registry else '' }}{{ docker_namespace }}/{{ kolla_base_distro }}-{{ kolla_install_type }}-neutron-agents"
+neutron_agents_tag: "{{ openstack_release }}"
+neutron_agents_image_full: "{{ neutron_agents_image }}:{{ neutron_agents_tag }}"
+
+neutron_openvswitch_agent_image: "{{ docker_registry ~ '/' if docker_registry else '' }}{{ docker_namespace }}/{{ kolla_base_distro }}-{{ kolla_install_type }}-neutron-openvswitch-agent"
+neutron_openvswitch_agent_tag: "{{ openstack_release }}"
+neutron_openvswitch_agent_image_full: "{{ neutron_openvswitch_agent_image }}:{{ neutron_openvswitch_agent_tag }}"
+
+neutron_linuxbridge_agent_image: "{{ docker_registry ~ '/' if docker_registry else '' }}{{ docker_namespace }}/{{ kolla_base_distro }}-{{ kolla_install_type }}-neutron-linuxbridge-agent"
+neutron_linuxbridge_agent_tag: "{{ openstack_release }}"
+neutron_linuxbridge_agent_image_full: "{{ neutron_linuxbridge_agent_image }}:{{ neutron_linuxbridge_agent_tag }}"
+
+openvswitch_vswitchd_image: "{{ docker_registry ~ '/' if docker_registry else '' }}{{ docker_namespace }}/{{ kolla_base_distro }}-{{ kolla_install_type }}-openvswitch-vswitchd"
+openvswitch_vswitchd_tag: "{{ openstack_release }}"
+openvswitch_vswitchd_image_full: "{{ openvswitch_vswitchd_image }}:{{ openvswitch_vswitchd_tag }}"
+
+openvswitch_db_image: "{{ docker_registry ~ '/' if docker_registry else '' }}{{ docker_namespace }}/{{ kolla_base_distro }}-{{ kolla_install_type }}-openvswitch-db-server"
+openvswitch_db_tag: "{{ openstack_release }}"
+openvswitch_db_image_full: "{{ openvswitch_db_image }}:{{ openvswitch_db_tag }}"
+
+
+####################
+# Openstack
+####################
+neutron_public_address: "{{ kolla_external_address }}"
+neutron_admin_address: "{{ kolla_internal_address }}"
+neutron_internal_address: "{{ kolla_internal_address }}"
+
+neutron_logging_verbose: "{{ openstack_logging_verbose }}"
+neutron_logging_debug: "{{ openstack_logging_debug }}"
+
+neutron_keystone_user: "neutron"
+
+neutron_bridge_name: "br-ex"
+
+openstack_neutron_auth: "{'auth_url':'{{ openstack_auth_v2.auth_url }}','username':'{{ openstack_auth_v2.username }}','password':'{{ openstack_auth_v2.password }}','project_name':'{{ openstack_auth_v2.project_name }}'}"
