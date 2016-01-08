@@ -1,0 +1,35 @@
+{
+    "id": "/{{ deployment_id }}/neutron-linuxbridge-agent",
+    "instances": 1,
+    "mem": 128,
+    "cpus": 0.1,
+    "container": {
+        "type": "DOCKER",
+        "docker": {
+            "image": "{{ neutron_linuxbridge_agent_image }}:{{ neutron_linuxbridge_agent_tag }}",
+            "network": "HOST",
+            "privileged" true
+        },
+        "volumes": [
+            {
+                "containerPath": "/lib/modules",
+                "hostPath": "/lib/modules",
+                "mode": "RO"
+            },
+            {
+                "containerPath": "/run",
+                "hostPath": "/run",
+                "mode": "RW"
+            }
+        ]
+    },
+    "env": {
+        "KOLLA_CONFIG_STRATEGY": "{{ config_strategy }}",
+        "KOLLA_CONFIG": "{{ kolla_config }}",
+        "KOLLA_GROUP": "neutron",
+        "KOLLA_ROLE": "neutron-openvswitch-agent",
+        "KOLLA_ZK_HOSTS": "{{ zookeeper_hosts }}",
+        "KOLLA_PRIVATE_INTERFACE": "{{ private_interface }}",
+        "KOLLA_PUBLIC_INTERFACE": "{{ public_interface }}"
+    }
+}
