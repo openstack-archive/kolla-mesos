@@ -1,0 +1,198 @@
+config:
+  neutron:
+    neutron-server:
+      neutron.conf.j2:
+        source: ["config/neutron/templates/neutron.conf.j2",
+                 {% if neutron_plugin_agent == 'linuxbridge' %}
+                 "config/neutron/templates/neutron.linuxbridge.conf.j2"
+                 {% elif neutron_plugin_agent == 'openvswitch' %}
+                 "config/neutron/templates/neutron.openvswitch.conf.j2"
+                 {% endif %}]
+        dest: /etc/neutron/neutron.conf
+        owner: neutron
+        perm: "0600"
+      ml2_conf.ini.j2:
+        source: ["config/neutron/templates/ml2_conf.ini.j2",
+                 {% if neutron_plugin_agent == 'linuxbridge' %}
+                 "config/neutron/templates/ml2_conf.linuxbridge.ini.j2"
+                 {% elif neutron_plugin_agent == 'openvswitch' %}
+                 "config/neutron/templates/ml2_conf.openvswitch.ini.j2"
+                 {% endif %}]
+        dest: /etc/neutron/plugins/ml2/ml2_conf.ini
+        owner: neutron
+        perm: "0600"
+    neutron-linuxbridge-agent:
+      neutron.conf.j2:
+        source: ["config/neutron/templates/neutron.conf.j2",
+                 "config/neutron/templates/neutron.linuxbridge.conf.j2"]
+        dest: /etc/neutron/neutron.conf
+        owner: neutron
+        perm: "0600"
+      ml2_conf.ini.j2:
+        source: ["config/neutron/templates/ml2_conf.ini.j2",
+                 "config/neutron/templates/ml2_conf.linuxbridge.ini.j2"]
+        dest: /etc/neutron/plugins/ml2/ml2_conf.ini
+        owner: neutron
+        perm: "0600"
+    neutron-openvswitch-agent:
+      neutron.conf.j2:
+        source: ["config/neutron/templates/neutron.conf.j2",
+                 "config/neutron/templates/neutron.openvswitch.conf.j2"]
+        dest: /etc/neutron/neutron.conf
+        owner: neutron
+        perm: "0600"
+      ml2_conf.ini.j2:
+        source: ["config/neutron/templates/ml2_conf.ini.j2",
+                 "config/neutron/templates/ml2_conf.openvswitch.ini.j2"]
+        dest: /etc/neutron/plugins/ml2/ml2_conf.ini
+        owner: neutron
+        perm: "0600"
+    neutron-agents:
+      neutron.conf.j2:
+        source: ["config/neutron/templates/neutron.conf.j2",
+                 {% if neutron_plugin_agent == 'linuxbridge' %}
+                 "config/neutron/templates/neutron.linuxbridge.conf.j2"
+                 {% elif neutron_plugin_agent == 'openvswitch' %}
+                 "config/neutron/templates/neutron.openvswitch.conf.j2"
+                 {% endif %}]
+        dest: /etc/neutron/neutron.conf
+        owner: neutron
+        perm: "0600"
+      dhcp_agent.ini.j2:
+        source: ["config/neutron/templates/dhcp_agent.ini.j2"]
+        dest: /etc/neutron/dhcp_agent.ini
+        owner: neutron
+        perm: "0600"
+      dnsmasq.conf.j2:
+        source: "config/neutron/templates/dnsmasq.conf.j2"
+        dest: /etc/neutron/dnsmasq.conf
+        owner: neutron
+        perm: "0600"
+      l3_agent.ini.j2:
+        source: ["config/neutron/templates/l3_agent.ini.j2"]
+        dest: /etc/neutron/l3_agent.ini
+        owner: neutron
+        perm: "0600"
+      ml2_conf.ini.j2:
+        source: ["config/neutron/templates/ml2_conf.ini.j2",
+                 {% if neutron_plugin_agent == 'linuxbridge' %}
+                 "config/neutron/templates/ml2_conf.linuxbridge.ini.j2"
+                 {% elif neutron_plugin_agent == 'openvswitch' %}
+                 "config/neutron/templates/ml2_conf.openvswitch.ini.j2"
+                 {% endif %}]
+        dest: /etc/neutron/plugins/ml2/ml2_conf.ini
+        owner: neutron
+        perm: "0600"
+      metadata_agent.ini.j2:
+        source: ["config/neutron/templates/metadata_agent.ini.j2"]
+        dest: /etc/neutron/metadata_agent.ini
+        owner: neutron
+        perm: "0600"
+commands:
+  neutron:
+    {% if neutron_plugin_agent == 'openvswitch' %}
+    openvswitch-db:
+      openvswitch_db:
+        daemon: True
+        command: /usr/sbin/ovsdb-server /etc/openvswitch/conf.db -vconsole:emer -vsyslog:err -vfile:info --remote=punix:/run/openvswitch/db.sock --log-file=/var/log/openvswitch/ovsdb-server.log
+    openvswitch-vswitchd:
+      openvswitch_vswitchd:
+        daemon: True
+        requires: [/kolla/{{ deployment_id }}/variables/openvswitch_setup/.done]
+        command: /usr/sbin/ovs-vswitchd unix:/run/openvswitch/db.sock --mlockall
+    {% endif %}
+    neutron-server:
+      db_sync:
+        run_once: True
+        requires: [/kolla/{{ deployment_id }}/variables/neutron_database/.done,
+                   /kolla/{{ deployment_id }}/variables/neutron_database_user_create/.done]
+        register: /kolla/{{ deployment_id }}/variables/neutron_setup/.done
+        env:
+          KOLLA_BOOTSTRAP:
+        command: bash kolla_extend_start
+      neutron_server:
+        daemon: True
+        requires: [/kolla/{{ deployment_id }}/variables/keystone_running/.done,
+                   /kolla/{{ deployment_id }}/variables/rabbitmq_bootstrap/.done]
+        command: neutron-server --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugins/ml2/ml2_conf.ini
+    {% if neutron_plugin_agent == 'linuxbridge' %}
+    neutron-linuxbridge-agent:
+      neutron_linuxbridge_agent:
+        daemon: True
+        command: neutron-linuxbridge-agent --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugins/ml2/ml2_conf.ini
+    {% elif neutron_plugin_agent == 'openvswitch' %}
+    neutron-openvswitch-agent:
+      neutron_openvswitch_agent:
+        daemon: True
+        requires: [/kolla/{{ deployment_id }}/variables/openvswitch_setup/.done]
+        command: neutron-openvswitch-agent --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugins/ml2/ml2_conf.ini
+    {% endif %}
+    neutron-agents:
+      neutron_agents:
+        daemon: True
+        command: /start.sh
+    neutron_ansible_tasks:
+      create_database:
+        run_once: True
+        requires: [/kolla/{{ deployment_id }}/variables/mariadb_bootstrap/.done]
+        register: /kolla/{{ deployment_id }}/variables/neutron_database/.done
+        command: /usr/bin/ansible localhost
+          -m mysql_db
+          -a "login_host='{{ database_address }}'
+              login_port='{{ mariadb_port }}'
+              login_user='{{ database_user }}'
+              login_password='{{ database_password }}'
+              name='{{ neutron_database_name }}'"
+      database_user_create:
+        run_once: True
+        requires: [/kolla/{{ deployment_id }}/variables/neutron_database/.done]
+        register: /kolla/{{ deployment_id }}/variables/neutron_database_user_create/.done
+        command: /usr/bin/ansible localhost
+          -m mysql_user
+          -a "login_host='{{ database_address }}'
+              login_port='{{ mariadb_port }}'
+              login_user='{{ database_user }}'
+              login_password='{{ database_password }}'
+              name='{{ neutron_database_name }}'
+              password='{{ neutron_database_password }}'
+              host='%'
+              priv='{{ neutron_database_name }}.*:ALL'
+              append_privs='yes'"
+      register_endpoint:
+        run_once: True
+        requires: [/kolla/{{ deployment_id }}/variables/neutron_setup/.done,
+                   /kolla/{{ deployment_id }}/variables/keystone_running/.done]
+        register: /kolla/{{ deployment_id }}/variables/neutron_server_registered/.done
+        command : /usr/bin/ansible localhost
+          -m kolla_keystone_service
+          -a "service_name=neutron
+              service_type=network
+              description='Openstack Networking'
+              endpoint_region={{ openstack_region_name }}
+              admin_url='http://{{ kolla_internal_address }}:{{ neutron_server_port }}'
+              internal_url='http://{{ kolla_internal_address }}:{{ neutron_server_port }}'
+              public_url='http://{{ kolla_external_address }}:{{ neutron_server_port }}'
+              region_name={{ openstack_region_name }}
+              auth={{ '{{ openstack_neutron_auth }}' }}"
+          -e "{'openstack_neutron_auth':{{ openstack_neutron_auth }}}"
+      create_neutron_user:
+        run_once: True
+        requires: [/kolla/{{ deployment_id }}/variables/neutron_setup/.done,
+                   /kolla/{{ deployment_id }}/variables/keystone_running/.done]
+        register: /kolla/{{ deployment_id }}/variables/neutron_user/.done
+        command: /usr/bin/ansible localhost
+          -m kolla_keystone_user
+          -a "project=service
+              user=neutron
+              password={{ neutron_keystone_password }}
+              role=admin
+              region_name={{ openstack_region_name }}
+              auth={{ '{{ openstack_neutron_auth }}' }}"
+          -e "{'openstack_neutron_auth':{{ openstack_neutron_auth }}}"
+    neutron_openvswitch_tasks:
+      setup_ovs_bridge:
+        run_once: True
+        retries: 10
+        delay: 5
+        register: /kolla/{{ deployment_id }}/variables/openvswitch_setup/.done
+        command: /usr/local/bin/kolla_ensure_openvswitch_configured {{ neutron_bridge_name }} {{ neutron_external_interface }}
