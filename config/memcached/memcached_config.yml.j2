@@ -1,0 +1,9 @@
+commands:
+  memcached:
+    memcached:
+      run_daemon:
+        {% raw %}
+        command: /usr/bin/memcached -vv -l {{ hostvars[inventory_hostname]['ansible_' + api_interface]['ipv4']['address'] }} -p {{ memcached_port }}
+        {% endraw %}
+        daemon: True
+        run_once: False
