@@ -86,7 +86,7 @@ def jinja_regex_replace(value='', pattern='',
     return _re.sub(replacement, value)
 
 
-def jinja_render(name, content, global_config, extra=None):
+def jinja_render(content, global_config, name='dafault_name', extra=None):
     variables = global_config
     if extra:
         variables.update(extra)
@@ -97,7 +97,7 @@ def jinja_render(name, content, global_config, extra=None):
     return myenv.get_template(name).render(variables)
 
 
-def jinja_find_required_variables(name, content):
+def jinja_find_required_variables(content, name='default_name'):
     myenv = jinja2.Environment(loader=jinja2.DictLoader({name: content}))
     myenv.filters['bool'] = jinja_filter_bool
     myenv.filters['regex_replace'] = jinja_regex_replace
@@ -222,44 +222,66 @@ def write_file(conf, data):
         LOG.exception(inst_cmd)
 
 
-def generate_config(zk, conf):
-    # render what ever templates we can given the variables that are
-    # defined. If there is a variable that we need, wait for it to be defined.
+def generate_host_vars(zk):
     host = str(get_ip_address(PRIVATE_INTERFACE))
     groups, hostvars = get_groups_and_hostvars(zk)
     variables = {'hostvars': hostvars, 'groups': groups,
                  'inventory_hostname': host,
                  'ansible_hostname': host,
                  'deployment_id': DEPLOYMENT_ID}
+    return variables
 
-    conf_base_node = os.path.join('kolla', DEPLOYMENT_ID, 'config', GROUP,
-                                  ROLE)
-    for name, item in six.iteritems(conf):
+
+def render_template(zk, templ, variables, var_names):
+    for var in var_names:
+        if var not in variables:
+            try:
+                value, stat = zk.get(os.path.join('kolla', DEPLOYMENT_ID,
+                                                  'variables', var))
+            except kz_exceptions.NoNodeError:
+                value = ''
+                LOG.error('missing required variable %s' % var)
+
+            if stat.dataLength == 0:
+                value = ''
+                LOG.warning('missing required variable value %s' % var)
+            variables[var] = value.encode('utf-8')
+    return jinja_render(templ, variables)
+
+
+def generate_configs(zk, conf, conf_base_node):
+    """Render and create all config files for this app"""
+
+    variables = generate_host_vars(zk)
+    for name, item in six.iteritems(conf['config'][GROUP][ROLE]):
+        LOG.info('Name is: %s, Item is: %s' % (name, item))
         if name == 'kolla_mesos_start.py':
             continue
         raw_content, stat = zk.get(os.path.join(conf_base_node, name))
         templ = raw_content.encode('utf-8')
-        var_names = jinja_find_required_variables(name, templ)
+        var_names = jinja_find_required_variables(templ, name)
         if not var_names:
             # not a template, doesn't need rendering.
             write_file(item, templ)
             continue
 
-        for var in var_names:
-            if var not in variables:
-                try:
-                    value, stat = zk.get(os.path.join('kolla', DEPLOYMENT_ID,
-                                                      'variables', var))
-                except kz_exceptions.NoNodeError:
-                    value = ''
-                    LOG.error('missing required variable %s' % var)
-
-                if stat.dataLength == 0:
-                    value = ''
-                    LOG.warning('missing required variable value %s' % var)
-                variables[var] = value.encode('utf-8')
-        content = jinja_render(name, templ, variables)
+        content = render_template(zk, templ, variables, var_names)
         write_file(item, content)
+
+
+def render_config(zk, conf):
+    """Take the app main config and render it if needed"""
+
+    variables = generate_host_vars(zk)
+    templ = conf.encode('utf-8')
+    var_names = jinja_find_required_variables(templ)
+    if not var_names:
+        # not a template, doesn't need rendering.
+        LOG.info('Config is: %s' % conf)
+        return json.loads(conf)
+
+    content = render_template(zk, templ, variables, var_names)
+    return json.loads(content)
 
 
 class Command(object):
@@ -370,7 +392,7 @@ class Command(object):
         return child_p.returncode
 
 
-def run_commands(zk, service_conf):
+def run_commands(zk, service_conf, conf_base_node):
     LOG.info('run_commands')
     first_ready = False
     conf = service_conf['commands'][GROUP][ROLE]
@@ -382,8 +404,8 @@ def run_commands(zk, service_conf):
         cmd = cmdq.get()
         if cmd.requirements_fulfilled():
             if not first_ready:
-                if ROLE in service_conf['config'][GROUP]:
-                    generate_config(zk, service_conf['config'][GROUP][ROLE])
+                if ROLE in service_conf.get('config', {}).get(GROUP, {}):
+                    generate_configs(zk, service_conf, conf_base_node)
                 first_ready = True
             if cmd.run() != 0:
                 if cmd.retries > 0:
@@ -401,6 +423,7 @@ def main():
     LOG.info('starting')
     with zk_connection(ZK_HOSTS) as zk:
         base_node = os.path.join('kolla', DEPLOYMENT_ID, 'config')
+        conf_base_node = os.path.join(base_node, GROUP, ROLE)
         service_conf_raw, stat = zk.get(os.path.join(base_node,
                                                      GROUP, GROUP))
         service_conf = json.loads(service_conf_raw)
@@ -413,8 +436,10 @@ def main():
                 register_group = True
         if register_group:
             register_group_and_hostvars(zk)
+            service_conf = render_config(zk, service_conf_raw)
+            LOG.debug('Rendered service config: %s' % service_conf)
 
-        run_commands(zk, service_conf)
+        run_commands(zk, service_conf, conf_base_node)
 
 
 if __name__ == '__main__':

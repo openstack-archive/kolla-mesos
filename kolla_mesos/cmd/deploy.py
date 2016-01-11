@@ -188,22 +188,27 @@ class KollaWorker(object):
             zk.ensure_path(dest_node)
             zk.set(dest_node, json.dumps(extra))
 
-            for service in extra['config'][proj]:
-                # write the config files
-                for name, item in extra['config'][proj][service].iteritems():
-                    dest_node = os.path.join(base_node, proj, service, name)
-                    zk.ensure_path(dest_node)
+            if 'config' in extra:
+                for service in extra['config'][proj]:
+                    # write the config files
+                    for name, item in (extra['config'][proj]
+                                       [service].iteritems()):
+                        dest_node = os.path.join(base_node,
+                                                 proj, service, name)
+                        zk.ensure_path(dest_node)
 
-                    if isinstance(item['source'], list):
-                        content = self.merge_ini_files(item['source'])
-                    else:
-                        src_file = item['source']
-                        if not src_file.startswith('/'):
-                            src_file = file_utils.find_file(src_file)
-                        with open(src_file) as fp:
-                            content = fp.read()
-                    zk.set(dest_node, content)
+                        if isinstance(item['source'], list):
+                            content = self.merge_ini_files(item['source'])
+                        else:
+                            src_file = item['source']
+                            if not src_file.startswith('/'):
+                                src_file = file_utils.find_file(src_file)
+                            with open(src_file) as fp:
+                                content = fp.read()
+                        zk.set(dest_node, content)
+                        LOG.debug('Created "%s" node in zookeeper' % dest_node)
 
+            for service in extra['commands'][proj]:
                 # write the commands
                 for name, item in extra['commands'][proj][service].iteritems():
                     dest_node = os.path.join(base_node, proj, service, name)
@@ -322,11 +327,14 @@ class KollaWorker(object):
                 if 'marathon' in name:
                     deployment_id = {'KOLLA_DEPLOYMENT_ID': self.deployment_id}
                     app_resource['env'].update(deployment_id)
+                    LOG.info('Deploying "%s" app' % app_resource['id'])
                     self._start_marathon_app(app_resource)
                 else:
                     deployment_id = {'name': 'KOLLA_DEPLOYMENT_ID',
                                      'value': self.deployment_id}
                     app_resource['environmentVariables'].append(deployment_id)
+                    LOG.info('Deploying "%s" chronos job' %
+                             app_resource['name'])
                     self._start_chronos_job(app_resource)
 
 
