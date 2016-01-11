@@ -96,6 +96,10 @@ commands:
       apache:
         daemon: False
         command: service apache2 start
+  memcached:
+    memcached:
+       daemon: True
+       command: /usr/bin/memcached -vv -l {{ hostvars[inventory_hostname]['ansible_' + api_interface]['ipv4']['address'] }} -p {{ memcached_port }}
 """
 
 
