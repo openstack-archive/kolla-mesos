@@ -55,11 +55,16 @@ def find_base_dir():
         return os.path.join(script_path, '..', '..')
     if base_script_path == 'subunit':
         return get_src_dir()
+    base_dir = '/usr/share/kolla-mesos'
     if base_script_path == 'bin':
-        base_dir = '/usr/share/kolla-mesos'
         if os.path.exists(base_dir):
             return base_dir
         return get_src_dir()
+    if os.path.exists(base_dir):
+        return base_dir
+    base_dir = '/usr/local/share/kolla-mesos'
+    if os.path.exists(base_dir):
+        return base_dir
     raise KollaDirNotFoundException(
         'I do not know where your Kolla directory is'
     )
