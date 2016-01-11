@@ -14,15 +14,17 @@ import prettytable
 import six
 
 
-def lister(column_names, data):
+def lister(column_names, data, align='c'):
     table = prettytable.PrettyTable(column_names, print_empty=False)
+    table.align = align
     for data_row in data:
         table.add_row(data_row)
     print(table.get_string())
 
 
-def show(column_names, data):
+def show(column_names, data, align='c'):
     table = prettytable.PrettyTable(('Field', 'Value',), print_empty=False)
+    table.align = align
     for column_name, data_row in six.moves.zip(column_names, data):
         table.add_row((column_name, data_row,))
     print(table.get_string())
