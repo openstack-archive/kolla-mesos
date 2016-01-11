@@ -193,23 +193,26 @@ class KollaWorker(object):
             zk.ensure_path(dest_node)
             zk.set(dest_node, json.dumps(extra))
 
-            for service in extra['config'][proj]:
-                # write the config files
-                for name, item in extra['config'][proj][service].iteritems():
-                    dest_node = os.path.join(base_node, 'config', proj,
-                                             service, name)
-                    zk.ensure_path(dest_node)
+            if 'config' in extra:
+                for service in extra['config'][proj]:
+                    # write the config files
+                    for name, item in (extra['config'][proj]
+                                       [service].iteritems()):
+                        dest_node = os.path.join(base_node, 'config',
+                                                 proj, service, name)
+                        zk.ensure_path(dest_node)
 
-                    if isinstance(item['source'], list):
-                        content = self.merge_ini_files(item['source'])
-                    else:
-                        src_file = item['source']
-                        if not src_file.startswith('/'):
-                            src_file = file_utils.find_file(src_file)
-                        with open(src_file) as fp:
-                            content = fp.read()
-                    zk.set(dest_node, content)
+                        if isinstance(item['source'], list):
+                            content = self.merge_ini_files(item['source'])
+                        else:
+                            src_file = item['source']
+                            if not src_file.startswith('/'):
+                                src_file = file_utils.find_file(src_file)
+                            with open(src_file) as fp:
+                                content = fp.read()
+                        zk.set(dest_node, content)
 
+            for service in extra['commands'][proj]:
                 # write the commands
                 for name, item in extra['commands'][proj][service].iteritems():
                     dest_node = os.path.join(base_node, 'commands', proj,

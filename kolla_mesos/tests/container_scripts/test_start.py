@@ -185,7 +185,7 @@ class RunCommandsTest(base.BaseTestCase):
                                                      newvalue='testr'))
 
     @reload_start
-    @mock.patch.object(start, 'generate_config')
+    @mock.patch.object(start, 'generate_configs')
     @mock.patch.object(start.sys, 'exit')
     def test_one_good(self, m_exit, m_gc):
         cmd = {'setup': {
@@ -195,16 +195,18 @@ class RunCommandsTest(base.BaseTestCase):
 
         conf = {'config': {'testg': {'testr': {}}},
                 'commands': {'testg': {'testr': cmd}}}
+
+        conf_base_node = '/kolla/deploy_id/config/testg/testr'
         # Mocking Command's method in decorator doesn't work
         with mock.patch.object(start.Command, 'run') as m_run:
             m_run.return_value = 0
-            start.run_commands(self.client, conf)
+            start.run_commands(self.client, conf, conf_base_node)
             m_run.assert_called_once_with()
             self.assertEqual([], m_exit.mock_calls)
 
     @reload_start
     @mock.patch.object(start.Command, 'run')
-    @mock.patch.object(start, 'generate_config')
+    @mock.patch.object(start, 'generate_configs')
     @mock.patch.object(start.sys, 'exit')
     def test_one_bad(self, m_exit, m_gc, m_run):
         cmd = {'setup': {
@@ -214,15 +216,16 @@ class RunCommandsTest(base.BaseTestCase):
 
         conf = {'config': {'testg': {'testr': {}}},
                 'commands': {'testg': {'testr': cmd}}}
+        conf_base_node = '/kolla/deploy_id/config/testg/testr'
         # Mocking Command's method in decorator doesn't work
         with mock.patch.object(start.Command, 'run') as m_run:
             m_run.return_value = 3
-            start.run_commands(self.client, conf)
+            start.run_commands(self.client, conf, conf_base_node)
             m_run.assert_called_once_with()
             self.assertEqual([mock.call(1)], m_exit.mock_calls)
 
     @reload_start
-    @mock.patch.object(start, 'generate_config')
+    @mock.patch.object(start, 'generate_configs')
     @mock.patch.object(start.sys, 'exit')
     def test_one_bad_retry(self, m_exit, m_gc):
         cmd = {'setup': {
@@ -235,6 +238,7 @@ class RunCommandsTest(base.BaseTestCase):
         conf = {'config': {'testg': {'testr': {}}},
                 'commands': {'testg': {'testr': cmd}}}
 
+        conf_base_node = '/kolla/deploy_id/config/testg/testr'
         self.returns = 0
 
         def run_effect(run_self):
@@ -245,13 +249,13 @@ class RunCommandsTest(base.BaseTestCase):
         # Mocking Command's method in decorator doesn't work
         with mock.patch.object(start.Command, 'run', autospec=True) as m_run:
             m_run.side_effect = run_effect
-            start.run_commands(self.client, conf)
+            start.run_commands(self.client, conf, conf_base_node)
             self.assertEqual([mock.call(mock.ANY), mock.call(mock.ANY)],
                              m_run.mock_calls)
             self.assertEqual([], m_exit.mock_calls)
 
     @reload_start
-    @mock.patch.object(start, 'generate_config')
+    @mock.patch.object(start, 'generate_configs')
     @mock.patch.object(start.sys, 'exit')
     def test_daemon_last_lots(self, m_exit, m_gc):
         conf = {'config': {'testg': {'testr': {}}},
@@ -268,6 +272,8 @@ class RunCommandsTest(base.BaseTestCase):
             conf['commands']['testg']['testr'].update(cmd)
         exp = conf['commands']['testg']['testr']
 
+        conf_base_node = '/kolla/deploy_id/config/testg/testr'
+
         def run_record(run_self):
             print(run_self)
             run_self.time_slept = 120
@@ -278,7 +284,7 @@ class RunCommandsTest(base.BaseTestCase):
         # Mocking Command's method in decorator doesn't work
         with mock.patch.object(start.Command, 'run', autospec=True) as m_run:
             m_run.side_effect = run_record
-            start.run_commands(self.client, conf)
+            start.run_commands(self.client, conf, conf_base_node)
             self.assertEqual(200, len(m_run.mock_calls))
             self.assertEqual([], m_exit.mock_calls)
 
@@ -309,50 +315,55 @@ class GenerateConfigTest(base.BaseTestCase):
     @mock.patch.object(start, 'get_groups_and_hostvars')
     @mock.patch.object(start, 'write_file')
     def test_no_rendering(self, m_wf, m_gar, m_gip):
-        conf = {'afile': {
+        conf = {'config': {'testg': {'testr': {'afile': {
             'source': 'config/mariadb/templates/galera.cnf.j2',
             'dest': '/etc/mysql_dir/my.cnf',
             'owner': 'mysql',
-            'perm': "0600"}}
+            'perm': "0600"}}}}}
+        conf_base_node = '/kolla/deploy_id/config/testg/testr'
         m_gar.return_value = {}, {}
         self.client.create('/kolla/deploy_id/config/testg/testr/afile', 'xyz',
                            makepath=True)
-        start.generate_config(self.client, conf)
-        m_wf.assert_called_once_with(conf['afile'], 'xyz')
+        start.generate_configs(self.client, conf, conf_base_node)
+        m_wf.assert_called_once_with(conf['config']['testg']['testr']['afile'], 'xyz')
 
     @reload_start
     @mock.patch.object(start, 'get_ip_address')
     @mock.patch.object(start, 'get_groups_and_hostvars')
     @mock.patch.object(start, 'write_file')
     def test_simple_render(self, m_wf, m_gar, m_gip):
-        conf = {'afile': {
+        conf = {'config': {'testg': {'testr': {'afile': {
             'source': 'config/mariadb/templates/galera.cnf.j2',
             'dest': '/etc/mysql_dir/my.cnf',
             'owner': 'mysql',
-            'perm': "0600"}}
+            'perm': "0600"}}}}}
+        conf_base_node = '/kolla/deploy_id/config/testg/testr'
         m_gar.return_value = {}, {}
         self.client.create('/kolla/deploy_id/variables/xyz', 'yeah',
                            makepath=True)
         self.client.create('/kolla/deploy_id/config/testg/testr/afile',
                            '{{ xyz }}', makepath=True)
-        start.generate_config(self.client, conf)
-        m_wf.assert_called_once_with(conf['afile'], 'yeah')
+        start.generate_configs(self.client, conf, conf_base_node)
+        m_wf.assert_called_once_with(conf['config']['testg']['testr']['afile'], 'yeah')
 
     @reload_start
+    @mock.patch.object(start, 'render_template')
     @mock.patch.object(start, 'get_ip_address')
     @mock.patch.object(start, 'get_groups_and_hostvars')
     @mock.patch.object(start, 'write_file')
-    def test_missing_variable(self, m_wf, m_gar, m_gip):
-        conf = {'afile': {
+    def test_missing_variable(self, m_wf, m_gar, m_gip, m_rt):
+        conf = {'config': {'testg': {'testr': {'afile': {
             'source': 'config/mariadb/templates/galera.cnf.j2',
             'dest': '/etc/mysql_dir/my.cnf',
             'owner': 'mysql',
-            'perm': "0600"}}
+            'perm': "0600"}}}}}
+        conf_base_node = '/kolla/deploy_id/config/testg/testr'
         m_gar.return_value = {}, {}
+        m_rt.return_value = ''
         self.client.create('/kolla/deploy_id/config/testg/testr/afile',
                            '{{ xyz }}', makepath=True)
-        start.generate_config(self.client, conf)
-        m_wf.assert_called_once_with(conf['afile'], '')
+        start.generate_configs(self.client, conf, conf_base_node)
+        m_wf.assert_called_once_with(conf['config']['testg']['testr']['afile'], '')
 
 
 class MainTest(base.BaseTestCase):
@@ -380,7 +391,7 @@ class MainTest(base.BaseTestCase):
 
     @reload_start
     @mock.patch.object(start, 'run_commands')
-    @mock.patch.object(start, 'generate_config')
+    @mock.patch.object(start, 'generate_configs')
     @mock.patch.object(start, 'register_group_and_hostvars')
     def test_no_register_if_no_daemon(self, m_rgah, m_gc, m_rc):
         afile = {'source': 'bla/a.cnf.j2',
@@ -390,6 +401,7 @@ class MainTest(base.BaseTestCase):
         acmd = {'command': 'true'}
         tconf = {'config': {'testg': {'testr': {'afile': afile}}},
                  'commands': {'testg': {'testr': {'thing': acmd}}}}
+        conf_base_node = '/kolla/deploy_id/config/testg/testr'
 
         self.client.create('/kolla/deploy_id/config/testg/testg',
                            json.dumps(tconf), makepath=True)
@@ -399,12 +411,12 @@ class MainTest(base.BaseTestCase):
             m_zk_c.return_value.__enter__.return_value = self.client
 
             start.main()
-            m_rc.assert_called_once_with(self.client, tconf)
+            m_rc.assert_called_once_with(self.client, tconf, conf_base_node)
             self.assertEqual([], m_rgah.mock_calls)
 
     @reload_start
     @mock.patch.object(start, 'run_commands')
-    @mock.patch.object(start, 'generate_config')
+    @mock.patch.object(start, 'generate_configs')
     @mock.patch.object(start, 'register_group_and_hostvars')
     def test_register_if_daemon(self, m_rgah, m_gc, m_rc):
         afile = {'source': 'bla/a.cnf.j2',
