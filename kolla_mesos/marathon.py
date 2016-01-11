@@ -60,3 +60,8 @@ class Client(marathon.Client):
         apps_ids = six.moves.map(operator.itemgetter('id'), self.get_apps())
         for app_id in apps_ids:
             self.remove_app(app_id, force=True)
+
+    def remove_all_groups(self):
+        group_ids = six.moves.map(operator.itemgetter('id'), self.get_groups())
+        for group_id in group_ids:
+            self.remove_group(group_id, force=True)

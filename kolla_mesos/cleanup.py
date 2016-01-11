@@ -22,4 +22,5 @@ def cleanup():
     with zk_utils.connection() as zk:
         zk_utils.clean(zk)
     marathon_client.remove_all_apps()
+    marathon_client.remove_all_groups()
     chronos_client.remove_all_jobs()
