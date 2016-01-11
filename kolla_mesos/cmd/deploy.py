@@ -24,6 +24,7 @@ from oslo_config import cfg
 from oslo_log import log as logging
 import retrying
 import shutil
+import six
 from six.moves import configparser
 from six.moves import cStringIO
 import yaml
@@ -197,27 +198,31 @@ class KollaWorker(object):
             zk.set(dest_node, json.dumps(extra))
             LOG.debug('Created "%s" node in zookeeper' % dest_node)
 
-            for service in extra['config'][proj]:
-                LOG.debug('Current service is %s' % service)
-                # write the config files
-                for name, item in extra['config'][proj][service].iteritems():
-                    dest_node = os.path.join(base_node, 'config', proj,
-                                             service, name)
-                    zk.ensure_path(dest_node)
+            if 'config' in extra:
+                for service in extra['config'][proj]:
+                    LOG.debug('Current service is %s' % service)
+                    # write the config files
+                    for name, item in six.iteritems(extra['config'][proj]
+                                                         [service]):
+                        dest_node = os.path.join(base_node, 'config',
+                                                 proj, service, name)
+                        zk.ensure_path(dest_node)
 
-                    if isinstance(item['source'], list):
-                        content = self.merge_ini_files(item['source'])
-                    else:
-                        src_file = item['source']
-                        if not src_file.startswith('/'):
-                            src_file = file_utils.find_file(src_file)
-                        with open(src_file) as fp:
-                            content = fp.read()
-                    zk.set(dest_node, content)
-                    LOG.debug('Created "%s" node in zookeeper' % dest_node)
+                        if isinstance(item['source'], list):
+                            content = self.merge_ini_files(item['source'])
+                        else:
+                            src_file = item['source']
+                            if not src_file.startswith('/'):
+                                src_file = file_utils.find_file(src_file)
+                            with open(src_file) as fp:
+                                content = fp.read()
+                        zk.set(dest_node, content)
+                        LOG.debug('Created "%s" node in zookeeper' % dest_node)
 
+            for service in extra['commands'][proj]:
                 # write the commands
-                for name, item in extra['commands'][proj][service].iteritems():
+                for name, item in six.iteritems(extra['commands'][proj]
+                                                     [service]):
                     dest_node = os.path.join(base_node, 'commands', proj,
                                              service, name)
                     zk.ensure_path(dest_node)
