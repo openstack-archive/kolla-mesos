@@ -1,0 +1,81 @@
+#!/bin/bash
+
+function find_base_dir {
+    local real_path=$(python -c "import os,sys;print os.path.realpath('$0')")
+    local dir_name="$(dirname "$real_path")"
+    if [[ ${dir_name} == "/usr/bin" ]]; then
+        BASEDIR=/usr/share/kolla-mesos
+    elif [[ ${dir_name} == "/usr/local/bin" ]]; then
+        BASEDIR=/usr/local/share/kolla-mesos
+    else
+        BASEDIR="${dir_name}/.."
+    fi
+}
+
+function process_cmd {
+    echo "$ACTION : $CMD"
+    $CMD
+    if [[ $? -ne 0 ]]; then
+        echo "Command failed $CMD"
+        exit 1
+    fi
+}
+
+function usage {
+    cat <<EOF
+Usage: $0 COMMAND [options]
+
+Options:
+    --inventory, -i <inventory_path> Specify path to Ansible inventory file
+    --help, -h                       Show this usage information
+
+Commands:
+    deploy  Deploy and start all Mesos containers
+EOF
+}
+
+ARGS=$(getopt -o hi: -l help,inventory: --name "$0" -- "$@") || { usage >&2; exit 2; }
+eval set -- "$ARGS"
+
+find_base_dir
+
+INVENTORY="${BASEDIR}/ansible/inventory/all-in-one"
+PLAYBOOK="${BASEDIR}/ansible/site.yml"
+
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        (--inventory|-i)
+            INVENTORY="$2"
+            shift 2
+            ;;
+
+        (--help|-h)
+            usage
+            shift
+            exit 0
+            ;;
+
+        (--)
+            shift
+            break
+            ;;
+
+        (*)
+            echo "error"
+            exit 3
+            ;;
+    esac
+done
+
+
+case "$1" in
+(deploy)
+    CMD="ansible-playbook -i $INVENTORY -e @/etc/kolla-mesos/globals.yml -e @/etc/kolla-mesos/passwords.yml $PLAYBOOK"
+    ;;
+(*)
+    usage
+    exit 0
+    ;;
+esac
+
+process_cmd
