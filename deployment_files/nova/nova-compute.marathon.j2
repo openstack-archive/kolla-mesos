@@ -1,0 +1,45 @@
+{
+    "id": "/nova-compute",
+    "instances": 1,
+    "mem": 128,
+    "cpus": 0.3,
+    "container": {
+        "type": "DOCKER",
+        "docker": {
+            "image": "{{ nova_compute_image }}:{{ nova_compute_tag }}",
+            "network": "HOST",
+            "privileged": true
+        },
+       "volumes": [
+            {
+                "containerPath": "/lib/modules",
+                "hostPath": "/lib/modules",
+                "mode": "RO"
+            },
+            {
+                "containerPath": "/var/lib/nova/instances",
+                "hostPath": "/var/lib/nova/instances",
+                "mode": "RW"
+            },
+            {
+                "containerPath": "/var/lib/libvirt",
+                "hostPath": "/var/lib/libvirt",
+                "mode": "RW"
+            },
+            {
+                "containerPath": "/run",
+                "hostPath": "/run",
+                "mode": "RW"
+            }
+        ]
+    },
+    "env": {
+        "KOLLA_CONFIG_STRATEGY": "{{ config_strategy }}",
+        "KOLLA_CONFIG": "{{ kolla_config }}",
+        "KOLLA_GROUP": "nova",
+        "KOLLA_ROLE": "nova-compute",
+        "KOLLA_ZK_HOSTS": "{{ zookeeper_hosts }}",
+        "KOLLA_PRIVATE_INTERFACE": "{{ private_interface }}",
+        "KOLLA_PUBLIC_INTERFACE": "{{ public_interface }}"
+    }
+}
