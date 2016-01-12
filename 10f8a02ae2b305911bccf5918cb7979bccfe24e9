@@ -1,0 +1,9 @@
+Code-Review+2: Sam Yaple <sam@yaple.net>
+Code-Review+2: Michal Jastrzebski (inc0) <michal.jastrzebski@intel.com>
+Workflow+1: Michal Jastrzebski (inc0) <michal.jastrzebski@intel.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Tue, 12 Jan 2016 21:40:13 +0000
+Reviewed-on: https://review.openstack.org/262242
+Project: openstack/kolla-mesos
+Branch: refs/heads/master
