@@ -1,0 +1,18 @@
+---
+- name: Starting Mesos slave container
+  kolla_docker:
+    action: "start_container"
+    common_options: "{{ docker_common_options }}"
+    environment:
+      MESOS_HOSTNAME: "{{ inventory_hostname }}"
+      MESOS_IP: "{{ hostvars[inventory_hostname]['ansible_' + api_interface]['ipv4']['address'] }}"
+      MESOS_MASTER: "zk://{% for host in groups['zookeeper'] %}{{ hostvars[host]['ansible_' + hostvars[host]['api_interface']]['ipv4']['address'] }}:2181{% if not loop.last %},{% endif %}{% endfor %}/mesos"
+      MESOS_SWITCH_USER: "false"
+      MESOS_LOG_DIR: "/var/log/mesos"
+      MESOS_LOGGING_LEVEL: "INFO"
+    image: "{{ mesos_slave_image_full }}"
+    name: "mesos_slave"
+    privileged: True
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup
+      - /var/run/docker.sock:/var/run/docker.sock
