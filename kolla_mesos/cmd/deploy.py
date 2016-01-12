@@ -138,6 +138,23 @@ class KollaWorker(object):
             if 'image' in var:
                 LOG.info('%s=%s' % (var, jinja_vars[var]))
 
+        # At first write global tools to ZK. FIXME: Make it a common profile
+        conf_path = os.path.join(self.config_dir, 'common',
+                                 'common_config.yml.j2')
+        common_cfg = yaml.load(jinja_utils.jinja_render(conf_path, jinja_vars))
+        common_node = os.path.join('kolla', 'common')
+        for script in common_cfg:
+            script_node = os.path.join(common_node, script)
+            zk.ensure_path(script_node)
+            source_path = common_cfg[script]['source']
+
+            if not source_path.startswith('/'):
+                src_file = file_utils.find_file(source_path)
+            with open(src_file) as fp:
+                content = fp.read()
+            zk.set(script_node, content)
+
+        # Now write services configs
         for proj in self.get_projects():
             proj_dir = os.path.join(self.config_dir, proj)
             if not os.path.exists(proj_dir):
@@ -180,13 +197,14 @@ class KollaWorker(object):
                         LOG.error('%s=%s -> %s' % (dest_node,
                                                    item, te))
 
-                # 3. do the service's config.json (now KOLLA_CONFIG)
-                kc_name = os.path.join(self.config_dir, 'config.json')
+                # 3. Add startup config
+                start_conf = os.path.join(self.config_dir,
+                                          'common/kolla-start-config.json')
                 # override container_config_directory
                 cont_conf_dir = 'zk://%s' % (
                     CONF.zookeeper.host)
                 jinja_vars['container_config_directory'] = cont_conf_dir
-                kolla_config = jinja_utils.jinja_render(kc_name, jinja_vars)
+                kolla_config = jinja_utils.jinja_render(start_conf, jinja_vars)
                 kolla_config = kolla_config.replace('"', '\\"').replace(
                     '\n', '')
 
