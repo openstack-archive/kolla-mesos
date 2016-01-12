@@ -1,0 +1,9 @@
+Code-Review+2: Sam Yaple <sam@yaple.net>
+Code-Review+2: Harm Weites <harm@weites.com>
+Workflow+1: Harm Weites <harm@weites.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Tue, 12 Jan 2016 18:41:53 +0000
+Reviewed-on: https://review.openstack.org/263906
+Project: openstack/kolla-mesos
+Branch: refs/heads/master
