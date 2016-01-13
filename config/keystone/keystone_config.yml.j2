@@ -43,7 +43,7 @@ commands:
         delay: 5
         requires: [/kolla/variables/mariadb_bootstrap/.done]
         register: /kolla/variables/keystone_database/.done
-        command: /usr/bin/ansible localhost
+        command: /usr/bin/ansible localhost -vvv
           -m mysql_db
           -a "login_host='{{ database_address }}'
               login_port='{{ mariadb_port }}'
@@ -56,7 +56,7 @@ commands:
         delay: 5
         requires: [/kolla/variables/keystone_database/.done]
         register: /kolla/variables/keystone_database_user_create/.done
-        command: /usr/bin/ansible localhost
+        command: /usr/bin/ansible localhost -vvv
           -m mysql_user
           -a "login_host='{{ database_address }}'
               login_port='{{ mariadb_port }}'
@@ -67,11 +67,46 @@ commands:
               host='%'
               priv='{{ keystone_database_name }}.*:ALL'
               append_privs='yes'"
+      admin_creds:
+        run_once: True
+        retries: 3
+        delay: 5
+        requires: [/kolla/variables/keystone_setup/.done]
+        register: /kolla/variables/keystone_admin_creds/.done
+        command: /usr/bin/ansible localhost -vvv
+          -m kolla_keystone_user
+          -a "project=admin
+              user=admin
+              password={{ keystone_admin_password }}
+              role=admin
+              region_name={{ openstack_region_name }}
+              auth_type=admin_token
+              auth={{ '{{ openstack_keystone_token_auth }}' }}"
+          -e "{'openstack_keystone_token_auth':{{ openstack_keystone_token_auth }}}"
+      register_endpoint:
+        run_once: True
+        retries: 3
+        delay: 5
+        requires: [/kolla/variables/keystone_setup/.done]
+        register: /kolla/variables/keystone_admin_endpoint/.done
+        command: /usr/bin/ansible localhost -vvv
+          -m kolla_keystone_service
+          -a "service_name=keystone
+              service_type=identity
+              description='Openstack Identity'
+              endpoint_region={{ openstack_region_name }}
+              admin_url='http://{{ kolla_internal_address }}:{{ keystone_admin_port }}'
+              internal_url='http://{{ kolla_internal_address }}:{{ keystone_admin_port }}'
+              public_url='http://{{ kolla_external_address }}:{{ keystone_public_port }}'
+              region_name={{ openstack_region_name }}
+              auth_type=admin_token
+              auth={{ '{{ openstack_keystone_token_auth }}' }}"
+          -e "{'openstack_keystone_token_auth':{{ openstack_keystone_token_auth }}}"
       sanity_check:
         run_once: True
         retries: 10
         delay: 5
-        requires: [/kolla/variables/keystone_setup/.done]
+        requires: [/kolla/variables/keystone_admin_endpoint/.done]
         register: /kolla/variables/keystone_running/.done
         command: /usr/bin/ansible localhost
           -m kolla_sanity
