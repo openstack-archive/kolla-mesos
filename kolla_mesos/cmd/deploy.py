@@ -312,6 +312,9 @@ def main():
     kolla.write_to_zookeeper()
     kolla.write_openrc()
     kolla.start()
+    LOG.info('Mesos: %s/#/' % CONF.marathon.host.replace('8080', '5050'))
+    LOG.info('Marathon: %s/ui/#/apps' % CONF.marathon.host)
+    LOG.info('Chronos: %s/#' % CONF.chronos.host)
 
     # kolla.cleanup_temp_files()
 
