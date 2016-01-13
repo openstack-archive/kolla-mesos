@@ -5,7 +5,7 @@
     "command": "kolla_start",
     "container": {
         "type": "DOCKER",
-        "image": "{{ docker_registry ~ '/' if docker_registry else '' }}{{ kolla_ansible_image }}:{{ kolla_ansible_tag }}",
+        "image": "{{ kolla_ansible_image }}:{{ kolla_ansible_tag }}",
         "network": "HOST"
     },
     "environmentVariables": [
