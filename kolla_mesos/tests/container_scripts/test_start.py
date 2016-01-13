@@ -61,8 +61,8 @@ class CommandTest(base.BaseTestCase):
         self.assertEqual(False, cmd.run_once)
         self.assertEqual(False, cmd.daemon)
         self.assertEqual([], cmd.requires)
-        self.assertEqual(None, cmd.init_path)
-        self.assertEqual(None, cmd.check_path)
+        self.assertIsNone(cmd.init_path)
+        self.assertIsNone(cmd.check_path)
         self.assertEqual(0, cmd.priority)
 
     def test_cmp_1(self):
