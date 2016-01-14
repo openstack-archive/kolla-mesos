@@ -9,5 +9,6 @@
       MARATHON_HTTP_ADDRESS: "{{ hostvars[inventory_hostname]['ansible_' + api_interface]['ipv4']['address'] }}"
       MARATHON_MASTER: "zk://{% for host in groups['zookeeper'] %}{{ hostvars[host]['ansible_' + hostvars[host]['api_interface']]['ipv4']['address'] }}:2181{% if not loop.last %},{% endif %}{% endfor %}/mesos"
       MARATHON_ZK: "zk://{% for host in groups['zookeeper'] %}{{ hostvars[host]['ansible_' + hostvars[host]['api_interface']]['ipv4']['address'] }}:2181{% if not loop.last %},{% endif %}{% endfor %}/marathon"
+      MARATHON_MESOS_USER: "root"
     image: "{{ marathon_image_full }}"
     name: "marathon"
