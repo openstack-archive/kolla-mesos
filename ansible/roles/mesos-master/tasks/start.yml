@@ -6,7 +6,7 @@
     environment:
       MESOS_HOSTNAME: "{{ inventory_hostname }}"
       MESOS_IP: "{{ hostvars[inventory_hostname]['ansible_' + api_interface]['ipv4']['address'] }}"
-      MESOS_ZK: "zk://{% for host in groups['zookeeper'] %}{{ hostvars[host]['ansible_' + hostvars[host]['api_interface']]['ipv4']['address'] }}:2181{% if not loop.last %},{% endif %}{% endfor %}/mesos"
+      MESOS_ZK: "zk://{% for host in groups['zookeeper'] %}{{ hostvars[host]['ansible_' + api_interface]['ipv4']['address'] }}:2181{% if not loop.last %},{% endif %}{% endfor %}/mesos"
       MESOS_PORT: "5050"
       MESOS_LOG_DIR: "/var/log/mesos"
       MESOS_QUORUM: "3"
