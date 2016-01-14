@@ -12,16 +12,73 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Print out a table showing all the kolla-mesos tasks and their status
+usage: show_tasks.py [-h] [--id ID] [--list_ids]
+
+Show tasks for a deployment. If there is only one deployment id, an id does
+not have to be specified.
+
+optional arguments:
+  -h, --help      show this help message and exit
+  --id ID         show tasks for this deployment id
+  --list_ids, -l  list out the current deployment ids
 """
+import argparse
+import os
+import sys
+import traceback
+import yaml
+
 from kolla_mesos.common import cli_utils
 from kolla_mesos.common import file_utils
 from kolla_mesos.common import zk_utils
 
-import os
-import yaml
-
 CONFIG_SUFFIX = '_config.yml.j2'
+
+
+def get_deploy_id(args, ids):
+    deploy_id = ''
+    if args.id:
+        deploy_id = args.id[0]
+    elif len(ids) == 1:
+        deploy_id = ids[0]
+    print('Deployment id: %s' % deploy_id)
+    return deploy_id
+
+
+def list_ids(ids):
+    out = '['
+    comma = ''
+    for deploy_id in ids:
+        out += comma + deploy_id
+        comma = ', '
+    print(out + ']')
+
+
+def validate_input(args, ids):
+    if args.id:
+        args_id = args.id[0]
+        if not ids:
+            print('Error: No deployment ids exist.')
+            sys.exit(1)
+        if args_id not in ids:
+            print("Error: Deployment id %s doesn't exist in " % args.id +
+                  'list of ids: %s' % ids)
+            sys.exit(1)
+    elif len(ids) > 1:
+        print('Error: Multiple deployment ids exist: %s.\n' % ids +
+              'Use %s --id deployment_id.' % sys.argv[0])
+        sys.exit(1)
+
+
+def get_deployment_ids():
+    ids = []
+    with zk_utils.connection() as zk:
+        children = zk.get_children('/kolla')
+        for child in children:
+            if child not in ['groups', 'variables', 'common',
+                             'config', 'commands']:
+                ids.append(child)
+    return ids
 
 
 def get_tasks():
@@ -43,7 +100,8 @@ def get_tasks():
       'keystone/keystone_ansible_tasks/create_database',
     """
     tasks = {}
-    for root, _, files in os.walk(file_utils.find_base_dir()):
+    config_dir = os.path.join(file_utils.find_base_dir(), 'config')
+    for root, _, files in os.walk(config_dir):
         for name in files:
             if CONFIG_SUFFIX not in name:
                 continue
@@ -56,7 +114,13 @@ def get_tasks():
                         line = '# ' + line
                     cfg_string += line
 
-            cfg = yaml.load(cfg_string)
+            try:
+                cfg = yaml.load(cfg_string)
+            except Exception:
+                print('exception processing file: %s' % name)
+                raise Exception(traceback.format_exc())
+            if 'commands' not in cfg:
+                continue
             commands = cfg['commands']
             for group, group_info in commands.items():
                 for role, role_info in group_info.items():
@@ -70,7 +134,7 @@ def get_tasks():
     return tasks
 
 
-def get_status(tasks):
+def get_status(tasks, deploy_id):
     """Get status from zookeeper
 
     Returns the status of for each task
@@ -96,6 +160,7 @@ def get_status(tasks):
             if 'requires' in info:
                 status[task]['requirements'] = {}
                 for path in info['requires']:
+                    path.replace('{{ deployment_id }}', deploy_id)
                     reqt_status = ''
                     if zk.exists(path):
                         reqt_status = 'done'
@@ -153,14 +218,47 @@ def print_status(status):
 
 
 def clean_path(path):
-    path = path.replace('/.done', '')
-    path = path.replace('/kolla/variables/', '')
+    """clean path to reduce output clutter
+
+    The path is either:
+        /kolla/variables/.../.done (older version) or
+        /kolla/deployment_id/variables/.../.done
+
+    This will remove edit down the path to just the string between
+    'variables' and '.done'.
+    """
+    if 'variables/' in path:
+        path = path.rsplit('variables/', 1)[1]
+    if '/.done' in path:
+        path = path.rsplit('/.done', 1)[0]
     return path
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.description = (
+        'Show tasks for a deployment.\n' +
+        'If there is only one deployment id, an id does not have to be ' +
+        'specified.')
+
+    parser.add_argument('--id', nargs=1,
+                        help='show tasks for this deployment id')
+    parser.add_argument('--list_ids', '-l', action='store_true',
+                        help='list out the current deployment ids')
+    args = parser.parse_args()
+
+    ids = get_deployment_ids()
+
+    if args.list_ids:
+        list_ids(ids)
+        sys.exit(0)
+
+    validate_input(args, ids)
+
+    deploy_id = get_deploy_id(args, ids)
+
     tasks = get_tasks()
-    status = get_status(tasks)
+    status = get_status(tasks, deploy_id)
     print_status(status)
 
 
