@@ -56,7 +56,7 @@ EOF
 
 function configure_operator {
     # Fetch and install pip packages
-    pip install ansible tox
+    pip install ansible==1.9.4 tox
     sudo -u vagrant git clone https://github.com/openstack/kolla ~vagrant/kolla
     pip install ~vagrant/kolla
     pip install ~vagrant/kolla-mesos
