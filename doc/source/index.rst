@@ -37,7 +37,6 @@ Contents:
    :maxdepth: 1
 
    quickstart
-   contributing
    howto_add_a_new_service
    man/index
 
