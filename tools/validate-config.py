@@ -46,18 +46,38 @@ def validate_config(conf):
                 assert os.path.exists(file_path), '%s missing' % file_path
 
 
-def validate_command(cmds):
+def validate_command(filename, cmds, deps):
+    daemons = []
     for cmd in cmds:
         for key in cmds[cmd]:
             assert key in CMD_FIELDS, '%s not in %s' % (key, CMD_FIELDS)
+        if cmds[cmd].get('daemon', False):
+            daemons.append(cmd)
+        if cmds[cmd].get('run_once', False) and 'register' not in cmds[cmd]:
+            assert False, 'run_once is True, but no "register" %s' % cmd
+
+        reg = cmds[cmd].get('register')
+        reqs = cmds[cmd].get('requires', [])
+        if reg is not None:
+            if reg not in deps:
+                deps[reg] = {'waiters': {}}
+            deps[reg]['registered_by'] = cmd
+            deps[reg]['name'] = cmd
+            deps[reg]['run_by'] = filename
+        for req in reqs:
+            if req not in deps:
+                deps[req] = {'waiters': {}}
+            deps[req]['waiters'][cmd] = reg
+
+    assert len(daemons) < 2, 'Only one daemon allowed %s' % daemons
 
 
-def validate(group, role):
+def validate(filename, group, role, deps):
     conf_path = os.path.join(BASE_PATH, 'config', group,
                              '%s_config.yml.j2' % group)
     mini_vars = {'cinder_volume_driver': 'lvm'}
     cnf = yaml.load(jinja_utils.jinja_render(conf_path, mini_vars))
-    validate_command(cnf['commands'][group][role])
+    validate_command(filename, cnf['commands'][group][role], deps)
     if role not in cnf['config'][group]:
         print('WARN: no config for role %s in group %s' % (role, group))
     else:
@@ -69,6 +89,7 @@ def main():
     logging.basicConfig()
     res = 0
 
+    deps = {}
     for filename in args.input:
         with open(filename) as fd:
             try:
@@ -85,12 +106,17 @@ def main():
                         elif env['name'] == 'KOLLA_ROLE':
                             role = env['value']
 
-                validate(group, role)
+                validate(filename, group, role, deps)
             except ValueError as error:
                 res = 1
                 logging.error('%s failed validation: %s',
                               filename, error)
-
+    print(json.dumps(deps, indent=2))
+    # validate the deps
+    for task in deps:
+        if 'registered_by' not in deps[task]:
+            res = 1
+            logging.error('%s not registered' % task)
     sys.exit(res)
 
 if __name__ == '__main__':

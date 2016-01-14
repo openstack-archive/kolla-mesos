@@ -332,7 +332,7 @@ class Command(object):
         if self.run_once:
             def _init_done():
                 if not self.check_path:
-                    LOG.error('run_once is Ture set but no "register"')
+                    LOG.error('run_once is True, but no "register"')
                     sys.exit(1)
                 return zk.retry(zk.exists, self.check_path)
 
