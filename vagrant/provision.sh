@@ -71,17 +71,21 @@ function configure_operator {
 
     # Change network settings
     # TODO(nihilifer): Change kolla_internal_address when loadbalancing will be implemented.
-    HOST_IP=$(ip addr show eth1 | grep -Po 'inet \K[\d.]+')
+    INTERNAL_INT=eth1
+    EXTERNAL_INT=eth2
+    HOST_IP=$(ip addr show $INTERNAL_INT | grep -Po 'inet \K[\d.]+')
     if [ "$MODE" = "multinode" ]; then
         sed -i -r "s,^[# ]*namespace.+$,namespace = ${REGISTRY}/kollaglue," /etc/kolla/kolla-build.conf
+        sed -i -r "s,^[# ]*namespace.+$,namespace = ${REGISTRY}/kollaglue," /etc/kolla-mesos/kolla-mesos.conf
         sed -i -r "s,^[# ]*push.+$,push = True," /etc/kolla/kolla-build.conf
-    else
-        sed -i -r "s,^[# ]*docker_registry.+$,docker_registry: \"\"," /etc/kolla-mesos/globals.yml
     fi
-    sed -i -r "s,^[# ]*kolla_internal_address:.+$,kolla_internal_address: \"$HOST_IP\"," /etc/kolla/globals.yml
-    sed -i -r "s,^[# ]*network_interface:.+$,network_interface: \"eth1\"," /etc/kolla/globals.yml
-    sed -i -r "s,^[# ]*neutron_external_interface:.+$,neutron_external_interface: \"eth2\"," /etc/kolla/globals.yml
-    sed -i -r "s,^[# ]*registry.+$,registry = operator.local:${REGISTRY_PORT}," /etc/kolla-mesos/kolla-mesos.conf
+    for proj in kolla kolla-mesos ; do
+      sed -i -r "s,^[# ]*kolla_internal_address:.+$,kolla_internal_address: \"$HOST_IP\"," /etc/$proj/globals.yml
+      sed -i -r "s,^[# ]*network_interface:.+$,network_interface: \"$INTERNAL_INT\"," /etc/$proj/globals.yml
+    done
+    sed -i -r "s,^[# ]*public_interface:.+$,public_interface: \"$EXTERNAL_INT\"," /etc/kolla-mesos/kolla-mesos.conf
+    sed -i -r "s,^[# ]*neutron_external_interface:.+$,neutron_external_interface: \"$EXTERNAL_INT\"," /etc/kolla/globals.yml
+    sed -i -r "s,^[# ]*registry.+$,registry = operator.local:${REGISTRY_PORT}," /etc/kolla-mesos/global.yml
 
     # Run Docker Registry
     if [[ ! $(docker ps -a -q -f name=registry) ]]; then
