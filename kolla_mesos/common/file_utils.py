@@ -71,7 +71,7 @@ def find_base_dir():
 
 
 def find_config_file(filename):
-    filepath = os.path.join('/etc/kolla', filename)
+    filepath = os.path.join('/etc/kolla-mesos', filename)
     if os.access(filepath, os.R_OK):
         config_file = filepath
     else:

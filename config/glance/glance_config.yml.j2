@@ -8,22 +8,22 @@ config:
 {% else %}
                  "config/glance/templates/glance-file.conf.j2",
 {% endif %}
-                 "/etc/kolla/config/global.conf",
-                 "/etc/kolla/config/database.conf",
-                 "/etc/kolla/config/messaging.conf",
-                 "/etc/kolla/config/glance.conf",
-                 "/etc/kolla/config/glance/glance-api.conf"]
+                 "/etc/kolla-mesos/config/global.conf",
+                 "/etc/kolla-mesos/config/database.conf",
+                 "/etc/kolla-mesos/config/messaging.conf",
+                 "/etc/kolla-mesos/config/glance.conf",
+                 "/etc/kolla-mesos/config/glance/glance-api.conf"]
         dest: /etc/glance/glance-api.conf
         owner: glance
         perm: "0600"
     glance-registry:
       glance-registry.conf.j2:
         source: ["config/glance/templates/glance-registry.conf.j2",
-                 "/etc/kolla/config/global.conf",
-                 "/etc/kolla/config/database.conf",
-                 "/etc/kolla/config/messaging.conf",
-                 "/etc/kolla/config/glance.conf",
-                 "/etc/kolla/config/glance/glance-registry.conf"]
+                 "/etc/kolla-mesos/config/global.conf",
+                 "/etc/kolla-mesos/config/database.conf",
+                 "/etc/kolla-mesos/config/messaging.conf",
+                 "/etc/kolla-mesos/config/glance.conf",
+                 "/etc/kolla-mesos/config/glance/glance-registry.conf"]
         dest: /etc/glance/glance-registry.conf
         owner: glance
         perm: "0600"
