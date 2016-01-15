@@ -1,0 +1,22 @@
+{
+    "id": "/nova-conductor",
+    "instances": 1,
+    "mem": 128,
+    "cpus": 0.3,
+    "container": {
+        "type": "DOCKER",
+        "docker": {
+            "image": "{{ nova_conductor_image }}:{{ nova_conductor_tag }}",
+            "network": "HOST"
+        }
+    },
+    "env": {
+        "KOLLA_CONFIG_STRATEGY": "{{ config_strategy }}",
+        "KOLLA_CONFIG": "{{ kolla_config }}",
+        "KOLLA_GROUP": "nova",
+        "KOLLA_ROLE": "nova-conductor",
+        "KOLLA_ZK_HOSTS": "{{ zookeeper_hosts }}",
+        "KOLLA_PRIVATE_INTERFACE": "{{ private_interface }}",
+        "KOLLA_PUBLIC_INTERFACE": "{{ public_interface }}"
+    }
+}
