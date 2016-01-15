@@ -1,4 +1,6 @@
 ---
+# You can use this file to override _any_ variable throughout Kolla-Mesos.
+# Additional options can be found in the 'kolla-mesos/config/all.yml' file.
 network_interface: "eth2"
 docker_registry: "operator.local:5000"
 docker_namespace: "kollaglue"
@@ -6,3 +8,4 @@ kolla_base_distro: "centos"
 kolla_install_type: "binary"
 openstack_release: "2.0.0"
 config_strategy: "COPY_ONCE"
+kolla_internal_address: "10.10.10.254"
