@@ -1,0 +1,9 @@
+Code-Review+2: Paul Bourke <paul.bourke@oracle.com>
+Code-Review+2: Michal Rostecki <mrostecki@mirantis.com>
+Workflow+1: Michal Rostecki <mrostecki@mirantis.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Mon, 18 Jan 2016 12:24:39 +0000
+Reviewed-on: https://review.openstack.org/268876
+Project: openstack/kolla-mesos
+Branch: refs/heads/master
