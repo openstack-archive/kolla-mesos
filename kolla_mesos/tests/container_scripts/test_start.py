@@ -63,28 +63,6 @@ class CommandTest(base.BaseTestCase):
         self.assertEqual([], cmd.requires)
         self.assertIsNone(cmd.init_path)
         self.assertIsNone(cmd.check_path)
-        self.assertEqual(0, cmd.priority)
-
-    def test_cmp_1(self):
-        cmd1 = start.Command('a', {'command': 'true'},
-                             self.client)
-        cmd2 = start.Command('b', {'command': 'true',
-                                   'daemon': True},
-                             self.client)
-        self.assertTrue(cmd2 > cmd1)
-        self.assertEqual(0, cmd1.priority)
-        self.assertEqual(100, cmd2.priority)
-
-    def test_cmp_2(self):
-        cmd1 = start.Command('a', {'command': 'true',
-                                   'requires': ['x', 'y']},
-                             self.client)
-        cmd2 = start.Command('b', {'command': 'true',
-                                   'daemon': True},
-                             self.client)
-        self.assertTrue(cmd2 > cmd1)
-        self.assertEqual(2, cmd1.priority)
-        self.assertEqual(100, cmd2.priority)
 
     def test_requirements_fulfilled_no(self):
         cmd1 = start.Command('a', {'command': 'true',
@@ -93,7 +71,6 @@ class CommandTest(base.BaseTestCase):
 
         self.client.create('/x', 'one', makepath=True)
         self.assertFalse(cmd1.requirements_fulfilled())
-        self.assertEqual(1, cmd1.priority)
 
     def test_requirements_fulfilled_yes(self):
         cmd1 = start.Command('a', {'command': 'true',
@@ -103,7 +80,6 @@ class CommandTest(base.BaseTestCase):
         self.client.create('/x', 'one', makepath=True)
         self.client.create('/y', 'one', makepath=True)
         self.assertTrue(cmd1.requirements_fulfilled())
-        self.assertEqual(0, cmd1.priority)
 
     def test_run_always(self):
         cmd1 = start.Command('a', {'command': 'true'},
@@ -177,7 +153,7 @@ class CommandTest(base.BaseTestCase):
             m_sleep.assert_called_once_with(4)
 
 
-@mock.patch.object(start.Command, 'run')
+@mock.patch.object(start.Command, 'run', autospec=True)
 @mock.patch.object(start, 'generate_config')
 @mock.patch.object(start.sys, 'exit')
 class RunCommandsTest(base.BaseTestCase):
@@ -200,7 +176,7 @@ class RunCommandsTest(base.BaseTestCase):
                 'commands': {'testg': {'testr': cmd}}}
         m_run.return_value = 0
         start.run_commands(self.client, conf)
-        m_run.assert_called_once_with()
+        m_run.assert_called_once_with(mock.ANY)
         self.assertEqual([], m_exit.mock_calls)
 
     def test_one_bad(self, m_exit, m_gc, m_run):
@@ -213,7 +189,7 @@ class RunCommandsTest(base.BaseTestCase):
                 'commands': {'testg': {'testr': cmd}}}
         m_run.return_value = 3
         start.run_commands(self.client, conf)
-        m_run.assert_called_once_with()
+        m_run.assert_called_once_with(mock.ANY)
         self.assertEqual([mock.call(1)], m_exit.mock_calls)
 
     def test_one_bad_retry(self, m_exit, m_gc, m_run):
@@ -229,14 +205,42 @@ class RunCommandsTest(base.BaseTestCase):
 
         self.returns = 0
 
-        def run_effect():
+        def run_effect(run_self):
             if self.returns == 0:
                 self.returns = 1
                 return 3
             return 0
         m_run.side_effect = run_effect
         start.run_commands(self.client, conf)
-        self.assertEqual([mock.call(), mock.call()], m_run.mock_calls)
+        self.assertEqual(2, len(m_run.mock_calls))
+        self.assertEqual([], m_exit.mock_calls)
+
+    def test_daemon_last_lots(self, m_exit, m_gc, m_run):
+        conf = {'config': {'testg': {'testr': {}}},
+                'commands': {'testg': {'testr': {}}}}
+        for cc in range(0, 99):
+            cmd = {'c-%d' % cc: {'command': 'true'}}
+            conf['commands']['testg']['testr'].update(cmd)
+
+        conf['commands']['testg']['testr'].update(
+            {'c-last': {'daemon': True, 'command': 'true'}})
+
+        for cc in range(100, 200):
+            cmd = {'c-%d' % cc: {'command': 'true'}}
+            conf['commands']['testg']['testr'].update(cmd)
+        exp = conf['commands']['testg']['testr']
+
+        def run_record(run_self):
+            print(run_self)
+            run_self.time_slept = 120
+            if run_self.daemon:
+                self.assertEqual(1, len(exp))
+            del exp[run_self.name]
+            return 0
+        m_run.side_effect = run_record
+
+        start.run_commands(self.client, conf)
+        self.assertEqual(200, len(m_run.mock_calls))
         self.assertEqual([], m_exit.mock_calls)
 
 
