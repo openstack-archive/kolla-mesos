@@ -25,6 +25,15 @@ CONF.import_group('kolla', 'kolla_mesos.config.kolla')
 YAML_SERVICES_CONFIG = """
 config:
   source: "test1.yml"
+  heat:
+    heat-api:
+      heat.conf.j2:
+        source: ["config/heat/templates/heat.conf.j2",
+                 "config/heat/templates/heat-api.conf.j2",
+                 "/etc/kolla/config/heat.conf"]
+        dest: /etc/heat/heat.conf
+        owner: heat
+        perm: "0600"
   keystone:
     keystone-api:
       keystone-api.conf:
@@ -61,6 +70,13 @@ config:
         dest: /etc/horizon/openstack-dashboard.conf
 commands:
   source: "/etc/test2.yaml"
+  heat:
+    heat-api:
+      run_daemon:
+        run_once: False
+        daemon: True
+        requires: [/kolla/1/variables/heat_setup/.done]
+        command: heat-api
   glance:
     glance-api:
       db_sync:
