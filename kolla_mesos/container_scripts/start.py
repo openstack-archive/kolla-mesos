@@ -370,7 +370,7 @@ def run_commands(zk, service_conf):
     LOG.info('run_commands')
     first_ready = False
     conf = service_conf['commands'][GROUP][ROLE]
-    cmdq = queue.PriorityQueue()
+    cmdq = queue.Queue()
     for name, cmd in conf.items():
         cmdq.put(Command(name, cmd, zk))
 
