@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import copy
 import datetime
 import json
 import logging
@@ -94,9 +93,8 @@ class KollaWorker(object):
         all_yml_name = os.path.join(self.config_dir, 'all.yml')
         with open(all_yml_name) as af:
             raw_vars = yaml.load(af)
-        temp_vars = copy.deepcopy(global_vars)
-        temp_vars.update(raw_vars)
-        jvars = yaml.load(jinja_utils.jinja_render(all_yml_name, temp_vars))
+        raw_vars.update(global_vars)
+        jvars = yaml.load(jinja_utils.jinja_render(all_yml_name, raw_vars))
 
         jvars.update(global_vars)
 
