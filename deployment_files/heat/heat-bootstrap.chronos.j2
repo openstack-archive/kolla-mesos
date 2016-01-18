@@ -1,0 +1,19 @@
+{
+    "name": "{{ deployment_id }}-heat-bootstrap-tasks",
+    "mem": 256.0,
+    "cpus": 0.5,
+    "command": "kolla_start",
+    "container": {
+        "type": "DOCKER",
+        "image": "{{ heat_api_image }}:{{ heat_api_tag }}",
+        "network": "HOST"
+    },
+    "environmentVariables": [
+        {"name": "KOLLA_CONFIG_STRATEGY", "value": "{{ config_strategy }}"},
+        {"name": "KOLLA_CONFIG", "value": "{{ kolla_config }}"},
+        {"name": "KOLLA_GROUP", "value": "heat"},
+        {"name": "KOLLA_ROLE", "value": "heat-bootstrap"},
+        {"name": "KOLLA_ZK_HOSTS", "value": "{{ zookeeper_hosts }}"},
+        {"name": "KOLLA_PRIVATE_INTERFACE", "value": "{{ private_interface }}"},
+        {"name": "KOLLA_PUBLIC_INTERFACE", "value": "{{ public_interface }}"}]
+}
