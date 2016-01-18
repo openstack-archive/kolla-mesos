@@ -62,6 +62,7 @@ function configure_operator {
     pip install ~vagrant/kolla-mesos
 
     # Generate and copy configuration
+    sudo -u vagrant bash -c "cd ~vagrant/kolla && tox -e genconfig"
     sudo -u vagrant bash -c "cd ~vagrant/kolla-mesos && tox -e genconfig"
     mkdir -p /etc/kolla-mesos
     cp -r ~vagrant/kolla/etc/kolla/ /etc/kolla
