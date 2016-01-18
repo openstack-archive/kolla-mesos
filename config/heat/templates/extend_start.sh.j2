@@ -1,0 +1,19 @@
+#!/bin/bash
+
+# Bootstrap and exit if KOLLA_BOOTSTRAP variable is set. This catches all cases
+# of the KOLLA_BOOTSTRAP variable being set, including empty.
+if [[ "${!KOLLA_BOOTSTRAP[@]}" ]]; then
+    echo "Starting DB sync"
+    heat-manage db_sync
+    echo "Create domain heat"
+    openstack domain create heat
+    echo "Create user heat_domain_admin"
+    openstack user create --domain heat heat_domain_admin --password ${HEAT_DOMAIN_ADMIN_PASSWORD}
+    echo "Adding role to user heat_domain_admin"
+    openstack role add --domain heat --user heat_domain_admin admin
+    echo "Creating role heat_stack_owner"
+    openstack role create heat_stack_owner
+    echo "Creating role heat_stack_user"
+    openstack role create heat_stack_user
+    exit 0
+fi
