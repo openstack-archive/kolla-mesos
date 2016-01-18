@@ -32,7 +32,6 @@ from jinja2 import meta
 from kazoo import client as zk_client
 from kazoo import exceptions as kz_exceptions
 from kazoo.recipe import party
-import six
 from six.moves import queue
 
 
@@ -231,7 +230,7 @@ def generate_config(zk, conf):
                  'ansible_hostname': host}
 
     conf_base_node = os.path.join('kolla', 'config', GROUP, ROLE)
-    for name, item in six.iteritems(conf):
+    for name, item in conf.items():
         if name == 'kolla_mesos_start.py':
             continue
         raw_content, stat = zk.get(os.path.join(conf_base_node, name))
@@ -271,7 +270,7 @@ class Command(object):
         self.retries = int(cmd.get('retries', 0))
         self.delay = int(cmd.get('delay', 5))
         self.env = os.environ.copy()
-        for ek, ev in six.iteritems(cmd.get('env', {})):
+        for ek, ev in cmd.get('env', {}).items():
             # make sure they are strings
             self.env[ek] = str(ev)
         if self.check_path:
@@ -372,7 +371,7 @@ def run_commands(zk, service_conf):
     first_ready = False
     conf = service_conf['commands'][GROUP][ROLE]
     cmdq = queue.PriorityQueue()
-    for name, cmd in six.iteritems(conf):
+    for name, cmd in conf.items():
         cmdq.put(Command(name, cmd, zk))
 
     while not cmdq.empty():
