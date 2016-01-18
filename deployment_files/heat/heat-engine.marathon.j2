@@ -1,0 +1,24 @@
+{
+    "id": "/{{ deployment_id }}/heat-engine",
+    "instances": 1,
+    "mem": 128,
+    "cpus": 0.3,
+    "constraints": [["hostname", "UNIQUE"]],
+    "container": {
+        "type": "DOCKER",
+        "docker": {
+            "image": "{{ heat_engine_image }}:{{ heat_engine_tag }}",
+            "network": "HOST"
+        }
+    },
+    "env": {
+        "KOLLA_CONFIG_STRATEGY": "{{ config_strategy }}",
+        "KOLLA_CONFIG": "{{ kolla_config }}",
+        "KOLLA_LOGLEVEL": "{{ init_loglevel }}",
+        "KOLLA_GROUP": "heat",
+        "KOLLA_ROLE": "heat-engine",
+        "KOLLA_ZK_HOSTS": "{{ zookeeper_hosts }}",
+        "KOLLA_PRIVATE_INTERFACE": "{{ private_interface }}",
+        "KOLLA_PUBLIC_INTERFACE": "{{ public_interface }}"
+    }
+}
