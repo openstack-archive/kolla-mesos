@@ -1,0 +1,158 @@
+config:
+  heat:
+    heat-bootstrap:
+      extend_start.sh.j2:
+        source: config/heat/templates/extend_start.sh.j2
+        dest: /usr/local/bin/kolla_mesos_extend_start
+        owner: heat
+        perm: "0755"
+      heat.conf.j2:
+        source: ["config/heat/templates/heat.conf.j2",
+                 "/etc/kolla/config/heat.conf"]
+        dest: /etc/heat/heat.conf
+        owner: heat
+        perm: "0600"
+    heat-api:
+      heat.conf.j2:
+        source: ["config/heat/templates/heat.conf.j2",
+                 "config/heat/templates/heat-api.conf.j2",
+                 "/etc/kolla/config/heat.conf"]
+        dest: /etc/heat/heat.conf
+        owner: heat
+        perm: "0600"
+    heat-api-cfn:
+      heat.conf.j2:
+        source: ["config/heat/templates/heat.conf.j2",
+                 "config/heat/templates/heat-api-cfn.conf.j2",
+                 "/etc/kolla/config/heat.conf"]
+        dest: /etc/heat/heat.conf
+        owner: heat
+        perm: "0600"
+    heat-engine:
+      heat.conf.j2:
+        source: ["config/heat/templates/heat.conf.j2",
+                 "/etc/kolla/config/heat.conf"]
+        dest: /etc/heat/heat.conf
+        owner: heat
+        perm: "0600"
+commands:
+  heat:
+    heat-bootstrap:
+      populate_heat:
+        run_once: True
+        env:
+          KOLLA_BOOTSTRAP:
+        requires: [/kolla/{{ deployment_id }}/variables/heat_database/.done,
+                   /kolla/{{ deployment_id }}/variables/heat_database_user_create/.done,
+                   /kolla/{{ deployment_id }}/variables/rabbitmq_bootstrap/.done,
+                   /kolla/{{ deployment_id }}/variables/heat_credentials_setup/.done]
+        register: /kolla/{{ deployment_id }}/variables/heat_setup/.done
+        command: bash kolla_mesos_extend_start
+    heat-api:
+      run_daemon:
+        run_once: False
+        daemon: True
+        requires: [/kolla/{{ deployment_id }}/variables/heat_setup/.done]
+        command: heat-api
+    heat-api-cfn:
+      run_daemon:
+        run_once: False
+        daemon: True
+        requires: [/kolla/{{ deployment_id }}/variables/heat_setup/.done]
+        command: heat-api-cfn
+    heat-engine:
+      run_daemon:
+        run_once: False
+        daemon: True
+        requires: [/kolla/{{ deployment_id }}/variables/heat_setup/.done]
+        command: heat-engine
+    heat_ansible:
+      create_database:
+        run_once: True
+        retries: 3
+        delay: 5
+        requires: [/kolla/{{ deployment_id }}/variables/mariadb_bootstrap/.done]
+        register: /kolla/{{ deployment_id }}/variables/heat_database/.done
+        command: {{ ansible_task_cmd }}
+          -m mysql_db
+          -a "login_host='{{ database_address }}'
+              login_port='{{ mariadb_port }}'
+              login_user='{{ database_user }}'
+              login_password='{{ database_password }}'
+              name='{{ heat_database_name }}'"
+      create_databse_user:
+        run_once: True
+        retries: 3
+        delay: 5
+        requires: [/kolla/{{ deployment_id }}/variables/heat_database/.done]
+        register: /kolla/{{ deployment_id }}/variables/heat_database_user_create/.done
+        command: {{ ansible_task_cmd }}
+          -m mysql_user
+          -a "login_host='{{ database_address }}'
+              login_port='{{ mariadb_port }}'
+              login_user='{{ database_user }}'
+              login_password='{{ database_password }}'
+              name='{{ heat_database_name }}'
+              password='{{ heat_database_password }}'
+              host='%'
+              priv='{{ heat_database_name }}.*:ALL'
+              append_privs='yes'"
+      create_heat_endpoint:
+        run_once: True
+        retries: 3
+        delay: 5
+        requires: [/kolla/{{ deployment_id }}/variables/heat_database/.done,
+                   /kolla/{{ deployment_id }}/variables/heat_database_user_create/.done,
+                   /kolla/{{ deployment_id }}/variables/keystone_running/.done]
+        register: /kolla/{{ deployment_id }}/variables/heat_endpoint_create/.done
+        command: {{ ansible_task_cmd }}
+          -m kolla_keystone_service
+          -a "service_name=heat
+              service_type=orchestration
+              description='Openstack Orchestration'
+              endpoint_region={{ openstack_region_name }}
+              admin_url='http://{{ kolla_internal_address }}:{{ heat_api_port }}/v1/%(tenant_id)s'
+              internal_url='http://{{ kolla_internal_address }}:{{ heat_api_port }}/v1/%(tenant_id)s'
+              public_url='http://{{ kolla_external_address }}:{{ heat_api_port }}/v1/%(tenant_id)s'
+              region_name={{ openstack_region_name }}
+              auth={{ '{{ openstack_heat_auth }}' }}"
+          -e "{'openstack_heat_auth':{{ openstack_heat_auth }}}"
+      create_heat_cfn_endpoint:
+        run_once: True
+        retries: 3
+        delay: 5
+        requires: [/kolla/{{ deployment_id }}/variables/heat_database/.done,
+                   /kolla/{{ deployment_id }}/variables/heat_database_user_create/.done,
+                   /kolla/{{ deployment_id }}/variables/keystone_running/.done]
+        register: /kolla/{{ deployment_id }}/variables/heat_cfn_endpoint_create/.done
+        command: {{ ansible_task_cmd }}
+          -m kolla_keystone_service
+          -a "service_name=heat-cfn
+              service_type=orchestration
+              description='Openstack Orchestration'
+              endpoint_region={{ openstack_region_name }}
+              admin_url='http://{{ kolla_internal_address }}:{{ heat_api_port }}/v1'
+              internal_url='http://{{ kolla_internal_address }}:{{ heat_api_cfn_port }}/v1'
+              public_url='http://{{ kolla_external_address }}:{{ heat_api_cfn_port }}/v1'
+              region_name={{ openstack_region_name }}
+              auth={{ '{{ openstack_heat_auth }}' }}"
+          -e "{'openstack_heat_auth':{{ openstack_heat_auth }}}"
+      create_heat_credentials:
+        run_once: True
+        retries: 3
+        delay: 5
+        requires: [/kolla/{{ deployment_id }}/variables/heat_database/.done,
+                   /kolla/{{ deployment_id }}/variables/heat_database_user_create/.done,
+                   /kolla/{{ deployment_id }}/variables/keystone_running/.done,
+                   /kolla/{{ deployment_id }}/variables/heat_endpoint_create/.done,
+                   /kolla/{{ deployment_id }}/variables/heat_cfn_endpoint_create/.done]
+        register: /kolla/{{ deployment_id }}/variables/heat_credentials_setup/.done
+        command: {{ ansible_task_cmd }}
+          -m kolla_keystone_user
+          -a "project=service
+              user=heat
+              password={{ heat_keystone_password }}
+              role=admin
+              region_name={{ openstack_region_name }}
+              auth={{ '{{ openstack_heat_auth }}' }}"
+          -e "{'openstack_heat_auth':{{ openstack_heat_auth }}}"
