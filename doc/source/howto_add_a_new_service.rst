@@ -156,7 +156,7 @@ supported in kolla-mesos.
 
 initial copying::
 
-  cp ansible/<project>/templates/* ../kolla-mesos/config/<project>/templates/
-  cp ansible/<project>/roles/config.yml ../kolla-mesos/config/<project>/<service>_config.yml
+  cp ansible/roles/<project>/templates/* ../kolla-mesos/config/<project>/templates/
+  cp ansible/roles/<project>/tasks/config.yml ../kolla-mesos/config/<project>/<service>_config.yml
   # then edit the above to the new format.
-  cp ansible/<projects>/defaults/main.yml ../kolla-mesos/config/<project>/defaults/main.yml
+  cp ansible/roles/<projects>/defaults/main.yml ../kolla-mesos/config/<project>/defaults/main.yml
