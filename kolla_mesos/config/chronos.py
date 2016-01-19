@@ -15,7 +15,8 @@ from oslo_config import cfg
 from kolla_mesos.common import network_utils
 
 
-CHRONOS_URL = 'http://{}:4400'.format(network_utils.get_ip_address())
+CHRONOS_URL = 'http://{}:4400'.format(
+    network_utils.get_ip_address(public=False))
 
 CONF = cfg.CONF
 chronos_opts = [
