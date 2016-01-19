@@ -1,5 +1,4 @@
 [DEFAULT]
-verbose = {{ glance_logging_verbose }}
 debug = {{ glance_logging_debug }}
 
 bind_host = {{ hostvars[inventory_hostname]['ansible_' + api_interface]['ipv4']['address'] }}
