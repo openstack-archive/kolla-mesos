@@ -11,7 +11,6 @@
 # limitations under the License.
 
 import fixtures
-import functools
 import json
 from kazoo.recipe import party
 import logging
@@ -20,22 +19,6 @@ from zake import fake_client
 
 from kolla_mesos.container_scripts import start
 from kolla_mesos.tests import base
-
-
-# TODO(kproskurin/nihilifer): Make a possibility of decorating classes, not
-# only callables.
-def reload_start(f):
-    """Decorator which reloads start library.
-
-    In the tests below we're setting fake environment variables which are
-    used by the global variables in start module. That's why it's needed
-    to reload it after setting environment.
-    """
-    @functools.wraps(f)
-    def wrapper(*args, **kwargs):
-        reload(start)
-        return f(*args, **kwargs)
-    return wrapper
 
 
 class CommandTest(base.BaseTestCase):
@@ -201,17 +184,16 @@ class RunCommandsTest(base.BaseTestCase):
         self.client.start()
         self.addCleanup(self.client.stop)
         self.addCleanup(self.client.close)
-        start.GROUP = 'testg'
-        start.ROLE = 'testr'
         self.useFixture(fixtures.EnvironmentVariable('KOLLA_GROUP',
                                                      newvalue='testg'))
         self.useFixture(fixtures.EnvironmentVariable('KOLLA_ROLE',
                                                      newvalue='testr'))
+        start.set_globals()
 
-    @reload_start
+    @mock.patch.object(start.Command, 'run', autospec=True)
     @mock.patch.object(start, 'generate_config')
     @mock.patch.object(start.sys, 'exit')
-    def test_one_good(self, m_exit, m_gc):
+    def test_one_good(self, m_exit, m_gc, m_run):
         cmd = {'setup': {
             'run_once': True,
             'register': '/kolla/variables/action/.done',
@@ -219,15 +201,12 @@ class RunCommandsTest(base.BaseTestCase):
 
         conf = {'config': {'testg': {'testr': {}}},
                 'commands': {'testg': {'testr': cmd}}}
-        # Mocking Command's method in decorator doesn't work
-        with mock.patch.object(start.Command, 'run') as m_run:
-            m_run.return_value = 0
-            start.run_commands(self.client, conf)
-            m_run.assert_called_once_with()
-            self.assertEqual([], m_exit.mock_calls)
+        m_run.return_value = 0
+        start.run_commands(self.client, conf)
+        m_run.assert_called_once_with(mock.ANY)
+        self.assertEqual([], m_exit.mock_calls)
 
-    @reload_start
-    @mock.patch.object(start.Command, 'run')
+    @mock.patch.object(start.Command, 'run', autospec=True)
     @mock.patch.object(start, 'generate_config')
     @mock.patch.object(start.sys, 'exit')
     def test_one_bad(self, m_exit, m_gc, m_run):
@@ -238,15 +217,12 @@ class RunCommandsTest(base.BaseTestCase):
 
         conf = {'config': {'testg': {'testr': {}}},
                 'commands': {'testg': {'testr': cmd}}}
-        # Mocking Command's method in decorator doesn't work
-        with mock.patch.object(start.Command, 'run') as m_run:
-            m_run.return_value = 3
-            start.run_commands(self.client, conf)
-            m_run.assert_called_once_with()
-            self.assertEqual([mock.call(1)], m_exit.mock_calls)
+        m_run.return_value = 3
+        start.run_commands(self.client, conf)
+        m_run.assert_called_once_with(mock.ANY)
+        self.assertEqual([mock.call(1)], m_exit.mock_calls)
 
-    @reload_start
-    @mock.patch.object(start.Command, 'run')
+    @mock.patch.object(start.Command, 'run', autospec=True)
     @mock.patch.object(start, 'generate_config')
     @mock.patch.object(start.sys, 'exit')
     def test_one_bad_retry(self, m_exit, m_gc, m_run):
@@ -262,17 +238,16 @@ class RunCommandsTest(base.BaseTestCase):
 
         self.returns = 0
 
-        def run_effect():
+        def run_effect(run_self):
             if self.returns == 0:
                 self.returns = 1
                 return 3
             return 0
-        # Mocking Command's method in decorator doesn't work
-        with mock.patch.object(start.Command, 'run') as m_run:
-            m_run.side_effect = run_effect
-            start.run_commands(self.client, conf)
-            self.assertEqual([mock.call(), mock.call()], m_run.mock_calls)
-            self.assertEqual([], m_exit.mock_calls)
+        m_run.side_effect = run_effect
+        start.run_commands(self.client, conf)
+        self.assertEqual([mock.call(mock.ANY), mock.call(mock.ANY)],
+                         m_run.mock_calls)
+        self.assertEqual([], m_exit.mock_calls)
 
 
 class GenerateConfigTest(base.BaseTestCase):
@@ -283,8 +258,6 @@ class GenerateConfigTest(base.BaseTestCase):
         self.client.start()
         self.addCleanup(self.client.stop)
         self.addCleanup(self.client.close)
-        start.GROUP = 'testg'
-        start.ROLE = 'testr'
         self.useFixture(fixtures.EnvironmentVariable('KOLLA_DEPLOYMENT_ID',
                                                      newvalue='deploy_id'))
         self.useFixture(fixtures.EnvironmentVariable('KOLLA_PRIVATE_INTERFACE',
@@ -295,8 +268,8 @@ class GenerateConfigTest(base.BaseTestCase):
                                                      newvalue='testg'))
         self.useFixture(fixtures.EnvironmentVariable('KOLLA_ROLE',
                                                      newvalue='testr'))
+        start.set_globals()
 
-    @reload_start
     @mock.patch.object(start, 'get_ip_address')
     @mock.patch.object(start, 'get_groups_and_hostvars')
     @mock.patch.object(start, 'write_file')
@@ -312,7 +285,6 @@ class GenerateConfigTest(base.BaseTestCase):
         start.generate_config(self.client, conf)
         m_wf.assert_called_once_with(conf['afile'], 'xyz')
 
-    @reload_start
     @mock.patch.object(start, 'get_ip_address')
     @mock.patch.object(start, 'get_groups_and_hostvars')
     @mock.patch.object(start, 'write_file')
@@ -330,7 +302,6 @@ class GenerateConfigTest(base.BaseTestCase):
         start.generate_config(self.client, conf)
         m_wf.assert_called_once_with(conf['afile'], 'yeah')
 
-    @reload_start
     @mock.patch.object(start, 'get_ip_address')
     @mock.patch.object(start, 'get_groups_and_hostvars')
     @mock.patch.object(start, 'write_file')
@@ -355,8 +326,6 @@ class MainTest(base.BaseTestCase):
         self.client.start()
         self.addCleanup(self.client.stop)
         self.addCleanup(self.client.close)
-        start.GROUP = 'testg'
-        start.ROLE = 'testr'
         self.useFixture(fixtures.EnvironmentVariable('KOLLA_DEPLOYMENT_ID',
                                                      newvalue='deploy_id'))
         self.useFixture(fixtures.EnvironmentVariable('KOLLA_PRIVATE_INTERFACE',
@@ -369,8 +338,8 @@ class MainTest(base.BaseTestCase):
                                                      newvalue='testr'))
         self.useFixture(fixtures.EnvironmentVariable('KOLLA_ZK_HOSTS',
                                                      newvalue='localhost'))
+        start.set_globals()
 
-    @reload_start
     @mock.patch.object(start, 'run_commands')
     @mock.patch.object(start, 'generate_config')
     @mock.patch.object(start, 'register_group_and_hostvars')
@@ -394,7 +363,6 @@ class MainTest(base.BaseTestCase):
             m_rc.assert_called_once_with(self.client, tconf)
             self.assertEqual([], m_rgah.mock_calls)
 
-    @reload_start
     @mock.patch.object(start, 'run_commands')
     @mock.patch.object(start, 'generate_config')
     @mock.patch.object(start, 'register_group_and_hostvars')
@@ -445,12 +413,6 @@ class HostvarsAndGroupsTest(base.BaseTestCase):
         self.client.start()
         self.addCleanup(self.client.stop)
         self.addCleanup(self.client.close)
-        start.GROUP = 'testg'
-        start.ROLE = 'testr'
-        start.PRIVATE_INTERFACE = 'eth1'
-        start.PUBLIC_INTERFACE = 'eth0'
-        start.ANSIBLE_PRIVATE = 'ansible_eth1'
-        start.ANSIBLE_PUBLIC = 'ansible_eth0'
         self.useFixture(fixtures.EnvironmentVariable('KOLLA_DEPLOYMENT_ID',
                                                      newvalue='deploy_id'))
         self.useFixture(fixtures.EnvironmentVariable('KOLLA_PRIVATE_INTERFACE',
@@ -461,8 +423,8 @@ class HostvarsAndGroupsTest(base.BaseTestCase):
                                                      newvalue='testg'))
         self.useFixture(fixtures.EnvironmentVariable('KOLLA_ROLE',
                                                      newvalue='testr'))
+        start.set_globals()
 
-    @reload_start
     @mock.patch('socket.gethostname')
     @mock.patch.object(start, 'get_ip_address')
     def test_reg_and_retieve_single(self, m_get_ip, m_gethost):
@@ -478,7 +440,6 @@ class HostvarsAndGroupsTest(base.BaseTestCase):
                'id': '1'}
         self.assertEqual(exp, hostvars['1.2.3.4'])
 
-    @reload_start
     @mock.patch('socket.gethostname')
     @mock.patch.object(start, 'get_ip_address')
     def test_reg_and_retieve_multi(self, m_get_ip, m_gethost):
