@@ -9,11 +9,11 @@ config:
         owner: keystone
         perm: "0600"
       keystone.conf.j2:
-        source: ["/etc/kolla/config/global.conf",
-                 "/etc/kolla/config/database.conf",
-                 "/etc/kolla/config/messaging.conf",
+        source: ["/etc/kolla-mesos/config/global.conf",
+                 "/etc/kolla-mesos/config/database.conf",
+                 "/etc/kolla-mesos/config/messaging.conf",
                  "config/keystone/templates/keystone.conf.j2",
-                 "/etc/kolla/config/keystone.conf"]
+                 "/etc/kolla-mesos/config/keystone.conf"]
         dest: /etc/keystone/keystone.conf
         owner: keystone
         perm: "0600"
