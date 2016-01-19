@@ -1,11 +1,16 @@
+# NOTE(nihilifer): Please don't use "ansible_connection=local" here!
+# Mesos slave has to be registered with its hostname accessible in the network
+# in order to get Mesos UI working outside. In order to do that, the
+# "inventory_hostname" variable must containe this hostname.
+
 [master]
-localhost    ansible_connection=local
+operator
 
 [controller]
-localhost    ansible_connection=local
+operator
 
 [compute]
-localhost    ansible_connection=local
+operator
 
 [zookeeper:children]
 master
