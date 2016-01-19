@@ -133,7 +133,7 @@ class KollaWorker(object):
     def gen_deployment_id(self):
 
         if CONF.kolla.deployment_id_prefix and CONF.kolla.deployment_id:
-            LOG.info('You cant use "deployment-id" and "deployment-id-prefix" '
+            LOG.info('You can\'t use "deployment-id" and "deployment-id-prefix" '
                      'together. Choose one.')
             sys.exit(1)
 
@@ -170,6 +170,7 @@ class KollaWorker(object):
             zk.ensure_path(script_node)
             source_path = common_cfg[script]['source']
 
+            src_file = source_path
             if not source_path.startswith('/'):
                 src_file = file_utils.find_file(source_path)
             with open(src_file) as fp:
