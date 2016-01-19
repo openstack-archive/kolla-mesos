@@ -36,14 +36,28 @@ import six
 from six.moves import queue
 
 
-ZK_HOSTS = os.environ.get('KOLLA_ZK_HOSTS')
-GROUP = os.environ.get('KOLLA_GROUP', 'mariadb')
-ROLE = os.environ.get('KOLLA_ROLE', 'mariadb')
-PRIVATE_INTERFACE = os.environ.get('KOLLA_PRIVATE_INTERFACE', 'undefined')
-PUBLIC_INTERFACE = os.environ.get('KOLLA_PUBLIC_INTERFACE', 'undefined')
-ANSIBLE_PRIVATE = 'ansible_%s' % PRIVATE_INTERFACE
-ANSIBLE_PUBLIC = 'ansible_%s' % PUBLIC_INTERFACE
-DEPLOYMENT_ID = os.environ.get('KOLLA_DEPLOYMENT_ID', 'undefined')
+ZK_HOSTS = None
+GROUP = None
+ROLE = None
+PRIVATE_INTERFACE = None
+PUBLIC_INTERFACE = None
+ANSIBLE_PRIVATE = None
+ANSIBLE_PUBLIC = None
+DEPLOYMENT_ID = None
+
+
+def set_globals():
+    global ZK_HOSTS, GROUP, ROLE, PRIVATE_INTERFACE, PUBLIC_INTERFACE
+    global ANSIBLE_PRIVATE, ANSIBLE_PUBLIC, DEPLOYMENT_ID
+    ZK_HOSTS = os.environ.get('KOLLA_ZK_HOSTS')
+    GROUP = os.environ.get('KOLLA_GROUP', 'undefined')
+    ROLE = os.environ.get('KOLLA_ROLE', 'undefined')
+    PRIVATE_INTERFACE = os.environ.get('KOLLA_PRIVATE_INTERFACE', 'undefined')
+    PUBLIC_INTERFACE = os.environ.get('KOLLA_PUBLIC_INTERFACE', 'undefined')
+    ANSIBLE_PRIVATE = 'ansible_%s' % PRIVATE_INTERFACE
+    ANSIBLE_PUBLIC = 'ansible_%s' % PUBLIC_INTERFACE
+    DEPLOYMENT_ID = os.environ.get('KOLLA_DEPLOYMENT_ID', 'undefined')
+
 
 logging.basicConfig()
 LOG = logging.getLogger(__file__)
@@ -386,6 +400,7 @@ def run_commands(zk, service_conf):
 
 
 def main():
+    set_globals()
     LOG.info('starting')
     with zk_connection(ZK_HOSTS) as zk:
         base_node = os.path.join('kolla', DEPLOYMENT_ID)
