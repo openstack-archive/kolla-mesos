@@ -4,11 +4,11 @@ config:
       cinder.conf.j2:
         source: ["config/cinder/templates/cinder.conf.j2",
                  "config/cinder/templates/cinder-{{ cinder_volume_driver }}.conf.j2",
-                 "/etc/kolla/config/global.conf",
-                 "/etc/kolla/config/database.conf",
-                 "/etc/kolla/config/messaging.conf",
-                 "/etc/kolla/config/cinder.conf",
-                 "/etc/kolla/config/cinder/cinder-api.conf"]
+                 "/etc/kolla-mesos/config/global.conf",
+                 "/etc/kolla-mesos/config/database.conf",
+                 "/etc/kolla-mesos/config/messaging.conf",
+                 "/etc/kolla-mesos/config/cinder.conf",
+                 "/etc/kolla-mesos/config/cinder/cinder-api.conf"]
         dest: /etc/cinder/cinder.conf
         owner: cinder
         perm: "0600"
@@ -19,11 +19,11 @@ config:
 {% if cinder_volume_driver == "ceph" %}
                  "config/cinder/templates/cinder-backup-{{ cinder_volume_driver }}.conf.j2",
 {% endif %}
-                 "/etc/kolla/config/global.conf",
-                 "/etc/kolla/config/database.conf",
-                 "/etc/kolla/config/messaging.conf",
-                 "/etc/kolla/config/cinder.conf",
-                 "/etc/kolla/config/cinder/cinder-backup.conf"]
+                 "/etc/kolla-mesos/config/global.conf",
+                 "/etc/kolla-mesos/config/database.conf",
+                 "/etc/kolla-mesos/config/messaging.conf",
+                 "/etc/kolla-mesos/config/cinder.conf",
+                 "/etc/kolla-mesos/config/cinder/cinder-backup.conf"]
         dest: /etc/cinder/cinder.conf
         owner: cinder
         perm: "0600"
@@ -31,11 +31,11 @@ config:
       cinder.conf.j2:
         source: ["config/cinder/templates/cinder.conf.j2",
                  "config/cinder/templates/cinder-{{ cinder_volume_driver }}.conf.j2",
-                 "/etc/kolla/config/global.conf",
-                 "/etc/kolla/config/database.conf",
-                 "/etc/kolla/config/messaging.conf",
-                 "/etc/kolla/config/cinder.conf",
-                 "/etc/kolla/config/cinder/cinder-scheduler.conf"]
+                 "/etc/kolla-mesos/config/global.conf",
+                 "/etc/kolla-mesos/config/database.conf",
+                 "/etc/kolla-mesos/config/messaging.conf",
+                 "/etc/kolla-mesos/config/cinder.conf",
+                 "/etc/kolla-mesos/config/cinder/cinder-scheduler.conf"]
         dest: /etc/cinder/cinder.conf
         owner: cinder
         perm: "0600"
@@ -43,11 +43,11 @@ config:
       cinder.conf.j2:
         source: ["config/cinder/templates/cinder.conf.j2",
                  "config/cinder/templates/cinder-{{ cinder_volume_driver }}.conf.j2",
-                 "/etc/kolla/config/global.conf",
-                 "/etc/kolla/config/database.conf",
-                 "/etc/kolla/config/messaging.conf",
-                 "/etc/kolla/config/cinder.conf",
-                 "/etc/kolla/config/cinder/cinder-volume.conf"]
+                 "/etc/kolla-mesos/config/global.conf",
+                 "/etc/kolla-mesos/config/database.conf",
+                 "/etc/kolla-mesos/config/messaging.conf",
+                 "/etc/kolla-mesos/config/cinder.conf",
+                 "/etc/kolla-mesos/config/cinder/cinder-volume.conf"]
         dest: /etc/cinder/cinder.conf
         owner: cinder
         perm: "0600"
