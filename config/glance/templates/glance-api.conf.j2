@@ -5,7 +5,6 @@ debug = {{ glance_logging_debug }}
 bind_host = {{ hostvars[inventory_hostname]['ansible_' + api_interface]['ipv4']['address'] }}
 bind_port = {{ glance_api_port }}
 
-notification_driver = noop
 
 registry_host = {{ kolla_internal_address }}
 
@@ -24,3 +23,6 @@ password = {{ glance_keystone_password }}
 
 [paste_deploy]
 flavor = keystone
+
+[oslo_messaging_notifications]
+driver = noop
