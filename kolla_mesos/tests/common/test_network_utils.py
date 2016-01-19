@@ -42,7 +42,7 @@ class TestNetworkUtils(base.BaseTestCase):
         ifaddresses_mock.return_value = {
             netifaces.AF_INET: [{'addr': '10.0.0.1'}]
         }
-        ip_address = network_utils.get_ip_address()
+        ip_address = network_utils.get_ip_address(public=True)
         self.assertEqual('10.0.0.1', ip_address)
 
     @mock.patch('netifaces.interfaces')
@@ -54,7 +54,7 @@ class TestNetworkUtils(base.BaseTestCase):
         ifaddresses_mock.return_value = {
             netifaces.AF_INET: [{'addr': '10.0.0.1'}]
         }
-        ip_address = network_utils.get_ip_address(public=False)
+        ip_address = network_utils.get_ip_address()
         self.assertEqual('10.0.0.1', ip_address)
 
     @mock.patch('netifaces.interfaces')
@@ -66,7 +66,7 @@ class TestNetworkUtils(base.BaseTestCase):
         ifaddresses_mock.return_value = {
             netifaces.AF_INET6: [{'addr': 'fe80::5054:ff:fe80:e42b%eth2'}]
         }
-        ip_address = network_utils.get_ip_address()
+        ip_address = network_utils.get_ip_address(public=True)
         self.assertEqual('fe80::5054:ff:fe80:e42b%eth2', ip_address)
 
     @mock.patch('netifaces.interfaces')
@@ -78,5 +78,5 @@ class TestNetworkUtils(base.BaseTestCase):
         ifaddresses_mock.return_value = {
             netifaces.AF_INET6: [{'addr': 'fe80::5054:ff:fefc:273e%eth1'}]
         }
-        ip_address = network_utils.get_ip_address(public=False)
+        ip_address = network_utils.get_ip_address()
         self.assertEqual('fe80::5054:ff:fefc:273e%eth1', ip_address)
