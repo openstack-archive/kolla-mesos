@@ -5,7 +5,7 @@
     "command": "kolla_start",
     "container": {
         "type": "DOCKER",
-        "image": "{{ kolla_ansible_image }}:{{ kolla_ansible_tag }}",
+        "image": "{{ kolla_ansible_image_full }}",
         "network": "HOST"
     },
     "environmentVariables": [
