@@ -1,0 +1,10 @@
+Code-Review+2: Sam Yaple <sam@yaple.net>
+Code-Review+2: Proskurin Kirill <kproskurin@mirantis.com>
+Code-Review+1: Artur Zarzycki <azarzycki@mirantis.com>
+Workflow+1: Angus Salkeld <asalkeld@mirantis.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Tue, 19 Jan 2016 18:54:52 +0000
+Reviewed-on: https://review.openstack.org/269048
+Project: openstack/kolla-mesos
+Branch: refs/heads/master
