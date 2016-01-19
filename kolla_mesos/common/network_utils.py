@@ -25,8 +25,8 @@ def _get_localhost():
     return '127.0.0.1'
 
 
-def get_ip_address(public=True):
-    """Get IP address of the interface connected to the public network.
+def get_ip_address(public=False):
+    """Get IP address of the interface connected to the network.
 
     If there is no such an interface, then localhost is returned.
     """
