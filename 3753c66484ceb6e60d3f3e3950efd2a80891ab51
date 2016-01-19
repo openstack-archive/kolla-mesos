@@ -1,0 +1,10 @@
+Code-Review+2: Sam Yaple <sam@yaple.net>
+Code-Review+1: Clint Adams <clint@gcfm.net>
+Code-Review+2: Steven Dake <stdake@cisco.com>
+Workflow+1: Steven Dake <stdake@cisco.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Tue, 19 Jan 2016 07:02:54 +0000
+Reviewed-on: https://review.openstack.org/269322
+Project: openstack/kolla-mesos
+Branch: refs/heads/master
