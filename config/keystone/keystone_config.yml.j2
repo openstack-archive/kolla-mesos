@@ -41,7 +41,7 @@ commands:
         run_once: True
         retries: 3
         delay: 5
-        requires: [/kolla/{{ deployment_id }}/variables/mariadb_bootstrap/.done]
+        requires: [/kolla/{{ deployment_id }}/variables/mariadb_running/.done]
         register: /kolla/{{ deployment_id }}/variables/keystone_database/.done
         command: /usr/bin/ansible localhost
           -m mysql_db
