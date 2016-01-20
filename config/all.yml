@@ -149,13 +149,13 @@ enable_nova: "yes"
 enable_rabbitmq: "yes"
 
 # Additional optional OpenStack services are specified here
-enable_ceph: "no"
-enable_cinder: "no"
+enable_ceph: "yes"
+enable_cinder: "yes"
 enable_heat: "yes"
 enable_horizon: "yes"
-enable_swift: "no"
-enable_murano: "no"
-enable_ironic: "no"
+enable_swift: "yes"
+enable_murano: "yes"
+enable_ironic: "yes"
 
 ironic_keystone_user: "ironic"
 

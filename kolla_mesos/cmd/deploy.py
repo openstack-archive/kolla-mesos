@@ -326,6 +326,18 @@ class KollaWorker(object):
         # find all cronos files and run.
         for root, dirs, names in os.walk(self.temp_dir):
             for name in names:
+                # Check whether the project is enabled in configuration.
+                # If not specified, we assume that it's enabled.
+                proj = name.split('.')[0]
+                proj_enable_var_name = 'enable_{}'.format(proj)
+                if proj_enable_var_name in self.required_vars:
+                    proj_enable_jvar = self.required_vars[proj_enable_var_name]
+                    proj_enable_var = jinja_utils.jinja_filter_bool(
+                        proj_enable_jvar)
+
+                    if not proj_enable_var:
+                        continue
+
                 app_path = os.path.join(root, name)
                 with open(app_path, 'r') as app_file:
                     app_resource = json.load(app_file)
