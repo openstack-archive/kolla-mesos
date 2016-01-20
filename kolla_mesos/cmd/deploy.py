@@ -101,6 +101,17 @@ class KollaWorker(object):
         jvars.update(global_vars)
 
         for proj in self.get_projects():
+            # Check whether the project is enabled in configuration.
+            # If not specified, we assume that it's enabled.
+            proj_enable_var_name = 'enable_{}'.format(proj)
+            if proj_enable_var_name in jvars:
+                proj_enable_jvar = jvars[proj_enable_var_name]
+                proj_enable_var = jinja_utils.jinja_filter_bool(
+                    proj_enable_jvar)
+
+                if not proj_enable_var:
+                    continue
+
             proj_yml_name = os.path.join(self.config_dir, proj,
                                          'defaults', 'main.yml')
             if os.path.exists(proj_yml_name):
