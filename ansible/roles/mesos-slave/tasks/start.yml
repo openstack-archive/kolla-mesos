@@ -10,6 +10,7 @@
       MESOS_SWITCH_USER: "false"
       MESOS_LOG_DIR: "/var/log/mesos"
       MESOS_LOGGING_LEVEL: "INFO"
+      MESOS_DOCKER_REMOVE_DELAY: "5mins"
     image: "{{ mesos_slave_image_full }}"
     name: "mesos_slave"
     privileged: True
