@@ -90,7 +90,7 @@ commands:
     cinder_ansible_tasks:
       create_database:
         run_once: True
-        requires: [/kolla/{{ deployment_id }}/variables/mariadb_bootstrap/.done]
+        requires: [/kolla/{{ deployment_id }}/variables/mariadb_running/.done]
         register: /kolla/{{ deployment_id }}/variables/cinder_database/.done
         command: /usr/bin/ansible localhost
           -m mysql_db
