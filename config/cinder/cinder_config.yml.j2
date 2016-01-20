@@ -114,16 +114,33 @@ commands:
               host='%'
               priv='{{ cinder_database_name }}.*:ALL'
               append_privs='yes'"
-      register_endpoint:
+      register_endpoint_v1:
+        run_once: True
+        requires: [/kolla/{{ deployment_id }}/variables/cinder_setup/.done,
+                   /kolla/{{ deployment_id }}/variables/keystone_running/.done]
+        register: /kolla/{{ deployment_id }}/variables/cinder_api_registered_v1/.done
+        command: /usr/bin/ansible localhost
+          -m kolla_keystone_service -vvv
+          -a "service_name=cinder
+              service_type=volume
+              description='Openstack Block Storage'
+              endpoint_region={{ openstack_region_name }}
+              admin_url='http://{{ kolla_internal_address }}:{{ cinder_api_port }}/v2/%(tenant_id)s'
+              internal_url='http://{{ kolla_internal_address }}:{{ cinder_api_port }}/v2/%(tenant_id)s'
+              public_url='http://{{ kolla_external_address }}:{{ cinder_api_port }}/v2/%(tenant_id)s'
+              region_name={{ openstack_region_name }}
+              auth={{ '{{ openstack_cinder_auth }}' }}"
+          -e "{'openstack_cinder_auth':{{ openstack_cinder_auth }}}"
+      register_endpoint_v2:
         run_once: True
         requires: [/kolla/{{ deployment_id }}/variables/cinder_setup/.done,
                    /kolla/{{ deployment_id }}/variables/keystone_running/.done]
         register: /kolla/{{ deployment_id }}/variables/cinder_api_registered/.done
         command: /usr/bin/ansible localhost
-          -m kolla_keystone_service
-          -a "service_name=cinder
-              service_type=image
-              description='Openstack Image'
+          -m kolla_keystone_service -vvv
+          -a "service_name=cinderv2
+              service_type=volumev2
+              description='Openstack Block Storage'
               endpoint_region={{ openstack_region_name }}
               admin_url='http://{{ kolla_internal_address }}:{{ cinder_api_port }}/v2/%(tenant_id)s'
               internal_url='http://{{ kolla_internal_address }}:{{ cinder_api_port }}/v2/%(tenant_id)s'
