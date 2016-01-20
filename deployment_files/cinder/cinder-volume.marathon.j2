@@ -1,14 +1,27 @@
 {
     "id": "/{{ deployment_id }}/cinder-volume",
     "instances": 1,
-    "mem": 128,
-    "cpus": 0.3,
+    "mem": 512,
+    "cpus": 0.5,
     "container": {
         "type": "DOCKER",
         "docker": {
             "image": "{{ cinder_volume_image }}:{{ cinder_volume_tag }}",
-            "network": "HOST"
-        }
+            "network": "HOST",
+            "privileged": true
+        },
+       "volumes": [
+            {
+                "containerPath": "/dev",
+                "hostPath": "/dev",
+                "mode": "RW"
+            },
+            {
+                "containerPath": "/run",
+                "hostPath": "/run",
+                "mode": "RW"
+            }
+        ]
     },
     "env": {
         "KOLLA_CONFIG_STRATEGY": "{{ config_strategy }}",
