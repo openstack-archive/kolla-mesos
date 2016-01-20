@@ -35,6 +35,8 @@ commands:
         requires: [/kolla/{{ deployment_id }}/variables/glance_database/.done,
                    /kolla/{{ deployment_id }}/variables/glance_database_user_create/.done]
         register: /kolla/{{ deployment_id }}/variables/glance_setup/.done
+        env:
+          KOLLA_BOOTSTRAP: "yes"
         command: kolla_extend_start
       glance_api:
         daemon: True
