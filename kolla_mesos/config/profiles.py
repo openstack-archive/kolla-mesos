@@ -18,7 +18,7 @@ profiles_opts = [
     cfg.ListOpt('infra',
                 default=['ceph', 'data', 'mariadb', 'haproxy', 'keepalived',
                          'kolla-toolbox', 'memcached', 'mongodb',
-                         'openvswitch', 'rabbitmq', 'rsyslog']),
+                         'openvswitch', 'rabbitmq']),
     cfg.ListOpt('main',
                 default=['cinder', 'ceilometer', 'glance', 'heat', 'horizon',
                          'keystone', 'neutron', 'nova', 'swift']),
@@ -28,12 +28,12 @@ profiles_opts = [
                 default=['data', 'kolla-toolbox', 'glance', 'haproxy', 'heat',
                          'horizon', 'keepalived', 'keystone', 'memcached',
                          'mariadb', 'neutron', 'nova', 'openvswitch',
-                         'rabbitmq', 'rsyslog']),
+                         'rabbitmq']),
     cfg.ListOpt('gate',
                 default=['ceph', 'cinder', 'data', 'dind', 'glance', 'haproxy',
                          'heat', 'horizon', 'keepalived', 'keystone',
                          'kolla-toolbox', 'mariadb', 'memcached', 'neutron',
-                         'nova', 'openvswitch', 'rabbitmq', 'rsyslog'])
+                         'nova', 'openvswitch', 'rabbitmq'])
 ]
 profiles_opt_group = cfg.OptGroup(name='profiles',
                                   title='Common sets of images')
