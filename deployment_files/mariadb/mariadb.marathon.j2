@@ -7,8 +7,11 @@
         "type": "DOCKER",
         "docker": {
             "image": "{{ mariadb_image }}:{{ mariadb_tag }}",
-            "network": "HOST"
-        }
+            "network": "HOST",
+            "parameters": [
+                {"key": "volume", "value": "mariadb:/var/lib/mysql"}
+            ]
+        },
     },
     "env": {
         "KOLLA_CONFIG_STRATEGY": "{{ config_strategy }}",
