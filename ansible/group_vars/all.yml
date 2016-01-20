@@ -19,3 +19,5 @@ docker_common_options:
     environment:
       KOLLA_CONFIG_STRATEGY: "{{ config_strategy }}"
     restart_policy: "{{ docker_restart_policy }}"
+
+mesos_docker_remove_delay: "5mins"
