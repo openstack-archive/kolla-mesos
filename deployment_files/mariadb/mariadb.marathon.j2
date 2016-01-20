@@ -8,7 +8,14 @@
         "docker": {
             "image": "{{ mariadb_image }}:{{ mariadb_tag }}",
             "network": "HOST"
-        }
+        },
+        "volumes": [
+            {
+                "containerPath": "/var/lib/mysql",
+                "hostPath": "/var/lib/mysql",
+                "mode": "RW"
+            }
+        ]
     },
     "env": {
         "KOLLA_CONFIG_STRATEGY": "{{ config_strategy }}",
