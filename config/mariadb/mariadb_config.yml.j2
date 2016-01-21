@@ -16,7 +16,7 @@ commands:
       bootstrap:
         command: kolla_extend_start
         env:
-          KOLLA_BOOTSTRAP: "yes"
+          KOLLA_BOOTSTRAP:
           DB_ROOT_PASSWORD: "{{ database_password }}"
         run_once: True
         register: /kolla/{{ deployment_id }}/variables/mariadb_bootstrap/.done

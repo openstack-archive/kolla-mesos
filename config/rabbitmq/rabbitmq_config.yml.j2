@@ -22,7 +22,7 @@ commands:
       bootstrap:
         command: kolla_extend_start
         env:
-          KOLLA_BOOTSTRAP: "yes"
+          KOLLA_BOOTSTRAP:
           RABBITMQ_CLUSTER_COOKIE: "{{ rabbitmq_cluster_cookie }}"
         run_once: True
         register: /kolla/{{ deployment_id }}/variables/rabbitmq_bootstrap/.done
