@@ -92,7 +92,7 @@ commands:
         run_once: True
         requires: [/kolla/{{ deployment_id }}/variables/mariadb_bootstrap/.done]
         register: /kolla/{{ deployment_id }}/variables/cinder_database/.done
-        command: /usr/bin/ansible localhost
+        command: {{ ansible_task_cmd }}
           -m mysql_db
           -a "login_host='{{ database_address }}'
               login_port='{{ mariadb_port }}'
@@ -103,7 +103,7 @@ commands:
         run_once: True
         requires: [/kolla/{{ deployment_id }}/variables/cinder_database/.done]
         register: /kolla/{{ deployment_id }}/variables/cinder_database_user_create/.done
-        command: /usr/bin/ansible localhost
+        command: {{ ansible_task_cmd }}
           -m mysql_user
           -a "login_host='{{ database_address }}'
               login_port='{{ mariadb_port }}'
@@ -119,7 +119,7 @@ commands:
         requires: [/kolla/{{ deployment_id }}/variables/cinder_setup/.done,
                    /kolla/{{ deployment_id }}/variables/keystone_running/.done]
         register: /kolla/{{ deployment_id }}/variables/cinder_api_registered/.done
-        command: /usr/bin/ansible localhost
+        command: {{ ansible_task_cmd }}
           -m kolla_keystone_service
           -a "service_name=cinder
               service_type=image
@@ -136,7 +136,7 @@ commands:
         requires: [/kolla/{{ deployment_id }}/variables/cinder_setup/.done,
                    /kolla/{{ deployment_id }}/variables/keystone_running/.done]
         register: /kolla/{{ deployment_id }}/variables/cinder_user/.done
-        command: /usr/bin/ansible localhost
+        command: {{ ansible_task_cmd }}
           -m kolla_keystone_user
           -a "project=service
               user=cinder
