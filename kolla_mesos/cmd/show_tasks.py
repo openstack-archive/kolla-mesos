@@ -33,8 +33,7 @@ from kolla_mesos.common import file_utils
 from kolla_mesos.common import zk_utils
 
 CONFIG_SUFFIX = '_config.yml.j2'
-DEPLOY_ID_TAG_IN_YAML = '{{ deployment_id }}'
-DEPLOY_ID_TAG = '<<deployment_id>>'
+DEPLOY_ID_TAG = '{{ deployment_id }}'
 
 
 def get_deploy_id(ids):
@@ -55,12 +54,11 @@ def list_ids(ids):
 
 
 def validate_input(args_ids, ids):
+    if not ids:
+        print('Error: No deployment ids exist.')
+        sys.exit(1)
     if args_ids:
-        args_id = args_ids[0]
-        if not ids:
-            print('Error: No deployment ids exist.')
-            sys.exit(1)
-        if args_id not in ids:
+        if args_ids[0] not in ids:
             print("Error: Deployment id %s doesn't exist in " % args_ids +
                   'the current set of ids: %s' % ids)
             sys.exit(1)
@@ -73,15 +71,16 @@ def validate_input(args_ids, ids):
 def get_deployment_ids():
     ids = []
     with zk_utils.connection() as zk:
-        children = zk.get_children('/kolla')
-        for child in children:
-            if child not in ['groups', 'variables', 'common',
-                             'config', 'commands']:
-                ids.append(child)
+        if zk.exists('/kolla'):
+            children = zk.get_children('/kolla')
+            for child in children:
+                if child not in ['groups', 'variables', 'common',
+                                 'config', 'commands']:
+                    ids.append(child)
     return ids
 
 
-def get_tasks():
+def get_tasks(deploy_id):
     """Get list of tasks
 
     Reads through all the kolla mesos services config files and
@@ -112,10 +111,12 @@ def get_tasks():
                     # comment out lines that cause yaml load to fail
                     if line.startswith('{%'):
                         line = '# ' + line
-                    # yaml load doesn't like {'s outside of quoted strings
-                    elif DEPLOY_ID_TAG_IN_YAML in line:
-                        line = line.replace(DEPLOY_ID_TAG_IN_YAML,
-                                            DEPLOY_ID_TAG)
+                    else:
+                        # add the deployment_id to the path
+                        line = line.replace(DEPLOY_ID_TAG, deploy_id)
+                    # avoid yaml/j2 conflicts
+                    line = line.replace('{{ ', '<<')
+                    line = line.replace(' }}', '>>')
                     cfg_string += line
 
             try:
@@ -139,7 +140,7 @@ def get_tasks():
     return tasks
 
 
-def get_status(tasks, deploy_id):
+def get_status(tasks):
     """Get status from zookeeper
 
     Returns the status of for each task
@@ -165,28 +166,19 @@ def get_status(tasks, deploy_id):
             if 'requires' in info:
                 status[task]['requirements'] = {}
                 for path in info['requires']:
-                    path.replace(DEPLOY_ID_TAG, deploy_id)
                     reqt_status = ''
                     if zk.exists(path):
-                        reqt_status = 'done'
+                        reqt_status, _ = zk.get(path)
                     status[task]['requirements'][path] = reqt_status
 
         # get status of registrations
         for task, info in tasks.items():
             if 'register' in info:
                 status[task]['register'] = {}
-                reg_status = 'NOT DONE'
+                reg_status = ''
                 reg_path = info['register']
                 if zk.exists(reg_path):
-                    reg_status = 'done'
-                elif 'requires' in info:
-                    all_done = True
-                    for path in info['requires']:
-                        if not status[task]['requirements'][path]:
-                            all_done = False
-                            break
-                    if not all_done:
-                        reg_status = 'waiting'
+                    reg_status, _ = zk.get(reg_path)
 
                 status[task]['register'] = (reg_path, reg_status)
     return status
@@ -225,17 +217,14 @@ def print_status(status):
 def clean_path(path):
     """clean path to reduce output clutter
 
-    The path is either:
-        /kolla/variables/.../.done (older version) or
-        /kolla/deployment_id/variables/.../.done
+    The path is:
+        /kolla/deployment_id/variables/...
 
-    This will remove edit down the path to just the string between
-    'variables' and '.done'.
+    This will remove edit down the path to the string after
+    'variables'
     """
     if 'variables/' in path:
         path = path.rsplit('variables/', 1)[1]
-    if '/.done' in path:
-        path = path.rsplit('/.done', 1)[0]
     return path
 
 
@@ -262,8 +251,8 @@ def main():
 
     deploy_id = get_deploy_id(args.id or ids)
 
-    tasks = get_tasks()
-    status = get_status(tasks, deploy_id)
+    tasks = get_tasks(deploy_id)
+    status = get_status(tasks)
     print_status(status)
 
 

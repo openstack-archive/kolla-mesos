@@ -27,7 +27,9 @@ commands:
         env:
           KOLLA_BOOTSTRAP:
         command: bash kolla_mesos_extend_start
+        register: /kolla/{{ deployment_id }}/variables/horizon_setup
       horizon:
         command: /usr/sbin/{{ apache_cmd }} -DFOREGROUND
+        register: /kolla/{{ deployment_id }}/variables/horizon
         daemon: True
         run_once: False
