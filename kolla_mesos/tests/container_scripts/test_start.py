@@ -78,56 +78,39 @@ class CommandTest(base.BaseTestCase):
         self.assertEqual(False, cmd.run_once)
         self.assertEqual(False, cmd.daemon)
         self.assertEqual([], cmd.requires)
-        self.assertIsNone(cmd.init_path)
         self.assertIsNone(cmd.check_path)
-        self.assertEqual(0, cmd.priority)
-
-    def test_cmp_1(self):
-        cmd1 = start.Command('a', {'command': 'true'},
-                             self.client)
-        cmd2 = start.Command('b', {'command': 'true',
-                                   'daemon': True},
-                             self.client)
-        self.assertTrue(cmd2 > cmd1)
-        self.assertEqual(0, cmd1.priority)
-        self.assertEqual(100, cmd2.priority)
-
-    def test_cmp_2(self):
-        cmd1 = start.Command('a', {'command': 'true',
-                                   'requires': ['x', 'y']},
-                             self.client)
-        cmd2 = start.Command('b', {'command': 'true',
-                                   'daemon': True},
-                             self.client)
-        self.assertTrue(cmd2 > cmd1)
-        self.assertEqual(2, cmd1.priority)
-        self.assertEqual(100, cmd2.priority)
 
     def test_requirements_fulfilled_no(self):
         cmd1 = start.Command('a', {'command': 'true',
-                                   'requires': ['/x', '/y']},
+                                   'requires': ['/x', '/y'],
+                                   'register': '/z'},
                              self.client)
 
-        self.client.create('/x', 'one', makepath=True)
+        self.client.create('/x', 'done', makepath=True)
         self.assertFalse(cmd1.requirements_fulfilled())
-        self.assertEqual(1, cmd1.priority)
 
     def test_requirements_fulfilled_yes(self):
         cmd1 = start.Command('a', {'command': 'true',
-                                   'requires': ['/x', '/y']},
+                                   'requires': ['/x', '/y'],
+                                   'register': '/z'},
                              self.client)
 
-        self.client.create('/x', 'one', makepath=True)
-        self.client.create('/y', 'one', makepath=True)
+        self.client.create('/x', 'done', makepath=True)
+        self.client.create('/y', 'done', makepath=True)
         self.assertTrue(cmd1.requirements_fulfilled())
         self.assertEqual(0, cmd1.priority)
 
     def test_run_always(self):
-        cmd1 = start.Command('a', {'command': 'true'},
+        cmd1 = start.Command('a', {'command': 'true',
+                                   'register': '/z'},
                              self.client)
         with fixtures.FakePopen() as mock_popen:
+            self.client.create('/z', '', makepath=True)
+            self.assertIsNone(cmd1.get_state())
             cmd1.run()
+            self.assertEqual(cmd1.get_state(), 'done')
             cmd1.run()
+            self.assertEqual(cmd1.get_state(), 'done')
             self.assertEqual(2, len(mock_popen.procs))
 
     def test_run_once(self):
@@ -143,22 +126,26 @@ class CommandTest(base.BaseTestCase):
 
     def test_already_run(self):
         cmd1 = start.Command('a', {'command': 'true',
-                                   'register': '/z/.done',
+                                   'register': '/z',
                                    'run_once': True},
                              self.client)
-        self.client.create('/z/.done', 'one', makepath=True)
+        self.client.create('/z', 'done', makepath=True)
         with fixtures.FakePopen() as mock_popen:
             cmd1.run()
             self.assertEqual(0, len(mock_popen.procs))
 
     def test_return_non_zero(self):
-        cmd1 = start.Command('a', {'command': 'true'},
+        cmd1 = start.Command('a', {'command': 'true',
+                                   'register': '/z'},
                              self.client)
         with fixtures.FakePopen(lambda _: {'returncode': 3}):
-            self.assertEqual(3, cmd1.run())
+            result = cmd1.run()
+            self.assertEqual(cmd1.get_state(), 'running')
+            self.assertEqual(3, result)
 
     def test_return_zero(self):
-        cmd1 = start.Command('a', {'command': 'true'},
+        cmd1 = start.Command('a', {'command': 'true',
+                                   'register': '/z'},
                              self.client)
         with fixtures.FakePopen(lambda _: {'returncode': 0}):
             self.assertEqual(0, cmd1.run())

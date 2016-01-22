@@ -27,22 +27,23 @@ commands:
     keystone:
       setup:
         run_once: True
-        requires: [/kolla/{{ deployment_id }}/variables/keystone_database/.done,
-                   /kolla/{{ deployment_id }}/variables/keystone_database_user_create/.done]
-        register: /kolla/{{ deployment_id }}/variables/keystone_setup/.done
+        requires: [/kolla/{{ deployment_id }}/variables/keystone_database,
+                   /kolla/{{ deployment_id }}/variables/keystone_database_user_create]
+        register: /kolla/{{ deployment_id }}/variables/keystone_setup
         command: bash kolla_mesos_extend_start
       keystone_api:
         run_once: False
         daemon: True
-        requires: [/kolla/{{ deployment_id }}/variables/keystone_setup/.done]
+        requires: [/kolla/{{ deployment_id }}/variables/keystone_setup]
+        register: /kolla/{{ deployment_id }}/variables/keystone_api
         command: "/usr/sbin/{{ keystone_cmd }} -DFOREGROUND"
     keystone_ansible_tasks:
       create_database:
         run_once: True
         retries: 3
         delay: 5
-        requires: [/kolla/{{ deployment_id }}/variables/mariadb_bootstrap/.done]
-        register: /kolla/{{ deployment_id }}/variables/keystone_database/.done
+        requires: [/kolla/{{ deployment_id }}/variables/mariadb_bootstrap]
+        register: /kolla/{{ deployment_id }}/variables/keystone_database
         command: /usr/bin/ansible localhost
           -m mysql_db
           -a "login_host='{{ database_address }}'
@@ -54,8 +55,8 @@ commands:
         run_once: True
         retries: 3
         delay: 5
-        requires: [/kolla/{{ deployment_id }}/variables/keystone_database/.done]
-        register: /kolla/{{ deployment_id }}/variables/keystone_database_user_create/.done
+        requires: [/kolla/{{ deployment_id }}/variables/keystone_database]
+        register: /kolla/{{ deployment_id }}/variables/keystone_database_user_create
         command: /usr/bin/ansible localhost
           -m mysql_user
           -a "login_host='{{ database_address }}'
@@ -71,8 +72,8 @@ commands:
         run_once: True
         retries: 10
         delay: 5
-        requires: [/kolla/{{ deployment_id }}/variables/keystone_setup/.done]
-        register: /kolla/{{ deployment_id }}/variables/keystone_running/.done
+        requires: [/kolla/{{ deployment_id }}/variables/keystone_setup]
+        register: /kolla/{{ deployment_id }}/variables/keystone_running
         command: /usr/bin/ansible localhost
           -m kolla_sanity
           -a "service=keystone
