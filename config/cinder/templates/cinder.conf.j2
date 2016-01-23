@@ -1,5 +1,7 @@
 [DEFAULT]
 debug = {{ cinder_logging_debug }}
+use_syslog = {{ openstack_use_syslog }}
+use_stderr = {{ openstack_use_stderr }}
 
 enable_v1_api=false
 volume_name_template = %s
