@@ -7,8 +7,21 @@
         "type": "DOCKER",
         "docker": {
             "image": "{{ cinder_volume_image }}:{{ cinder_volume_tag }}",
-            "network": "HOST"
-        }
+            "network": "HOST",
+            "privileged": true
+        },
+       "volumes": [
+            {
+                "containerPath": "/dev",
+                "hostPath": "/dev",
+                "mode": "RW"
+            },
+            {
+                "containerPath": "/run",
+                "hostPath": "/run",
+                "mode": "RW"
+            }
+        ]
     },
     "env": {
         "KOLLA_CONFIG_STRATEGY": "{{ config_strategy }}",
