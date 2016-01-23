@@ -24,6 +24,8 @@ commands:
     horizon:
       setup:
         run_once: False
+        env:
+          KOLLA_BOOTSTRAP:
         command: bash kolla_mesos_extend_start
       horizon:
         command: /usr/sbin/{{ apache_cmd }} -DFOREGROUND
