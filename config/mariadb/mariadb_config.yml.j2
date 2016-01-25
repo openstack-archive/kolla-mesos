@@ -2,9 +2,11 @@
 config:
   mariadb:
     mariadb:
-      kolla_mesos_start.py:
-        source: kolla_mesos/container_scripts/start.py
-        dest: /usr/local/bin/kolla_mesos_start
+      extend_start.sh.j2:
+        source: config/mariadb/templates/extend_start.sh.j2
+        dest: /usr/local/bin/kolla_mesos_extend_start
+        owner: mysql
+        perm: "0755"
       galera.cnf.j2:
         source: config/mariadb/templates/galera.cnf.j2
         dest: /etc/{{ mysql_dir }}/my.cnf
@@ -14,10 +16,11 @@ commands:
   mariadb:
     mariadb:
       bootstrap:
-        command: kolla_extend_start
+        command: kolla_mesos_extend_start
         env:
           KOLLA_BOOTSTRAP:
           DB_ROOT_PASSWORD: "{{ database_password }}"
+          DB_MAX_TIMEOUT: "{{ database_max_timeout }}"
         run_once: True
         register: /kolla/{{ deployment_id }}/variables/mariadb_bootstrap/.done
       mysqld:

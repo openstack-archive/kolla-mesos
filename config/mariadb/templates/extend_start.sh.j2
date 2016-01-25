@@ -1,0 +1,34 @@
+#!/bin/bash
+
+# TODO(kproskurin): [We need to find a way to pass hostvars to script like this or get rid of it]
+DB_PID_FILE="/var/lib/mysql/{{ hostvars[inventory_hostname]['ansible_hostname'] }}.pid"
+
+function bootstrap_db {
+    mysqld_safe --wsrep-new-cluster &
+    # Wait for the mariadb server to be "Ready" before starting the security reset with a max timeout
+    TIMEOUT=${DB_MAX_TIMEOUT:-60}
+    until [ -f ${DB_PID_FILE} ]  &&  [ -S /var/lib/mysql/mysql.sock ] && mysqladmin status >/dev/null 2>&1; do
+        if [[ ${TIMEOUT} -gt 0 ]]; then
+            echo "Database is not ready yet, waiting..."
+            let TIMEOUT-=1
+            sleep 1
+        else
+            echo "Database is not ready yet and timeout is reached. Exiting."
+            exit 1
+        fi
+    done
+    sudo -E kolla_security_reset
+    mysql -u root --password="${DB_ROOT_PASSWORD}" -e "GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' IDENTIFIED BY '${DB_ROOT_PASSWORD}' WITH GRANT OPTION;"
+    mysql -u root --password="${DB_ROOT_PASSWORD}" -e "GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' IDENTIFIED BY '${DB_ROOT_PASSWORD}' WITH GRANT OPTION;"
+    mysqladmin -uroot -p"${DB_ROOT_PASSWORD}" shutdown
+}
+
+sudo chown mysql: /var/lib/mysql
+
+# This catches all cases of the BOOTSTRAP variable being set, including empty
+if [[ "${!KOLLA_BOOTSTRAP[@]}" ]] && [[ ! -e /var/lib/mysql/cluster.exists ]]; then
+    ARGS="--wsrep-new-cluster"
+    mysql_install_db
+    bootstrap_db
+    touch /var/lib/mysql/cluster.exists
+fi

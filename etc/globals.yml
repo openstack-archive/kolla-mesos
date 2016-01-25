@@ -11,3 +11,4 @@ config_strategy: "COPY_ONCE"
 kolla_internal_address: "10.10.10.254"
 ansible_task_cmd: "/usr/bin/ansible localhost -vvv"
 init_log_level: "debug"
+database_max_timeout: 60
