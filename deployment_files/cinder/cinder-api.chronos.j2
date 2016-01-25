@@ -11,6 +11,7 @@
     "environmentVariables": [
         {"name": "KOLLA_CONFIG_STRATEGY", "value": "{{ config_strategy }}"},
         {"name": "KOLLA_CONFIG", "value": "{{ kolla_config }}"},
+        {"name": "KOLLA_LOGLEVEL", "value": "{{ init_loglevel }}"},
         {"name": "KOLLA_GROUP", "value": "cinder"},
         {"name": "KOLLA_ROLE", "value": "cinder_ansible_tasks"},
         {"name": "KOLLA_ZK_HOSTS", "value": "{{ zookeeper_hosts }}"},
