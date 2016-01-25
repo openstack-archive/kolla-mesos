@@ -33,8 +33,7 @@ from kolla_mesos.common import file_utils
 from kolla_mesos.common import zk_utils
 
 CONFIG_SUFFIX = '_config.yml.j2'
-DEPLOY_ID_TAG_IN_YAML = '{{ deployment_id }}'
-DEPLOY_ID_TAG = '<<deployment_id>>'
+DEPLOY_ID_TAG = '{{ deployment_id }}'
 
 
 def get_deploy_id(ids):
@@ -55,12 +54,11 @@ def list_ids(ids):
 
 
 def validate_input(args_ids, ids):
+    if not ids:
+        print('Error: No deployment ids exist.')
+        sys.exit(1)
     if args_ids:
-        args_id = args_ids[0]
-        if not ids:
-            print('Error: No deployment ids exist.')
-            sys.exit(1)
-        if args_id not in ids:
+        if args_ids[0] not in ids:
             print("Error: Deployment id %s doesn't exist in " % args_ids +
                   'the current set of ids: %s' % ids)
             sys.exit(1)
@@ -81,7 +79,7 @@ def get_deployment_ids():
     return ids
 
 
-def get_tasks():
+def get_tasks(deploy_id):
     """Get list of tasks
 
     Reads through all the kolla mesos services config files and
@@ -112,10 +110,12 @@ def get_tasks():
                     # comment out lines that cause yaml load to fail
                     if line.startswith('{%'):
                         line = '# ' + line
-                    # yaml load doesn't like {'s outside of quoted strings
-                    elif DEPLOY_ID_TAG_IN_YAML in line:
-                        line = line.replace(DEPLOY_ID_TAG_IN_YAML,
-                                            DEPLOY_ID_TAG)
+                    else:
+                        # add the deployment_id to the path
+                        line = line.replace(DEPLOY_ID_TAG, deploy_id)
+                    # avoid yaml/j2 conflicts
+                    line = line.replace('{{ ', '<<')
+                    line = line.replace(' }}', '>>')
                     cfg_string += line
 
             try:
@@ -139,7 +139,7 @@ def get_tasks():
     return tasks
 
 
-def get_status(tasks, deploy_id):
+def get_status(tasks):
     """Get status from zookeeper
 
     Returns the status of for each task
@@ -165,7 +165,6 @@ def get_status(tasks, deploy_id):
             if 'requires' in info:
                 status[task]['requirements'] = {}
                 for path in info['requires']:
-                    path.replace(DEPLOY_ID_TAG, deploy_id)
                     reqt_status = ''
                     if zk.exists(path):
                         reqt_status = 'done'
@@ -262,8 +261,8 @@ def main():
 
     deploy_id = get_deploy_id(args.id or ids)
 
-    tasks = get_tasks()
-    status = get_status(tasks, deploy_id)
+    tasks = get_tasks(deploy_id)
+    status = get_status(tasks)
     print_status(status)
 
 
