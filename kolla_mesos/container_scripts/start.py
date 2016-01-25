@@ -281,23 +281,14 @@ class Command(object):
             self.init_path = os.path.dirname(self.check_path)
         else:
             self.init_path = None
-        # the lowest valued entries are retrieved first
-        # so run the commands with least requirements and those
-        # that are not daemon are needed first.
-        self.priority = 0
-        self.time_slept = 0
         self.requirements_fulfilled()
 
     def requirements_fulfilled(self):
-        self.priority = min(self.time_slept, 50)
-        if self.daemon:
-            self.priority = self.priority + 100
         fulfilled = True
         for req in self.requires:
             if not self.zk.retry(self.zk.exists, req):
                 LOG.warning('%s is waiting for %s' % (self.name, req))
                 fulfilled = False
-                self.priority = self.priority + 1
         return fulfilled
 
     def sleep(self, queue_size, retry=False):
@@ -307,7 +298,6 @@ class Command(object):
             seconds = min(seconds, self.delay)
             LOG.info('Command %s failed, rescheduling, '
                      '%d retries left' % (self.name, self.retries))
-        self.time_slept = self.time_slept + seconds
         time.sleep(seconds)
 
     def __str__(self):
@@ -321,12 +311,6 @@ class Command(object):
             extra = ' (%s)' % extra
         return '%s%s "%s"' % (
             self.name, extra, self.command)
-
-    def __lt__(self, other):
-        return self.priority < other.priority
-
-    def __gt__(self, other):
-        return other.__lt__(self)
 
     def run(self):
         zk = self.zk
@@ -374,12 +358,16 @@ def run_commands(zk, service_conf):
     LOG.info('run_commands')
     first_ready = False
     conf = service_conf['commands'][GROUP][ROLE]
-    cmdq = queue.PriorityQueue()
+    cmdq = queue.Queue()
     for name, cmd in conf.items():
         cmdq.put(Command(name, cmd, zk))
 
     while not cmdq.empty():
         cmd = cmdq.get()
+        if cmd.daemon and not cmdq.empty():
+            # run the daemon command last
+            cmdq.put(cmd)
+            continue
         if cmd.requirements_fulfilled():
             if not first_ready:
                 if ROLE in service_conf['config'][GROUP]:
