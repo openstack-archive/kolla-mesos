@@ -1,0 +1,11 @@
+Code-Review+2: Sam Yaple <sam@yaple.net>
+Code-Review+1: Artur Zarzycki <azarzycki@mirantis.com>
+Code-Review+1: Ice Yao <yao3690093@gmail.com>
+Code-Review+2: Jeff Peeler <jpeeler@redhat.com>
+Workflow+1: Jeff Peeler <jpeeler@redhat.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Tue, 26 Jan 2016 19:48:46 +0000
+Reviewed-on: https://review.openstack.org/269045
+Project: openstack/kolla-mesos
+Branch: refs/heads/master
