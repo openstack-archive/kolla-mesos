@@ -482,6 +482,7 @@ class HostvarsAndGroupsTest(base.BaseTestCase):
         exp = {'ansible_eth1': {'ipv4': {'address': '1.2.3.4'}},
                'ansible_eth2': {'ipv4': {'address': '1.2.3.4'}},
                'ansible_hostname': 'test-hostname',
+               'api_interface': 'eth2',
                'role': 'testr',
                'id': '1'}
         self.assertEqual(exp, hostvars['1.2.3.4'])
@@ -500,6 +501,7 @@ class HostvarsAndGroupsTest(base.BaseTestCase):
         remote = {'ansible_eth0': {'ipv4': {'address': '4.4.4.4'}},
                   'ansible_eth1': {'ipv4': {'address': '4.4.4.4'}},
                   'ansible_hostname': 'the-other-host',
+                  'api_interface': 'eth2',
                   'role': 'testr',
                   'id': '55'}
         party.Party(self.client, '/kolla/deploy_id/groups/testg',
@@ -512,6 +514,7 @@ class HostvarsAndGroupsTest(base.BaseTestCase):
         exp_local = {'ansible_eth1': {'ipv4': {'address': '1.2.3.4'}},
                      'ansible_eth2': {'ipv4': {'address': '1.2.3.4'}},
                      'ansible_hostname': 'test-hostname',
+                     'api_interface': 'eth2',
                      'role': 'testr',
                      'id': '1'}
         self.assertEqual(exp_local, hostvars['1.2.3.4'])
