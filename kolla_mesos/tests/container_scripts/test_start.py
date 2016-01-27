@@ -78,66 +78,80 @@ class CommandTest(base.BaseTestCase):
         self.assertEqual(False, cmd.run_once)
         self.assertEqual(False, cmd.daemon)
         self.assertEqual([], cmd.requires)
-        self.assertIsNone(cmd.init_path)
-        self.assertIsNone(cmd.check_path)
+        self.assertEqual('/kolla/undefined/status/mariadb/a', cmd.init_path)
+        self.assertEqual('/kolla/undefined/status/mariadb/a/.done',
+                         cmd.check_path)
 
     def test_requirements_fulfilled_no(self):
         cmd1 = start.Command('a', {'command': 'true',
-                                   'requires': ['/x', '/y']},
+                                   'dependencies': ['q/x', 'f/y']},
                              self.client)
 
-        self.client.create('/x', 'one', makepath=True)
+        self.client.create('/kolla/undefined/status/q/x/.done',
+                           'one', makepath=True)
         self.assertFalse(cmd1.requirements_fulfilled())
 
     def test_requirements_fulfilled_yes(self):
         cmd1 = start.Command('a', {'command': 'true',
-                                   'requires': ['/x', '/y']},
+                                   'dependencies': ['w/x', 'y/l']},
                              self.client)
 
-        self.client.create('/x', 'one', makepath=True)
-        self.client.create('/y', 'one', makepath=True)
+        self.client.create('/kolla/undefined/status/w/x/.done',
+                           'one', makepath=True)
+        self.client.create('/kolla/undefined/status/y/l/.done',
+                           'one', makepath=True)
         self.assertTrue(cmd1.requirements_fulfilled())
 
-    def test_run_always(self):
+    @mock.patch('subprocess.Popen')
+    def test_run_always(self, mock_popen):
         cmd1 = start.Command('a', {'command': 'true'},
                              self.client)
-        with fixtures.FakePopen() as mock_popen:
-            cmd1.run()
-            cmd1.run()
-            self.assertEqual(2, len(mock_popen.procs))
+        mock_popen.return_value = mock.MagicMock()
+        mock_popen.return_value.poll.return_value = 0
+        cmd1.run()
+        cmd1.run()
+        self.assertEqual(2, len(mock_popen.return_value.poll.mock_calls))
 
-    def test_run_once(self):
+    @mock.patch('subprocess.Popen')
+    def test_run_once(self, mock_popen):
         cmd1 = start.Command('a', {'command': 'true',
-                                   'register': '/z/.done',
                                    'run_once': True},
                              self.client)
-        with fixtures.FakePopen() as mock_popen:
-            cmd1.run()
-            cmd1.run()
-            self.assertEqual(1, len(mock_popen.procs))
-            self.assertTrue(self.client.exists('/z/.done'))
+        mock_popen.return_value = mock.MagicMock()
+        mock_popen.return_value.poll.return_value = 0
+        cmd1.run()
+        cmd1.run()
+        self.assertEqual(1, len(mock_popen.return_value.poll.mock_calls))
+        self.assertTrue(self.client.exists(
+                        '/kolla/undefined/status/mariadb/a/.done'))
 
-    def test_already_run(self):
+    @mock.patch('subprocess.Popen')
+    def test_already_run(self, mock_popen):
         cmd1 = start.Command('a', {'command': 'true',
-                                   'register': '/z/.done',
                                    'run_once': True},
                              self.client)
-        self.client.create('/z/.done', 'one', makepath=True)
-        with fixtures.FakePopen() as mock_popen:
-            cmd1.run()
-            self.assertEqual(0, len(mock_popen.procs))
+        self.client.create('/kolla/undefined/status/mariadb/a/.done',
+                           'one', makepath=True)
+        mock_popen.return_value = mock.MagicMock()
+        mock_popen.return_value.poll.return_value = 0
+        cmd1.run()
+        self.assertEqual(0, len(mock_popen.return_value.poll.mock_calls))
 
-    def test_return_non_zero(self):
+    @mock.patch('subprocess.Popen')
+    def test_return_non_zero(self, mock_popen):
         cmd1 = start.Command('a', {'command': 'true'},
                              self.client)
-        with fixtures.FakePopen(lambda _: {'returncode': 3}):
-            self.assertEqual(3, cmd1.run())
+        mock_popen.return_value = mock.MagicMock()
+        mock_popen.return_value.poll.return_value = 3
+        self.assertEqual(3, cmd1.run())
 
-    def test_return_zero(self):
+    @mock.patch('subprocess.Popen')
+    def test_return_zero(self, mock_popen):
         cmd1 = start.Command('a', {'command': 'true'},
                              self.client)
-        with fixtures.FakePopen(lambda _: {'returncode': 0}):
-            self.assertEqual(0, cmd1.run())
+        mock_popen.return_value = mock.MagicMock()
+        mock_popen.return_value.poll.return_value = 0
+        self.assertEqual(0, cmd1.run())
 
     def test_sleep_0_q(self):
         cmd = start.Command('a', {'command': 'true'},
