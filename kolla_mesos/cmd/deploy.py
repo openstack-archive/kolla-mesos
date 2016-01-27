@@ -36,11 +36,6 @@ from kolla_mesos.common import zk_utils
 from kolla_mesos import exception
 from kolla_mesos import marathon
 
-
-logging.basicConfig()
-LOG = logging.getLogger(__name__)
-LOG.setLevel(logging.INFO)
-
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 CONF = cfg.CONF
@@ -51,6 +46,7 @@ CONF.import_group('marathon', 'kolla_mesos.config.marathon')
 CONF.import_group('chronos', 'kolla_mesos.config.chronos')
 CONF.import_opt('update', 'kolla_mesos.config.deploy_cli')
 CONF.import_opt('force', 'kolla_mesos.config.deploy_cli')
+CONF.import_opt('debug', 'kolla_mesos.config.deploy_cli')
 
 
 class KollaDirNotFoundException(Exception):
@@ -60,13 +56,24 @@ class KollaDirNotFoundException(Exception):
 class KollaWorker(object):
 
     def __init__(self):
+        self.init_logger()
         self.base_dir = os.path.abspath(file_utils.find_base_dir())
         self.config_dir = os.path.join(self.base_dir, 'config')
-        LOG.debug("Kolla-Mesos base directory: " + self.base_dir)
+        self.LOG.debug("Kolla-Mesos base directory: %s" % self.base_dir)
         self.required_vars = {}
         self.marathon_client = marathon.Client()
         self.chronos_client = chronos.Client()
         self.start_time = time.time()
+
+    def init_logger(self):
+        stdout_handler = logging.StreamHandler(sys.stdout)
+        log_format = logging.Formatter('%(levelname)s - %(message)s')
+        stdout_handler.setFormatter(log_format)
+        LOG = logging.getLogger(__name__)
+        loglevel = logging.DEBUG if CONF.debug else logging.INFO
+        LOG.setLevel(loglevel)
+        LOG.addHandler(stdout_handler)
+        self.LOG = LOG
 
     def setup_working_dir(self):
         """Creates a working directory for use while building"""
@@ -74,10 +81,11 @@ class KollaWorker(object):
             self.start_time
         ).strftime('%Y-%m-%d_%H-%M-%S_')
         self.temp_dir = tempfile.mkdtemp(prefix='kolla-' + ts)
-        LOG.debug('Created output dir: {}'.format(self.temp_dir))
+        self.LOG.debug('Created output dir: %s' % self.temp_dir)
 
     def get_projects(self):
         projects = set(getattr(CONF.profiles, CONF.kolla.profile))
+        self.LOG.debug('Projects are: %s' % projects)
         return projects
 
     def get_jinja_vars(self):
@@ -109,7 +117,7 @@ class KollaWorker(object):
 
                 jvars.update(proj_vars)
             else:
-                LOG.warning('path missing %s' % proj_yml_name)
+                self.LOG.warning('Path missing %s' % proj_yml_name)
 
         # Add deployment_id
         jvars.update({'deployment_id': self.deployment_id})
@@ -123,7 +131,7 @@ class KollaWorker(object):
             if not src_file.startswith('/'):
                 src_file = os.path.join(self.base_dir, src_file)
             if not os.path.exists(src_file):
-                LOG.warning('path missing %s' % src_file)
+                self.LOG.warning('Path missing %s' % src_file)
                 continue
             config_p.read(src_file)
         merged_f = cStringIO()
@@ -133,7 +141,7 @@ class KollaWorker(object):
     def gen_deployment_id(self):
 
         if CONF.kolla.deployment_id_prefix and CONF.kolla.deployment_id:
-            LOG.info('You can\'t use "deployment-id" and '
+            self.LOG.info('You can\'t use "deployment-id" and '
                      '"deployment-id-prefix" together. Choose one.')
             sys.exit(1)
 
@@ -149,16 +157,18 @@ class KollaWorker(object):
             deployment_id = (CONF.kolla.deployment_id_prefix + '-' + ts
                              if deploy_prefix else ts)
             self.deployment_id = deployment_id
+        self.LOG.info('Deployment ID: %s' % self.deployment_id)
 
     def write_config_to_zookeeper(self, zk):
         jinja_vars = self.get_jinja_vars()
+        self.LOG.debug('Jinja_vars is: %s' % jinja_vars)
         self.required_vars = jinja_vars
 
         for var in jinja_vars:
             if not jinja_vars[var]:
-                LOG.info('empty %s=%s' % (var, jinja_vars[var]))
+                self.LOG.info('Cant find var "%s" in jinja_vars' % var)
             if 'image' in var:
-                LOG.info('%s=%s' % (var, jinja_vars[var]))
+                self.LOG.debug('%s is "%s"' % (var, jinja_vars[var]))
 
         # At first write global tools to ZK. FIXME: Make it a common profile
         conf_path = os.path.join(self.config_dir, 'common',
@@ -179,8 +189,10 @@ class KollaWorker(object):
 
         # Now write services configs
         for proj in self.get_projects():
+            self.LOG.debug('Current project is %s' % proj)
             proj_dir = os.path.join(self.config_dir, proj)
             if not os.path.exists(proj_dir):
+                self.LOG.info('Cant find project dir "%s"' % proj_dir)
                 continue
 
             conf_path = os.path.join(self.config_dir, proj,
@@ -192,8 +204,10 @@ class KollaWorker(object):
             dest_node = os.path.join(base_node, 'config', proj, proj)
             zk.ensure_path(dest_node)
             zk.set(dest_node, json.dumps(extra))
+            self.LOG.debug('Created "%s" node in zookeeper' % dest_node)
 
             for service in extra['config'][proj]:
+                self.LOG.debug('Current service is %s' % service)
                 # write the config files
                 for name, item in extra['config'][proj][service].iteritems():
                     dest_node = os.path.join(base_node, 'config', proj,
@@ -209,6 +223,7 @@ class KollaWorker(object):
                         with open(src_file) as fp:
                             content = fp.read()
                     zk.set(dest_node, content)
+                    self.LOG.debug('Created "%s" node in zookeeper' % dest_node)
 
                 # write the commands
                 for name, item in extra['commands'][proj][service].iteritems():
@@ -217,8 +232,11 @@ class KollaWorker(object):
                     zk.ensure_path(dest_node)
                     try:
                         zk.set(dest_node, json.dumps(item))
+                        self.LOG.debug('Created "%s" node in zookeeper' % dest_node)
                     except Exception as te:
-                        LOG.error('%s=%s -> %s' % (dest_node, item, te))
+                        self.LOG.error('Cant create "%s" node with "%s" item in '
+                                  'Zookeeper. Error was: "%s"' %
+                                  (dest_node, item, te))
 
                 # 3. Add startup config
                 start_conf = os.path.join(self.config_dir,
@@ -244,7 +262,7 @@ class KollaWorker(object):
                                             proj,
                                             '%s.%s.j2' % (service, app_type))
                     if not os.path.exists(app_file):
-                        LOG.debug('potentially missing file %s' % app_file)
+                        self.LOG.debug('Potentially missing file %s' % app_file)
                         continue
                     content = jinja_utils.jinja_render(app_file, jinja_vars,
                                                        extra=values)
@@ -262,21 +280,22 @@ class KollaWorker(object):
         content = jinja_utils.jinja_render(openrc_file, self.required_vars)
         with open('openrc', 'w') as f:
             f.write(content)
-        LOG.info('Written OpenStack env to "openrc"')
+        self.LOG.info('Written OpenStack env to "openrc"')
 
     def cleanup_temp_files(self):
         """Remove temp files"""
         shutil.rmtree(self.temp_dir)
+        self.LOG.debug('Tmp file %s removed' % self.temp_dir)
 
     def write_to_zookeeper(self):
         with zk_utils.connection() as zk:
 
             base_node = os.path.join('kolla', self.deployment_id)
             if zk.exists(base_node) and CONF.force:
-                LOG.info('Deleting "%s" ZK node tree' % base_node)
+                self.LOG.info('Deleting "%s" ZK node tree' % base_node)
                 zk.delete(base_node, recursive=True)
             elif zk.exists(base_node) and not CONF.force:
-                LOG.info('"%s" ZK node tree is already exists. If you want '
+                self.LOG.info('"%s" ZK node tree is already exists. If you want '
                          'to delete it, use --force' % base_node)
                 sys.exit(1)
 
@@ -286,7 +305,8 @@ class KollaWorker(object):
                           'inventory_hostname']
             for var in self.required_vars:
                 if (var in filter_out):
-                    LOG.info('set(%s) = %s' % (var, self.required_vars[var]))
+                    self.LOG.debug('Var "%s" with value "%s" is filtered out' %
+                              (var, self.required_vars[var]))
                     continue
                 var_value = self.required_vars[var]
                 if isinstance(self.required_vars[var], dict):
@@ -295,12 +315,15 @@ class KollaWorker(object):
                 zk.ensure_path(var_path)
                 try:
                     zk.set(var_path, var_value)
+                    self.LOG.debug('Updated "%s" node in zookeeper.' % var_path)
                 except Exception as te:
-                    LOG.error('%s=%s -> %s' % (var_path, var_value, te))
+                    self.LOG.error('Cant create "%s" node with "%s" item in '
+                              'Zookeeper. Error was: "%s"' %
+                              (var_path, var_value, te))
 
     def _start_marathon_app(self, app_resource):
         if CONF.update:
-            LOG.info('Applications upgrade is not implemented '
+            self.LOG.info('Applications upgrade is not implemented '
                      'yet!')
         else:
             try:
@@ -312,7 +335,7 @@ class KollaWorker(object):
 
     def _start_chronos_job(self, job_resource):
         if CONF.update:
-            LOG.info('Bootstrap tasks for upgrade are not implemented yet!')
+            self.LOG.info('Bootstrap tasks for upgrade are not implemented yet!')
         else:
             try:
                 return self.chronos_client.add_job(job_resource)
@@ -334,11 +357,21 @@ class KollaWorker(object):
                     deployment_id = {'KOLLA_DEPLOYMENT_ID': self.deployment_id}
                     app_resource['env'].update(deployment_id)
                     self._start_marathon_app(app_resource)
+                    self.LOG.info('Marathon app "%s" is started' %
+                             app_resource['id'])
                 else:
                     deployment_id = {'name': 'KOLLA_DEPLOYMENT_ID',
                                      'value': self.deployment_id}
                     app_resource['environmentVariables'].append(deployment_id)
                     self._start_chronos_job(app_resource)
+                    self.LOG.info('Chronos job "%s" is started' %
+                             app_resource['name'])
+    def print_summary(self):
+        self.LOG.info('=' * 80)
+        self.LOG.info('Openstack deployed, check url below for mo info.')
+        self.LOG.info('Marathon: %s', CONF.marathon.host)
+        self.LOG.info('Mesos: %s', CONF.marathon.host.replace('8080', '5050'))
+        self.LOG.info('Chronos: %s', CONF.chronos.host)
 
 
 def main():
@@ -349,10 +382,7 @@ def main():
     kolla.write_to_zookeeper()
     kolla.write_openrc()
     kolla.start()
-    LOG.info('Mesos: %s/#/', CONF.marathon.host.replace('8080', '5050'))
-    LOG.info('Marathon: %s/ui/#/apps', CONF.marathon.host)
-    LOG.info('Chronos: %s/#', CONF.chronos.host)
-
+    kolla.print_summary()
     # kolla.cleanup_temp_files()
 
 
