@@ -138,9 +138,7 @@ class TestClient(base.BaseTestCase):
 
     def test_gen_deployment_id_without_parameters(self):
         self.worker.gen_deployment_id()
-        date = datetime.datetime.fromtimestamp(self.worker.start_time)
-        new_id = date.strftime('%Y-%m-%d-%H-%M-%S')
-        self.assertTrue(self.worker.deployment_id.startswith(new_id[:10]))
+        self.assertTrue(self.worker.deployment_id, 'openstack')
 
     @mock.patch('kolla_mesos.cmd.deploy.sys')
     def test_gen_deployment_id_with_extra_parameters(self, mock_sys):
