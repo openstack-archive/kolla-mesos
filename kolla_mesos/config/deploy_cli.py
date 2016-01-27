@@ -17,6 +17,8 @@ CONF = cfg.CONF
 deploy_cli_opts = [
     cfg.BoolOpt('update',
                 default=False),
+    cfg.BoolOpt('debug',
+                default=False),
     cfg.BoolOpt('force',
                 default=False)
 ]
