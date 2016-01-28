@@ -1,0 +1,9 @@
+Code-Review+2: Sam Yaple <sam@yaple.net>
+Code-Review+2: Martin André <m.andre@redhat.com>
+Workflow+1: Martin André <m.andre@redhat.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Thu, 28 Jan 2016 00:50:22 +0000
+Reviewed-on: https://review.openstack.org/272836
+Project: openstack/kolla-mesos
+Branch: refs/heads/master
