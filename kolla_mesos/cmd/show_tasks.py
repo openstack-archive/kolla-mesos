@@ -97,6 +97,15 @@ def get_tasks(deploy_id):
       'keystone/keystone/setup',
       'keystone/keystone_ansible_tasks/create_database',
     """
+
+    def get_task_from_cmd(role, cmd, cmd_info):
+        reg = '/kolla/%s/status/%s/%s/.done' % (deploy_id, role, cmd)
+        task = {'register': reg, 'requires': []}
+        for dep in cmd_info.get('dependencies', []):
+            task['requires'].append(
+                '/kolla/%s/status/%s/.done' % (deploy_id, dep))
+        return task
+
     tasks = {}
     config_dir = os.path.join(file_utils.find_base_dir(), 'config')
     for root, _, files in os.walk(config_dir):
@@ -131,11 +140,8 @@ def get_tasks(deploy_id):
                 for role, role_info in group_info.items():
                     for cmd, cmd_info in role_info.items():
                         task_name = '/%s/%s/%s' % (group, role, cmd)
-                        tasks[task_name] = {}
-                        if 'register' in cmd_info:
-                            tasks[task_name]['register'] = cmd_info['register']
-                        if 'requires' in cmd_info:
-                            tasks[task_name]['requires'] = cmd_info['requires']
+                        tasks[task_name] = get_task_from_cmd(role, cmd,
+                                                             cmd_info)
     return tasks
 
 
@@ -225,14 +231,14 @@ def clean_path(path):
     """clean path to reduce output clutter
 
     The path is either:
-        /kolla/variables/.../.done (older version) or
-        /kolla/deployment_id/variables/.../.done
+        /kolla/status/.../.done (older version) or
+        /kolla/deployment_id/status/.../.done
 
     This will remove edit down the path to just the string between
-    'variables' and '.done'.
+    'status' and '.done'.
     """
-    if 'variables/' in path:
-        path = path.rsplit('variables/', 1)[1]
+    if 'status/' in path:
+        path = path.rsplit('status/', 1)[1]
     if '/.done' in path:
         path = path.rsplit('/.done', 1)[0]
     return path
