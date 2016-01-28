@@ -155,6 +155,7 @@ def register_group_and_hostvars(zk):
             ANSIBLE_PRIVATE: {'ipv4': {'address':
                                        get_ip_address(PRIVATE_INTERFACE)}},
             'ansible_hostname': socket.gethostname(),
+            'api_interface': PUBLIC_INTERFACE,
             'role': ROLE,
             'id': str(node_id)}
 
@@ -230,7 +231,8 @@ def generate_config(zk, conf):
     variables = {'hostvars': hostvars, 'groups': groups,
                  'inventory_hostname': host,
                  'ansible_hostname': host,
-                 'deployment_id': DEPLOYMENT_ID}
+                 'deployment_id': DEPLOYMENT_ID,
+                 'service_name': ROLE}
 
     conf_base_node = os.path.join('kolla', DEPLOYMENT_ID, 'config', GROUP,
                                   ROLE)
