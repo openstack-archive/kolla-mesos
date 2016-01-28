@@ -12,6 +12,7 @@
 
 import contextlib
 
+from oslo_config import cfg
 from oslotest import base
 import six
 import testscenarios
@@ -29,5 +30,8 @@ else:
 
 class BaseTestCase(testscenarios.WithScenarios,
                    base.BaseTestCase):
-
     """Test case base class for all unit tests."""
+
+    def setUp(self):
+        super(BaseTestCase, self).setUp()
+        self.addCleanup(cfg.CONF.reset)
