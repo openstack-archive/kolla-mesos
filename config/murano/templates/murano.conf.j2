@@ -1,0 +1,32 @@
+[DEFAULT]
+debug = {{ murano_logging_debug }}
+
+
+use_syslog = True
+syslog_log_facility = LOG_LOCAL0
+
+[database]
+connection = mysql+pymysql://{{ murano_database_user }}:{{ murano_database_password }}@{{ murano_database_address }}/{{ murano_database_name }}
+
+[keystone_authtoken]
+auth_uri = http://{{ kolla_internal_address }}:{{ keystone_public_port }}
+auth_url = http://{{ kolla_internal_address }}:{{ keystone_admin_port }}
+auth_type = password
+project_domain_id = default
+user_domain_id = default
+project_name = service
+username = {{ murano_keystone_user }}
+password = {{ murano_keystone_password }}
+
+[murano]
+url = http://{{ kolla_internal_address }}:{{ murano_api_port }}
+
+[oslo_messaging_rabbit]
+rabbit_userid = {{ rabbitmq_user }}
+rabbit_password = {{ rabbitmq_password }}
+rabbit_ha_queues = true
+rabbit_hosts = {% for host in groups['rabbitmq'] %}{{ hostvars[host]['ansible_' + hostvars[host]['api_interface']]['ipv4']['address'] }}:{{ rabbitmq_port }}{% if not loop.last %},{% endif %}{% endfor %}
+
+[oslo_messaging_notifications]
+driver = noop
+

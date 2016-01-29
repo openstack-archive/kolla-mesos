@@ -1,0 +1,23 @@
+{
+    "id": "/{{ deployment_id }}/murano-engine",
+    "instances": 1,
+    "mem": 128,
+    "cpus": 0.3,
+    "container": {
+        "type": "DOCKER",
+        "docker": {
+            "image": "kollaglue/centos-source-murano-engine:2.0.0",
+            "network": "HOST"
+        }
+    },
+    "env": {
+        "KOLLA_CONFIG_STRATEGY": "{{ config_strategy }}",
+        "KOLLA_CONFIG": "{{ kolla_config }}",
+        "KOLLA_LOGLEVEL": "{{ init_loglevel }}",
+        "KOLLA_GROUP": "murano",
+        "KOLLA_ROLE": "murano-engine",
+        "KOLLA_ZK_HOSTS": "{{ zookeeper_hosts }}",
+        "KOLLA_PRIVATE_INTERFACE": "{{ private_interface }}",
+        "KOLLA_PUBLIC_INTERFACE": "{{ public_interface }}"
+    }
+}

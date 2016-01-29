@@ -1,0 +1,20 @@
+{
+    "name": "{{ deployment_id }}-murano-bootstrap-tasks",
+    "mem": 256.0,
+    "cpus": 0.3,
+    "command": "kolla_start",
+    "container": {
+        "type": "DOCKER",
+        "image": "kollaglue/centos-source-murano-api:{{ murano_api_tag }}",
+        "network": "HOST"
+    },
+    "environmentVariables": [
+        {"name": "KOLLA_CONFIG_STRATEGY", "value": "{{ config_strategy }}"},
+        {"name": "KOLLA_CONFIG", "value": "{{ kolla_config }}"},
+        {"name": "KOLLA_LOGLEVEL", "value": "{{ init_loglevel }}"},
+        {"name": "KOLLA_GROUP", "value": "murano"},
+        {"name": "KOLLA_ROLE", "value": "murano-bootstrap"},
+        {"name": "KOLLA_ZK_HOSTS", "value": "{{ zookeeper_hosts }}"},
+        {"name": "KOLLA_PRIVATE_INTERFACE", "value": "{{ private_interface }}"},
+        {"name": "KOLLA_PUBLIC_INTERFACE", "value": "{{ public_interface }}"}]
+}
