@@ -35,6 +35,11 @@ from kazoo.recipe import party
 import six
 from six.moves import queue
 
+CMD_WAIT = 'waiting'
+CMD_RUN = 'running'
+CMD_ERR = 'error'
+CMD_RETRY = 'retry'
+CMD_DONE = 'done'
 
 ZK_HOSTS = None
 GROUP = None
@@ -306,7 +311,10 @@ class Command(object):
         self.command = cmd['command']
         self.run_once = cmd.get('run_once', False)
         self.daemon = cmd.get('daemon', False)
-        self.check_path = cmd.get('register')  # eg. /a/b/c/.done
+        self.check_path = cmd.get('register')  # eg. /a/b/c
+        if not self.check_path:
+            raise Exception('Command: %s aborted. ' % name +
+                            'All commands require a register value')
         self.requires = cmd.get('requires', [])
         self.retries = int(cmd.get('retries', 0))
         self.delay = int(cmd.get('delay', 5))
@@ -314,19 +322,35 @@ class Command(object):
         for ek, ev in cmd.get('env', {}).items():
             # make sure they are strings
             self.env[ek] = str(ev)
-        if self.check_path:
-            self.init_path = os.path.dirname(self.check_path)
-        else:
-            self.init_path = None
         self.requirements_fulfilled()
 
     def requirements_fulfilled(self):
         fulfilled = True
         for req in self.requires:
-            if not self.zk.retry(self.zk.exists, req):
-                LOG.warning('%s is waiting for %s' % (self.name, req))
+            state = self.get_state(req)
+            if state != CMD_DONE:
+                LOG.warning('%s is waiting for %s, in state: %s'
+                            % (self.name, req, state))
                 fulfilled = False
         return fulfilled
+
+    def set_state(self, state):
+        self.zk.retry(self.zk.ensure_path, self.check_path)
+        current_state, _ = self.zk.get(self.check_path)
+        if current_state != state:
+            LOG.info('path: %s, changing state from %s to %s'
+                     % (self.check_path, current_state, state))
+            self.zk.set(self.check_path, state)
+
+    def get_state(self, path=None):
+        if not path:
+            path = self.check_path
+        state = None
+        if self.zk.exists(path):
+            state, _ = self.zk.get(str(path))
+        if not state:
+            state = None
+        return state
 
     def sleep(self, queue_size, retry=False):
         seconds = math.ceil(20 / (1.0 + queue_size))
@@ -358,21 +382,21 @@ class Command(object):
                 if not self.check_path:
                     LOG.error('run_once is True, but no "register"')
                     sys.exit(1)
-                return zk.retry(zk.exists, self.check_path)
+                return self.get_state() == CMD_DONE
 
             if _init_done():
                 LOG.info("Path '%s' exists: skipping command" %
                          self.check_path)
             else:
-                LOG.info("Path '%s' does not exists: running command" %
+                LOG.info("Path '%s' does not exist: running command" %
                          self.check_path)
-                zk.retry(zk.ensure_path, self.init_path)
-                lock = zk.Lock(self.init_path)
-                LOG.info("Acquiring lock '%s'" % self.init_path)
+                zk.retry(zk.ensure_path, self.check_path)
+                lock = zk.Lock(self.check_path)
+                LOG.info("Acquiring lock '%s'" % self.check_path)
                 with lock:
                     if not _init_done():
                         result = self._run_command()
-                LOG.info("Releasing lock '%s'" % self.init_path)
+                LOG.info("Releasing lock '%s'" % self.check_path)
         else:
             result = self._run_command()
         LOG.info('** < Complete %s result: %s' % (self.name, result))
@@ -382,11 +406,12 @@ class Command(object):
         LOG.debug("Running command: %s" % self.command)
         # decrement the retries
         self.retries = self.retries - 1
+        self.set_state(CMD_RUN)
         child_p = subprocess.Popen(self.command, shell=True,
                                    env=self.env)
         child_p.wait()
-        if child_p.returncode == 0 and self.check_path:
-            self.zk.retry(self.zk.ensure_path, self.check_path)
+        if child_p.returncode == 0:
+            self.set_state(CMD_DONE)
             LOG.debug("Command '%s' marked as done" % self.name)
         return child_p.returncode
 
@@ -400,26 +425,34 @@ def run_commands(zk, service_conf, conf_base_node):
         cmdq.put(Command(name, cmd, zk))
 
     while not cmdq.empty():
+        LOG.debug('evaluating command: %s' % cmd)
         cmd = cmdq.get()
         if cmd.daemon and not cmdq.empty():
             # run the daemon command last
+            cmd.set_state(CMD_WAIT)
             cmdq.put(cmd)
             continue
-        if cmd.requirements_fulfilled():
+        if not cmd.requirements_fulfilled():
+            cmd.set_state(CMD_WAIT)
+            cmd.sleep(cmdq.qsize())
+            cmdq.put(cmd)
+        else:
             if not first_ready:
                 if ROLE in service_conf.get('config', {}).get(GROUP, {}):
                     generate_configs(zk, service_conf, conf_base_node)
                 first_ready = True
+            # run the command
             if cmd.run() != 0:
+                # command failed
                 if cmd.retries > 0:
+                    cmd.set_state(CMD_RETRY)
                     cmd.sleep(cmdq.qsize(), retry=True)
                     cmdq.put(cmd)
                 else:
                     # command failed and no retries, so exit.
+                    cmd.set_state(CMD_ERR)
+                    LOG.error('exiting start.py due to error...')
                     sys.exit(1)
-        else:
-            cmd.sleep(cmdq.qsize())
-            cmdq.put(cmd)
 
 
 def main():

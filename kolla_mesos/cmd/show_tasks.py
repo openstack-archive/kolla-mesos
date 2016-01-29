@@ -167,25 +167,17 @@ def get_status(tasks):
                 for path in info['requires']:
                     reqt_status = ''
                     if zk.exists(path):
-                        reqt_status = 'done'
+                        reqt_status, _ = zk.get(path)
                     status[task]['requirements'][path] = reqt_status
 
         # get status of registrations
         for task, info in tasks.items():
             if 'register' in info:
                 status[task]['register'] = {}
-                reg_status = 'NOT DONE'
                 reg_path = info['register']
+                reg_status = ''
                 if zk.exists(reg_path):
-                    reg_status = 'done'
-                elif 'requires' in info:
-                    all_done = True
-                    for path in info['requires']:
-                        if not status[task]['requirements'][path]:
-                            all_done = False
-                            break
-                    if not all_done:
-                        reg_status = 'waiting'
+                    reg_status, _ = zk.get(reg_path)
 
                 status[task]['register'] = (reg_path, reg_status)
     return status
@@ -224,17 +216,14 @@ def print_status(status):
 def clean_path(path):
     """clean path to reduce output clutter
 
-    The path is either:
-        /kolla/variables/.../.done (older version) or
-        /kolla/deployment_id/variables/.../.done
+    The path:
+        /kolla/deployment_id/variables/...
 
-    This will remove edit down the path to just the string between
-    'variables' and '.done'.
+    This will edit down the path to just the string after
+    'variables'.
     """
     if 'variables/' in path:
         path = path.rsplit('variables/', 1)[1]
-    if '/.done' in path:
-        path = path.rsplit('/.done', 1)[0]
     return path
 
 
