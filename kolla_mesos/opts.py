@@ -12,6 +12,7 @@
 
 from kolla_mesos.config import chronos
 from kolla_mesos.config import kolla
+from kolla_mesos.config import logging
 from kolla_mesos.config import marathon
 from kolla_mesos.config import network
 from kolla_mesos.config import profiles
@@ -25,5 +26,6 @@ def list_opts():
         ('marathon', marathon.marathon_opts),
         ('network', network.network_opts),
         ('profiles', profiles.profiles_opts),
-        ('zookeeper', zookeeper.zookeeper_opts)
+        ('zookeeper', zookeeper.zookeeper_opts),
+        ('', logging.logging_opts)
     ]
