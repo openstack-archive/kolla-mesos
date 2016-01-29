@@ -31,18 +31,21 @@ class CommandTest(base.BaseTestCase):
         self.addCleanup(self.client.close)
 
     def test_str_1(self):
-        cmd = start.Command('a', {'command': 'true'},
+        cmd = start.Command('a', {'command': 'true',
+                                  'register': '/z'},
                             self.client)
         self.assertEqual('a "true"', str(cmd))
 
     def test_str_2(self):
         cmd = start.Command('b', {'command': 'true',
+                                  'register': '/z',
                                   'run_once': True},
                             self.client)
         self.assertEqual('b (run_once) "true"', str(cmd))
 
     def test_str_3(self):
         cmd = start.Command('c', {'command': 'true',
+                                  'register': '/z',
                                   'run_once': True,
                                   'daemon': True},
                             self.client)
@@ -50,39 +53,41 @@ class CommandTest(base.BaseTestCase):
 
     def test_str_4(self):
         cmd = start.Command('b', {'command': 'true',
+                                  'register': '/z',
                                   'retries': '3',
                                   'run_once': True},
                             self.client)
         self.assertEqual('b (run_once, retries) "true"', str(cmd))
 
     def test_defaults_1(self):
-        data = {'command': 'true'}
+        data = {'command': 'true', 'register': '/z'}
         cmd = start.Command('a', data, None)
         self.assertEqual(False, cmd.run_once)
         self.assertEqual(False, cmd.daemon)
         self.assertEqual([], cmd.requires)
-        self.assertIsNone(cmd.init_path)
-        self.assertIsNone(cmd.check_path)
 
     def test_requirements_fulfilled_no(self):
         cmd1 = start.Command('a', {'command': 'true',
-                                   'requires': ['/x', '/y']},
+                                   'requires': ['/x', '/y'],
+                                   'register': '/z'},
                              self.client)
 
-        self.client.create('/x', 'one', makepath=True)
+        self.client.create('/x', 'done', makepath=True)
         self.assertFalse(cmd1.requirements_fulfilled())
 
     def test_requirements_fulfilled_yes(self):
         cmd1 = start.Command('a', {'command': 'true',
-                                   'requires': ['/x', '/y']},
+                                   'requires': ['/x', '/y'],
+                                   'register': '/z'},
                              self.client)
 
-        self.client.create('/x', 'one', makepath=True)
-        self.client.create('/y', 'one', makepath=True)
+        self.client.create('/x', 'done', makepath=True)
+        self.client.create('/y', 'done', makepath=True)
         self.assertTrue(cmd1.requirements_fulfilled())
 
     def test_run_always(self):
-        cmd1 = start.Command('a', {'command': 'true'},
+        cmd1 = start.Command('a', {'command': 'true',
+                                   'register': '/z'},
                              self.client)
         with fixtures.FakePopen() as mock_popen:
             cmd1.run()
@@ -91,53 +96,53 @@ class CommandTest(base.BaseTestCase):
 
     def test_run_once(self):
         cmd1 = start.Command('a', {'command': 'true',
-                                   'register': '/z/.done',
+                                   'register': '/z',
                                    'run_once': True},
                              self.client)
         with fixtures.FakePopen() as mock_popen:
             cmd1.run()
             cmd1.run()
             self.assertEqual(1, len(mock_popen.procs))
-            self.assertTrue(self.client.exists('/z/.done'))
+            self.assertTrue(self.client.exists('/z'))
 
     def test_already_run(self):
         cmd1 = start.Command('a', {'command': 'true',
-                                   'register': '/z/.done',
+                                   'register': '/z',
                                    'run_once': True},
                              self.client)
-        self.client.create('/z/.done', 'one', makepath=True)
+        self.client.create('/z', 'done', makepath=True)
         with fixtures.FakePopen() as mock_popen:
             cmd1.run()
             self.assertEqual(0, len(mock_popen.procs))
 
     def test_return_non_zero(self):
-        cmd1 = start.Command('a', {'command': 'true'},
+        cmd1 = start.Command('a', {'command': 'true', 'register': '/z'},
                              self.client)
         with fixtures.FakePopen(lambda _: {'returncode': 3}):
             self.assertEqual(3, cmd1.run())
 
     def test_return_zero(self):
-        cmd1 = start.Command('a', {'command': 'true'},
+        cmd1 = start.Command('a', {'command': 'true', 'register': '/z'},
                              self.client)
         with fixtures.FakePopen(lambda _: {'returncode': 0}):
             self.assertEqual(0, cmd1.run())
 
     def test_sleep_0_q(self):
-        cmd = start.Command('a', {'command': 'true'},
+        cmd = start.Command('a', {'command': 'true', 'register': '/z'},
                             self.client)
         with mock.patch('time.sleep') as m_sleep:
             cmd.sleep(0)
             m_sleep.assert_called_once_with(20)
 
     def test_sleep_10_q(self):
-        cmd = start.Command('a', {'command': 'true'},
+        cmd = start.Command('a', {'command': 'true', 'register': '/z'},
                             self.client)
         with mock.patch('time.sleep') as m_sleep:
             cmd.sleep(10)
             m_sleep.assert_called_once_with(2)
 
     def test_sleep_retry_1(self):
-        cmd = start.Command('a', {'command': 'true'},
+        cmd = start.Command('a', {'command': 'true', 'register': '/z'},
                             self.client)
         cmd.delay = 4
         with mock.patch('time.sleep') as m_sleep:
@@ -145,7 +150,7 @@ class CommandTest(base.BaseTestCase):
             m_sleep.assert_called_once_with(2)
 
     def test_sleep_retry_2(self):
-        cmd = start.Command('a', {'command': 'true'},
+        cmd = start.Command('a', {'command': 'true', 'register': '/z'},
                             self.client)
         cmd.delay = 4
         with mock.patch('time.sleep') as m_sleep:
@@ -172,7 +177,7 @@ class RunCommandsTest(base.BaseTestCase):
     def test_one_good(self, m_exit, m_gc, m_run):
         cmd = {'setup': {
             'run_once': True,
-            'register': '/kolla/variables/action/.done',
+            'register': '/z',
             'command': 'true'}}
 
         conf = {'config': {'testg': {'testr': {}}},
@@ -188,7 +193,7 @@ class RunCommandsTest(base.BaseTestCase):
     def test_one_bad(self, m_exit, m_gc, m_run):
         cmd = {'setup': {
             'run_once': True,
-            'register': '/kolla/variables/action/.done',
+            'register': '/z',
             'command': 'true'}}
 
         conf = {'config': {'testg': {'testr': {}}},
@@ -206,7 +211,7 @@ class RunCommandsTest(base.BaseTestCase):
             'run_once': True,
             'retries': 2,
             'delay': 0,
-            'register': '/kolla/variables/action/.done',
+            'register': '/z',
             'command': 'true'}}
 
         conf = {'config': {'testg': {'testr': {}}},
@@ -231,14 +236,16 @@ class RunCommandsTest(base.BaseTestCase):
         conf = {'config': {'testg': {'testr': {}}},
                 'commands': {'testg': {'testr': {}}}}
         for cc in range(0, 99):
-            cmd = {'c-%d' % cc: {'command': 'true'}}
+            cmd = {'c-%d' % cc: {'command': 'true',
+                                 'register': '/z'}}
             conf['commands']['testg']['testr'].update(cmd)
 
         conf['commands']['testg']['testr'].update(
-            {'c-last': {'daemon': True, 'command': 'true'}})
+            {'c-last': {'daemon': True, 'command': 'true',
+                        'register': '/z'}})
 
         for cc in range(100, 200):
-            cmd = {'c-%d' % cc: {'command': 'true'}}
+            cmd = {'c-%d' % cc: {'command': 'true', 'register': '/z'}}
             conf['commands']['testg']['testr'].update(cmd)
         exp = conf['commands']['testg']['testr']
 
