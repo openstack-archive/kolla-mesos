@@ -1,0 +1,3 @@
+[DEFAULT]
+bind_host = {{ hostvars[inventory_hostname]['ansible_' + api_interface]['ipv4']['address'] }}
+bind_port = {{ murano_api_port }}

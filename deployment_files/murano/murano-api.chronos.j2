@@ -1,0 +1,21 @@
+{
+    "name": "{{ deployment_id }}-murano-ansible-tasks",
+    "mem": 512.0,
+    "cpus": 0.3,
+    "command": "kolla_start",
+    "container": {
+        "type": "DOCKER",
+        "image": "{{ kolla_ansible_image }}:{{ kolla_ansible_tag }}",
+        "network": "HOST"
+    },
+    "environmentVariables": [
+        {"name": "KOLLA_CONFIG_STRATEGY", "value": "{{ config_strategy }}"},
+        {"name": "KOLLA_CONFIG", "value": "{{ kolla_config }}"},
+        {"name": "KOLLA_LOGLEVEL", "value": "{{ init_loglevel }}"},
+        {"name": "KOLLA_GROUP", "value": "murano"},
+        {"name": "KOLLA_ROLE", "value": "murano_ansible_tasks"},
+        {"name": "KOLLA_ZK_HOSTS", "value": "{{ zookeeper_hosts }}"},
+        {"name": "KOLLA_PRIVATE_INTERFACE", "value": "{{ private_interface }}"},
+        {"name": "KOLLA_PUBLIC_INTERFACE", "value": "{{ public_interface }}"},
+        {"name": "ANSIBLE_LIBRARY", "value": "/usr/share/ansible/"}]
+}

@@ -1,0 +1,120 @@
+config:
+  murano:
+    murano-bootstrap:
+      murano.conf.j2:
+        source: ["config/murano/templates/murano.conf.j2",
+                 "config/murano/templates/murano-api.conf.j2",
+                 "/etc/kolla-mesos/config/global.conf",
+                 "/etc/kolla-mesos/config/database.conf",
+                 "/etc/kolla-mesos/config/messaging.conf",
+                 "/etc/kolla-mesos/config/murano.conf"]
+        dest: /etc/murano/murano.conf
+        owner: murano
+        perm: "0600"
+    murano-api:
+      murano.conf.j2:
+        source: ["config/murano/templates/murano.conf.j2",
+                 "config/murano/templates/murano-api.conf.j2",
+                 "/etc/kolla-mesos/config/global.conf",
+                 "/etc/kolla-mesos/config/database.conf",
+                 "/etc/kolla-mesos/config/messaging.conf",
+                 "/etc/kolla-mesos/config/murano.conf"]
+        dest: /etc/murano/murano.conf
+        owner: murano
+        perm: "0600"
+    murano-engine:
+      murano.conf.j2:
+        source: ["config/murano/templates/murano.conf.j2",
+                 "/etc/kolla-mesos/config/global.conf",
+                 "/etc/kolla-mesos/config/database.conf",
+                 "/etc/kolla-mesos/config/messaging.conf",
+                 "/etc/kolla-mesos/config/murano.conf"]
+        dest: /etc/murano/murano.conf
+        owner: murano
+        perm: "0600"
+commands:
+  murano:
+    murano-bootstrap:
+      bootstrap:
+        command: kolla_extend_start
+        env:
+          KOLLA_BOOTSTRAP:
+        run_once: True
+        requires: [/kolla/{{ deployment_id }}/variables/murano_database_user_create/.done]
+        register: /kolla/{{ deployment_id }}/variables/murano_bootstrap/.done
+    murano-api:
+      run_daemon:
+        run_once: False
+        daemon: True
+        requires: [/kolla/{{ deployment_id }}/variables/murano_bootstrap/.done]
+        command: "murano-api --config-file /etc/murano/murano.conf"
+    murano-engine:
+      run_daemon:
+        run_once: False
+        daemon: True
+        requires: [/kolla/{{ deployment_id }}/variables/murano_bootstrap/.done]
+        command: "murano-engine --config-file /etc/murano/murano.conf"
+    murano_ansible_tasks:
+      create_database:
+        run_once: True
+        retries: 3
+        delay: 5
+        requires: [/kolla/{{ deployment_id }}/variables/mariadb_bootstrap/.done]
+        register: /kolla/{{ deployment_id }}/variables/murano_database/.done
+        command: {{ ansible_task_cmd }}
+          -m mysql_db
+          -a "login_host='{{ database_address }}'
+              login_port='{{ mariadb_port }}'
+              login_user='{{ database_user }}'
+              login_password='{{ database_password }}'
+              name='{{ murano_database_name }}'"
+      database_user_create:
+        run_once: True
+        retries: 3
+        delay: 5
+        requires: [/kolla/{{ deployment_id }}/variables/murano_database/.done]
+        register: /kolla/{{ deployment_id }}/variables/murano_database_user_create/.done
+        command: {{ ansible_task_cmd }}
+          -m mysql_user
+          -a "login_host='{{ database_address }}'
+              login_port='{{ mariadb_port }}'
+              login_user='{{ database_user }}'
+              login_password='{{ database_password }}'
+              name='{{ murano_database_name }}'
+              password='{{ murano_database_password }}'
+              host='%'
+              priv='{{ murano_database_name }}.*:ALL'
+              append_privs='yes'"
+      register_endpoint:
+        run_once: True
+        retries: 3
+        delay: 5
+        requires: [/kolla/{{ deployment_id }}/variables/murano_database_user_create/.done]
+        register: /kolla/{{ deployment_id }}/variables/murano_admin_endpoint/.done
+        command: {{ ansible_task_cmd }}
+          -m kolla_keystone_service
+          -a "service_name=murano
+              service_type=application_catalog
+              description='Openstack Application Catalogue'
+              endpoint_region={{ openstack_region_name }}
+              admin_url='http://{{ kolla_internal_address }}:{{ murano_api_port }}'
+              internal_url='http://{{ kolla_internal_address }}:{{ murano_api_port }}'
+              public_url='http://{{ kolla_external_address }}:{{ murano_api_port }}'
+              region_name={{ openstack_region_name }}
+              auth={{ '{{ openstack_murano_auth }}' }}"
+          -e "{'openstack_murano_auth':{{ openstack_murano_auth }}}"
+      admin_creds:
+        run_once: True
+        retries: 3
+        delay: 5
+        requires: [/kolla/{{ deployment_id }}/variables/murano_admin_endpoint/.done]
+        register: /kolla/{{ deployment_id }}/variables/murano_admin_creds/.done
+        command: {{ ansible_task_cmd }}
+          -m kolla_keystone_user
+          -a "project=service
+              user=murano
+              password={{ murano_keystone_password }}
+              role=admin
+              region_name={{ openstack_region_name }}
+              auth={{ '{{ openstack_murano_auth }}' }}"
+          -e "{'openstack_murano_auth':{{ openstack_murano_auth }}}"
