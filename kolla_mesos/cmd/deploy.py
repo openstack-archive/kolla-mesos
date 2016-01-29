@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import collections
 import datetime
 import json
 import os
@@ -53,6 +54,129 @@ logging.register_options(CONF)
 
 class KollaDirNotFoundException(Exception):
     pass
+
+
+class File(object):
+    def __init__(self, conf, name, service_name):
+        self._conf = conf
+        self._name = name
+        self._service_name = service_name
+
+    def merge_ini_files(self, source_files):
+        config_p = configparser.ConfigParser()
+        for src_file in source_files:
+            if not src_file.startswith('/'):
+                src_file = os.path.join(self.base_dir, src_file)
+            if not os.path.exists(src_file):
+                LOG.warning('path missing %s' % src_file)
+                continue
+            config_p.read(src_file)
+        merged_f = cStringIO()
+        config_p.write(merged_f)
+        return merged_f.getvalue()
+
+    def write_to_zookeeper(self, zk, base_node):
+        _, proj, service = self._service_name.split('/')
+        dest_node = os.path.join(base_node, 'config', proj,
+                                 service, self._name)
+        zk.ensure_path(dest_node)
+        if isinstance(self._conf['source'], list):
+            content = self.merge_ini_files(self._conf['source'])
+        else:
+            src_file = self._conf['source']
+            if not src_file.startswith('/'):
+                src_file = file_utils.find_file(src_file)
+            with open(src_file) as fp:
+                content = fp.read()
+        zk.set(dest_node, content)
+
+
+class Command(object):
+    def __init__(self, conf, name, service_name):
+        self._conf = conf
+        self._name = name
+        self._service_name = service_name
+
+    def write_to_zookeeper(self, zk, base_node):
+        for fn in self._conf.get('files', []):
+            fo = File(self._conf['files'][fn], fn, self._service_name)
+            fo.write_to_zookeeper(zk, base_node)
+
+        del self._conf['files']
+        _, proj, service = self._service_name.split('/')
+        dest_node = os.path.join(base_node, 'commands', proj,
+                                 service, self._name)
+        zk.ensure_path(dest_node)
+        try:
+            zk.set(dest_node, json.dumps(self._conf))
+        except Exception as te:
+            LOG.error('%s=%s -> %s' % (dest_node, self._conf, te))
+
+
+class Runner(object):
+    def __init__(self, conf):
+        self._conf = conf
+
+    def _list_commands(self):
+        if 'service' in self._conf:
+            yield 'daemon', self._conf['service']['daemon']
+        for key in self._conf.get('commands', []):
+            yield key, self._conf['commands'][key]
+
+    def write_to_zookeeper(self, zk, base_node):
+        for cmd_name, cmd_conf in self._list_commands():
+            cmd = Command(cmd_conf, cmd_name, self._conf['name'])
+            cmd.write_to_zookeeper(zk, base_node)
+
+    def generate_deployment_files(self, kolla_config):
+        pass
+
+
+def recursive_dict_update(d, u):
+    for k, v in u.iteritems():
+        if isinstance(v, collections.Mapping):
+            d[k] = recursive_dict_update(d.get(k, {}), v)
+        else:
+            d[k] = u[k]
+    return d
+
+
+class MarathonApp(Runner):
+    def generate_deployment_files(self, kolla_config, jinja_vars):
+        _, proj, service = self._conf['name'].split('/')
+        values = {
+            'role': service,
+            'group': proj,
+            'service_name': self._conf['name'],
+            'kolla_config': kolla_config,
+            'zookeeper_hosts': CONF.zookeeper.host,
+            'private_interface': CONF.network.private_interface,
+            'public_interface': CONF.network.public_interface,
+        }
+
+        app_file = os.path.join(self.base_dir,
+                                'deployment_files',
+                                'default.marathon.j2')
+        if not os.path.exists(app_file):
+            LOG.debug('potentially missing file %s' % app_file)
+            continue
+        content = jinja_utils.jinja_render(app_file, jinja_vars,
+                                           extra=values)
+        app_def = yaml.load(content)
+        app_def['container'] = recursive_dict_update(
+            app_def['container'], self._conf.get('container', {}))
+        app_def = recursive_dict_update(
+            app_def, self._conf.get('service', {}))
+        dest_file = os.path.join(self.temp_dir, proj,
+                                 '%s.marathon' % (service))
+        file_utils.mkdir_p(os.path.dirname(dest_file))
+        with open(dest_file, 'w') as f:
+            f.write(yaml.dump(app_def))
+
+
+class ChronosTask(Runner):
+    def generate_deployment_files(self, kolla_config):
+        _, proj, service = self._conf['name'].split('/')
 
 
 class KollaWorker(object):
@@ -148,7 +272,74 @@ class KollaWorker(object):
             deployment_id = (CONF.kolla.deployment_id_prefix + '-' + ts
                              if deploy_prefix else ts)
             self.deployment_id = deployment_id
-        LOG.info('Deployment ID: %s' % self.deployment_id)
+
+    def process_project_config(self, zk, proj, conf_path, jinja_vars,
+                               kolla_config):
+        extra = yaml.load(jinja_utils.jinja_render(conf_path, jinja_vars))
+        base_node = os.path.join('kolla', self.deployment_id)
+        dest_node = os.path.join(base_node, 'config', proj, proj)
+        zk.ensure_path(dest_node)
+        zk.set(dest_node, json.dumps(extra))
+        for service in extra['config'][proj]:
+            # write the config files
+            for name, item in extra['config'][proj][service].iteritems():
+                dest_node = os.path.join(base_node, 'config', proj,
+                                         service, name)
+                zk.ensure_path(dest_node)
+                if isinstance(item['source'], list):
+                    content = self.merge_ini_files(item['source'])
+                else:
+                    src_file = item['source']
+                    if not src_file.startswith('/'):
+                        src_file = file_utils.find_file(src_file)
+                    with open(src_file) as fp:
+                        content = fp.read()
+                zk.set(dest_node, content)
+
+                # write the commands
+                for name, item in extra['commands'][proj][service].iteritems():
+                    dest_node = os.path.join(base_node, 'commands', proj,
+                                             service, name)
+                    zk.ensure_path(dest_node)
+                    try:
+                        zk.set(dest_node, json.dumps(item))
+                    except Exception as te:
+                        LOG.error('%s=%s -> %s' % (dest_node, item, te))
+
+                # 4. parse the marathon app file and add the KOLLA_CONFIG
+                values = {
+                    'kolla_config': kolla_config,
+                    'zookeeper_hosts': CONF.zookeeper.host,
+                    'private_interface': CONF.network.private_interface,
+                    'public_interface': CONF.network.public_interface,
+                }
+                for app_type in ['marathon', 'chronos']:
+                    app_file = os.path.join(self.base_dir,
+                                            'deployment_files',
+                                            proj,
+                                            '%s.%s.j2' % (service, app_type))
+                    if not os.path.exists(app_file):
+                        LOG.debug('potentially missing file %s' % app_file)
+                        continue
+                    content = jinja_utils.jinja_render(app_file, jinja_vars,
+                                                       extra=values)
+                    dest_file = os.path.join(self.temp_dir, proj,
+                                             '%s.%s' % (service, app_type))
+                    file_utils.mkdir_p(os.path.dirname(dest_file))
+                    with open(dest_file, 'w') as f:
+                        f.write(content)
+
+    def process_service_config(self, zk, proj, conf_path,
+                               jinja_vars, kolla_config):
+        LOG.info('Found %s', conf_path)
+        conf = yaml.load(jinja_utils.jinja_render(conf_path, jinja_vars))
+        if 'service' in conf:
+            runner = MarathonApp(conf)
+        else:
+            runner = ChronosTask(conf)
+        base_node = os.path.join('kolla', self.deployment_id)
+        runner.write_to_zookeeper(zk, base_node)
+        runner.generate_deployment_files(kolla_config)
 
     def write_config_to_zookeeper(self, zk):
         jinja_vars = self.get_jinja_vars()
@@ -188,81 +379,23 @@ class KollaWorker(object):
 
             conf_path = os.path.join(self.config_dir, proj,
                                      '%s_config.yml.j2' % proj)
-            extra = yaml.load(jinja_utils.jinja_render(conf_path, jinja_vars))
+            if os.path.exists(conf_path):
+                self.process_project_config(zk, proj, conf_path, jinja_vars,
+                                            kolla_config)
+            else:
+                service_path = os.path.join(self.base_dir, 'services', proj)
+                for root, dirs, names in os.walk(service_path):
+                    [self.process_service_config(os.path.join(root, name))
+                     for name in names]
 
-            base_node = os.path.join('kolla', self.deployment_id)
-            # TODO() should be proj, service, not proj, proj
-            dest_node = os.path.join(base_node, 'config', proj, proj)
-            zk.ensure_path(dest_node)
-            zk.set(dest_node, json.dumps(extra))
-            LOG.debug('Created "%s" node in zookeeper' % dest_node)
-
-            for service in extra['config'][proj]:
-                LOG.debug('Current service is %s' % service)
-                # write the config files
-                for name, item in extra['config'][proj][service].iteritems():
-                    dest_node = os.path.join(base_node, 'config', proj,
-                                             service, name)
-                    zk.ensure_path(dest_node)
-
-                    if isinstance(item['source'], list):
-                        content = self.merge_ini_files(item['source'])
-                    else:
-                        src_file = item['source']
-                        if not src_file.startswith('/'):
-                            src_file = file_utils.find_file(src_file)
-                        with open(src_file) as fp:
-                            content = fp.read()
-                    zk.set(dest_node, content)
-                    LOG.debug('Created "%s" node in zookeeper' % dest_node)
-
-                # write the commands
-                for name, item in extra['commands'][proj][service].iteritems():
-                    dest_node = os.path.join(base_node, 'commands', proj,
-                                             service, name)
-                    zk.ensure_path(dest_node)
-                    try:
-                        zk.set(dest_node, json.dumps(item))
-                        LOG.debug('Created "%s" node in zookeeper' %
-                                  dest_node)
-                    except Exception as te:
-                        LOG.error('Cant create "%s" node with "%s" item'
-                                  ' in Zookeeper. Error was: "%s"' %
-                                  (dest_node, item, te))
-
-                # 3. Add startup config
-                start_conf = os.path.join(self.config_dir,
-                                          'common/kolla-start-config.json')
-                # override container_config_directory
-                cont_conf_dir = 'zk://%s' % (CONF.zookeeper.host)
-                jinja_vars['container_config_directory'] = cont_conf_dir
-                jinja_vars['deployment_id'] = self.deployment_id
-                kolla_config = jinja_utils.jinja_render(start_conf, jinja_vars)
-                kolla_config = kolla_config.replace('"', '\\"').replace(
-                    '\n', '')
-
-                # 4. parse the marathon app file and add the KOLLA_CONFIG
-                values = {
-                    'kolla_config': kolla_config,
-                    'zookeeper_hosts': CONF.zookeeper.host,
-                    'private_interface': CONF.network.private_interface,
-                    'public_interface': CONF.network.public_interface,
-                }
-                for app_type in ['marathon', 'chronos']:
-                    app_file = os.path.join(self.base_dir,
-                                            'deployment_files',
-                                            proj,
-                                            '%s.%s.j2' % (service, app_type))
-                    if not os.path.exists(app_file):
-                        LOG.debug('Potentially missing file %s' % app_file)
-                        continue
-                    content = jinja_utils.jinja_render(app_file, jinja_vars,
-                                                       extra=values)
-                    dest_file = os.path.join(self.temp_dir, proj,
-                                             '%s.%s' % (service, app_type))
-                    file_utils.mkdir_p(os.path.dirname(dest_file))
-                    with open(dest_file, 'w') as f:
-                        f.write(content)
+    def test(self):
+        # Now write services configs
+        for proj in ['cinder', 'glance']:
+            service_path = os.path.join(self.base_dir, 'services', proj)
+            for root, dirs, names in os.walk(service_path):
+                [self.process_service_config(None, proj,
+                                             os.path.join(root, name), {})
+                 for name in names]
 
     def write_openrc(self):
         # write an openrc to the base_dir for convience.
@@ -368,10 +501,11 @@ class KollaWorker(object):
 
 def main():
     CONF(sys.argv[1:], project='kolla-mesos')
-    logging.setup(CONF, 'kolla-mesos')
     kolla = KollaWorker()
     kolla.setup_working_dir()
     kolla.gen_deployment_id()
+    kolla.test()
+    return 0
     kolla.write_to_zookeeper()
     kolla.write_openrc()
     kolla.start()

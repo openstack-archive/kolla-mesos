@@ -1,0 +1,19 @@
+name: openstack/cinder/cinder-volume
+service:
+  daemon:
+    dependencies: [cinder_ansible_tasks/create_user,
+                   keystone_ansible_tasks/running,
+                   rabbitmq/server]
+    command: /usr/bin/cinder-volume
+    files:
+      cinder.conf.j2:
+        source: ["config/cinder/templates/cinder.conf.j2",
+                 "config/cinder/templates/cinder-{{ cinder_volume_driver }}.conf.j2",
+                 "/etc/kolla-mesos/config/global.conf",
+                 "/etc/kolla-mesos/config/database.conf",
+                 "/etc/kolla-mesos/config/messaging.conf",
+                 "/etc/kolla-mesos/config/cinder.conf",
+                 "/etc/kolla-mesos/config/cinder/cinder-volume.conf"]
+        dest: /etc/cinder/cinder.conf
+        owner: cinder
+        perm: "0600"
