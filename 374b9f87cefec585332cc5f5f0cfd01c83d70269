@@ -1,0 +1,9 @@
+Code-Review+2: Sam Yaple <sam@yaple.net>
+Code-Review+2: Angus Salkeld <asalkeld@mirantis.com>
+Workflow+1: Angus Salkeld <asalkeld@mirantis.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Sun, 31 Jan 2016 23:08:05 +0000
+Reviewed-on: https://review.openstack.org/272974
+Project: openstack/kolla-mesos
+Branch: refs/heads/master
