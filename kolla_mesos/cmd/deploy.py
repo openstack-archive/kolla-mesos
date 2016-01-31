@@ -146,7 +146,7 @@ class KollaWorker(object):
                 self.start_time
             ).strftime('%Y-%m-%d-%H-%M-%S')
             deployment_id = (CONF.kolla.deployment_id_prefix + '-' + ts
-                             if deploy_prefix else ts)
+                             if deploy_prefix else 'openstack')
             self.deployment_id = deployment_id
         LOG.info('Deployment ID: %s' % self.deployment_id)
 
