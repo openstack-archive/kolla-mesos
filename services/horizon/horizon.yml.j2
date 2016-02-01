@@ -1,14 +1,14 @@
 {% set apache_cmd = 'apache2' if kolla_base_distro in ['ubuntu', 'debian'] else 'httpd' %}
 {% set apache_dir = 'apache2/conf-enabled' if kolla_base_distro in ['ubuntu', 'debian'] else 'httpd/conf.d' %}
 {% set apache_conf = 'horizon.conf' if kolla_base_distro in ['ubuntu', 'debian'] else '000-default.conf' %}
-config:
-  horizon:
-    horizon:
-      extend_start.sh.j2:
-        source: config/horizon/templates/extend_start.sh.j2
-        dest: /usr/local/bin/kolla_mesos_extend_start
-        owner: horizon
-        perm: "0755"
+name: openstack/horizon/horizon
+container:
+  image: "{{ horizon_image }}:{{ horizon_tag }}"
+service:
+  daemon:
+    command: /usr/sbin/{{ apache_cmd }} -DFOREGROUND
+    dependencies: [horizon/bootstrap]
+    files:
       000-default.conf:
         source: config/horizon/templates/horizon.conf.j2
         dest: /etc/{{ apache_dir }}/{{ apache_conf }}
@@ -19,15 +19,15 @@ config:
         dest: /etc/openstack-dashboard/local_settings
         owner: horizon
         perm: "0644"
+
 commands:
-  horizon:
-    horizon:
-      setup:
-        run_once: False
-        env:
-          KOLLA_BOOTSTRAP:
-        command: bash kolla_mesos_extend_start
-      horizon:
-        command: /usr/sbin/{{ apache_cmd }} -DFOREGROUND
-        daemon: True
-        run_once: False
+  bootstrap:
+    command: bash kolla_mesos_extend_start
+    env:
+      KOLLA_BOOTSTRAP:
+    files:
+      extend_start.sh.j2:
+        source: config/horizon/templates/extend_start.sh.j2
+        dest: /usr/local/bin/kolla_mesos_extend_start
+        owner: horizon
+        perm: "0755"

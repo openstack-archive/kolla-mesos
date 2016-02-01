@@ -1,0 +1,18 @@
+name: openstack/glance/glance-registry
+container:
+  image: "{{ glance_registry_image }}:{{ glance_registry_tag }}"
+service:
+  daemon:
+    dependencies: [glance_ansible_tasks/create_user, keystone_ansible_tasks/running]
+    command: glance-registry
+    files:
+      glance.conf.j2:
+        source: ["config/glance/templates/glance-registry.conf.j2",
+                 "/etc/kolla-mesos/config/global.conf",
+                 "/etc/kolla-mesos/config/database.conf",
+                 "/etc/kolla-mesos/config/messaging.conf",
+                 "/etc/kolla-mesos/config/glance.conf",
+                 "/etc/kolla-mesos/config/glance/glance-registry.conf"]
+        dest: /etc/glance/glance.conf
+        owner: glance
+        perm: "0600"

@@ -1,0 +1,29 @@
+name: openstack/glance/glance-api
+container:
+  image: "{{ glance_api_image }}:{{ glance_api_tag }}"
+service:
+  daemon:
+    dependencies: [glance_ansible_tasks/create_database,
+                   glance_ansible_tasks/database_user_create]
+    command: glance-api
+    files:
+      glance.conf.j2:
+        source: ["config/glance/templates/glance-api.conf.j2",
+                 "config/glance/templates/glance-file.conf.j2",
+                 "/etc/kolla-mesos/config/global.conf",
+                 "/etc/kolla-mesos/config/database.conf",
+                 "/etc/kolla-mesos/config/messaging.conf",
+                 "/etc/kolla-mesos/config/glance.conf",
+                 "/etc/kolla-mesos/config/glance/glance-api.conf"]
+        dest: /etc/glance/glance-api.conf
+        owner: glance
+        perm: "0600"
+
+commands:
+  db_sync:
+    env:
+      KOLLA_BOOTSTRAP:
+    command: kolla_extend_start
+    run_once: True
+    dependencies: [glance_ansible_tasks/create_database,
+                   glance_ansible_tasks/database_user_create]

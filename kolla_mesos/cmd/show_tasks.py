@@ -107,10 +107,10 @@ def get_tasks(deploy_id):
         return task
 
     tasks = {}
-    config_dir = os.path.join(file_utils.find_base_dir(), 'config')
+    config_dir = os.path.join(file_utils.find_base_dir(), 'services')
     for root, _, files in os.walk(config_dir):
         for name in files:
-            if CONFIG_SUFFIX not in name:
+            if 'default.' in name:
                 continue
             fpath = os.path.join(root, name)
             cfg_string = ''
@@ -133,15 +133,18 @@ def get_tasks(deploy_id):
                 print('exception processing file: %s\n ' % fpath +
                       'yaml: %s' % cfg_string)
                 raise Exception(traceback.format_exc())
-            if 'commands' not in cfg:
-                continue
-            commands = cfg['commands']
-            for group, group_info in commands.items():
-                for role, role_info in group_info.items():
-                    for cmd, cmd_info in role_info.items():
-                        task_name = '/%s/%s/%s' % (group, role, cmd)
-                        tasks[task_name] = get_task_from_cmd(role, cmd,
-                                                             cmd_info)
+
+            def get_commands():
+                for cmd in cfg.get('commands', {}):
+                    yield cmd, cfg['commands'][cmd]
+                if 'service' in cfg:
+                    yield 'daemon', cfg['service']['daemon']
+
+            _, group, role = cfg['name'].split('/')
+            for cmd, cmd_info in get_commands():
+                task_name = '/%s/%s/%s' % (group, role, cmd)
+                tasks[task_name] = get_task_from_cmd(role, cmd,
+                                                     cmd_info)
     return tasks
 
 
