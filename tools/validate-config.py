@@ -22,7 +22,7 @@ import yaml
 from kolla_mesos.common import jinja_utils
 
 CNF_FIELDS = ('source', 'dest', 'owner', 'perm')
-CMD_FIELDS = ('daemon', 'run_once', 'requires', 'command', 'env', 'register',
+CMD_FIELDS = ('daemon', 'run_once', 'dependencies', 'command', 'env',
               'delay', 'retries')
 BASE_PATH = os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), '..')
 
@@ -46,24 +46,21 @@ def validate_config(conf):
                 assert os.path.exists(file_path), '%s missing' % file_path
 
 
-def validate_command(filename, cmds, deps):
+def validate_command(filename, cmds, deps, role):
     daemons = []
     for cmd in cmds:
         for key in cmds[cmd]:
             assert key in CMD_FIELDS, '%s not in %s' % (key, CMD_FIELDS)
         if cmds[cmd].get('daemon', False):
             daemons.append(cmd)
-        if cmds[cmd].get('run_once', False) and 'register' not in cmds[cmd]:
-            assert False, 'run_once is True, but no "register" %s' % cmd
 
-        reg = cmds[cmd].get('register')
+        reg = '%s/%s' % (role, cmd)
         reqs = cmds[cmd].get('requires', [])
-        if reg is not None:
-            if reg not in deps:
-                deps[reg] = {'waiters': {}}
-            deps[reg]['registered_by'] = cmd
-            deps[reg]['name'] = cmd
-            deps[reg]['run_by'] = filename
+        if reg not in deps:
+            deps[reg] = {'waiters': {}}
+        deps[reg]['registered_by'] = cmd
+        deps[reg]['name'] = cmd
+        deps[reg]['run_by'] = filename
         for req in reqs:
             if req not in deps:
                 deps[req] = {'waiters': {}}
@@ -75,9 +72,10 @@ def validate_command(filename, cmds, deps):
 def validate(filename, group, role, deps):
     conf_path = os.path.join(BASE_PATH, 'config', group,
                              '%s_config.yml.j2' % group)
-    mini_vars = {'cinder_volume_driver': 'lvm'}
+    mini_vars = {'cinder_volume_driver': 'lvm',
+                 'deployment_id': 'test'}
     cnf = yaml.load(jinja_utils.jinja_render(conf_path, mini_vars))
-    validate_command(filename, cnf['commands'][group][role], deps)
+    validate_command(filename, cnf['commands'][group][role], deps, role)
     if role not in cnf['config'][group]:
         print('WARN: no config for role %s in group %s' % (role, group))
     else:

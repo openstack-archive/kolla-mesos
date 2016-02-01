@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import contextlib
+import datetime
 import fcntl
 import json
 import logging
@@ -285,18 +286,22 @@ class Command(object):
         self.command = cmd['command']
         self.run_once = cmd.get('run_once', False)
         self.daemon = cmd.get('daemon', False)
-        self.check_path = cmd.get('register')  # eg. /a/b/c/.done
-        self.requires = cmd.get('requires', [])
+        self.check_path = '/kolla/%s/status/%s/%s/.done' % (DEPLOYMENT_ID,
+                                                            ROLE, self.name)
+        self.requires = ['/kolla/%s/status/%s/.done' % (DEPLOYMENT_ID, req)
+                         for req in cmd.get('dependencies', [])]
+        self.init_path = os.path.dirname(self.check_path)
+        self.proc = None
         self.retries = int(cmd.get('retries', 0))
+        if self.daemon:
+            self.timeout = -1
+        else:
+            self.timeout = 60  # for now...
         self.delay = int(cmd.get('delay', 5))
         self.env = os.environ.copy()
         for ek, ev in cmd.get('env', {}).items():
             # make sure they are strings
             self.env[ek] = str(ev)
-        if self.check_path:
-            self.init_path = os.path.dirname(self.check_path)
-        else:
-            self.init_path = None
         self.requirements_fulfilled()
 
     def requirements_fulfilled(self):
@@ -334,9 +339,6 @@ class Command(object):
         LOG.info('** > Running %s' % self.name)
         if self.run_once:
             def _init_done():
-                if not self.check_path:
-                    LOG.error('run_once is True, but no "register"')
-                    sys.exit(1)
                 return zk.retry(zk.exists, self.check_path)
 
             if _init_done():
@@ -359,15 +361,38 @@ class Command(object):
 
     def _run_command(self):
         LOG.debug("Running command: %s" % self.command)
-        # decrement the retries
         self.retries = self.retries - 1
-        child_p = subprocess.Popen(self.command, shell=True,
-                                   env=self.env)
-        child_p.wait()
-        if child_p.returncode == 0 and self.check_path:
-            self.zk.retry(self.zk.ensure_path, self.check_path)
-            LOG.debug("Command '%s' marked as done" % self.name)
-        return child_p.returncode
+        self.proc = subprocess.Popen(self.command, shell=True, env=self.env)
+
+        if self.timeout > 0:
+            now = datetime.datetime.now()
+            while((datetime.datetime.now() - now).seconds < self.timeout):
+                ret = self.proc.poll()
+                if ret == 0:
+                    self.zk.retry(self.zk.ensure_path, self.check_path)
+                    LOG.debug("Command '%s' marked as done" % self.name)
+                if ret is not None:
+                    return ret
+                time.sleep(1)
+
+            LOG.error("Command failed with timeout (%s seconds)", self.timeout)
+            self.kill_process()
+
+        if self.daemon:
+            time.sleep(5)
+            if self.proc and self.proc.poll() is None:
+                self.zk.retry(self.zk.ensure_path, self.check_path)
+                LOG.debug("Daemon '%s' marked as running" % self.name)
+            self.proc.wait()
+            if self.proc.returncode != 0:
+                self.zk.retry(self.zk.delete, self.check_path)
+            return self.proc.returncode
+
+    def kill_process(self):
+        self.proc.terminate()
+        time.sleep(3)
+        self.proc.kill()
+        self.proc.wait()
 
 
 def run_commands(zk, service_conf):
