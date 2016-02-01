@@ -76,7 +76,7 @@ def find_config_file(filename):
         config_file = filepath
     else:
         config_file = os.path.join(find_base_dir(),
-                                   'etc', 'kolla', filename)
+                                   'etc', filename)
     return config_file
 
 
