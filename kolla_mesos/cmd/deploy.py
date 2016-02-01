@@ -402,7 +402,7 @@ class KollaWorker(object):
         LOG.debug('Tmp file %s removed' % self.temp_dir)
 
     def write_to_zookeeper(self):
-        with zk_utils.connection() as zk:
+        with zk_utils.connection(fake=True) as zk:
 
             base_node = os.path.join('kolla', self.deployment_id)
             if zk.exists(base_node) and CONF.force:

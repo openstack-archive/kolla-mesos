@@ -77,8 +77,12 @@ def clean(zk, path='/kolla'):
 
 
 @contextlib.contextmanager
-def connection():
-    zk = client.KazooClient(hosts=CONF.zookeeper.host)
+def connection(fake=False):
+    if fake:
+        from zake import fake_client
+        zk = fake_client.FakeClient()
+    else:
+        zk = client.KazooClient(hosts=CONF.zookeeper.host)
     try:
         zk.start()
         yield zk
