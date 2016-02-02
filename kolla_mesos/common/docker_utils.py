@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -12,26 +10,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
+import functools
 
-from oslo_config import cfg
-from oslo_log import log as logging
-
-from kolla_mesos import cleanup
+import docker
 
 
-CONF = cfg.CONF
-CONF.import_opt('workers', 'kolla_mesos.config.multiprocessing_cli')
+class DockerClient(object):
+    """Decorator and contextmanager for providing the Docker connection."""
+    def __enter__(self):
+        self.dc = docker.Client()
+        return self.dc
 
-LOG = logging.getLogger()
-logging.register_options(CONF)
+    def __exit__(self, *args, **kwargs):
+        self.dc.close()
 
-
-def main():
-    CONF(sys.argv[1:], project='kolla-mesos')
-    logging.setup(CONF, 'kolla-mesos')
-    cleanup.cleanup()
-
-
-if __name__ == '__main__':
-    main()
+    def __call__(self, f):
+        @functools.wraps(f)
+        def wrapper(*args, **kwargs):
+            with self as dc:
+                return f(dc, *args, **kwargs)
+        return wrapper
