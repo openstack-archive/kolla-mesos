@@ -78,10 +78,11 @@ def validate(filename, group, role, deps):
     mini_vars = {'cinder_volume_driver': 'lvm'}
     cnf = yaml.load(jinja_utils.jinja_render(conf_path, mini_vars))
     validate_command(filename, cnf['commands'][group][role], deps)
-    if role not in cnf['config'][group]:
-        print('WARN: no config for role %s in group %s' % (role, group))
-    else:
-        validate_config(cnf['config'][group][role])
+    if 'config' in cnf:
+        if role not in cnf['config'][group]:
+            print('WARN: no config for role %s in group %s' % (role, group))
+        else:
+            validate_config(cnf['config'][group][role])
 
 
 def main():
