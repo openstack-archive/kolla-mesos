@@ -198,7 +198,7 @@ class KollaWorker(object):
             zk.set(dest_node, json.dumps(extra))
             LOG.debug('Created "%s" node in zookeeper' % dest_node)
 
-            if 'config' in extra:
+            if proj in extra.get('config', {}):
                 for service in extra['config'][proj]:
                     LOG.debug('Current service is %s' % service)
                     # write the config files
