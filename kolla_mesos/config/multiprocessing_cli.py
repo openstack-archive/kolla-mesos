@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -12,26 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
-
 from oslo_config import cfg
-from oslo_log import log as logging
-
-from kolla_mesos import cleanup
 
 
 CONF = cfg.CONF
-CONF.import_opt('workers', 'kolla_mesos.config.multiprocessing_cli')
-
-LOG = logging.getLogger()
-logging.register_options(CONF)
-
-
-def main():
-    CONF(sys.argv[1:], project='kolla-mesos')
-    logging.setup(CONF, 'kolla-mesos')
-    cleanup.cleanup()
-
-
-if __name__ == '__main__':
-    main()
+multiprocessing_cli_opts = [
+    cfg.IntOpt('workers',
+               default=5,
+               help='Number of workers to run')
+]
+CONF.register_cli_opts(multiprocessing_cli_opts)

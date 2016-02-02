@@ -21,3 +21,7 @@ class ChronosException(Exception):
 
 class ChronosRollback(Exception):
     pass
+
+
+class MesosTasksNotCompleted(Exception):
+    pass
