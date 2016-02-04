@@ -13,6 +13,7 @@
 import mock
 from oslo_config import cfg
 import requests_mock
+import testtools
 
 from kolla_mesos import chronos
 from kolla_mesos import exception
@@ -95,6 +96,14 @@ class TestClient(base.BaseTestCase):
                           EXAMPLE_CHRONOS_JOB)
 
     @requests_mock.mock()
+    def test_add_job_failed(self, req_mock):
+        req_mock.get('http://localhost:4400/scheduler/jobs', json=[])
+        req_mock.post('http://localhost:4400/scheduler/iso8601',
+                      status_code=500)
+        with testtools.ExpectedException(exception.ChronosException):
+            self.client.add_job(EXAMPLE_CHRONOS_JOB)
+
+    @requests_mock.mock()
     def test_get_jobs(self, req_mock):
         req_mock.get('http://localhost:4400/scheduler/jobs',
                      json=[EXAMPLE_CHRONOS_JOB])
@@ -106,3 +115,43 @@ class TestClient(base.BaseTestCase):
 
         self.assertIsInstance(job, dict)
         self.assertDictEqual(job, EXAMPLE_CHRONOS_JOB)
+
+    @requests_mock.mock()
+    def test_remove_job(self, req_mock):
+        req_mock.delete(
+            'http://localhost:4400/scheduler/job/keystone-bootstrap')
+        self.client.remove_job(EXAMPLE_CHRONOS_JOB['name'][1:])
+
+    @requests_mock.mock()
+    def test_remove_job_failed(self, req_mock):
+        req_mock.delete(
+            'http://localhost:4400/scheduler/job/keystone-bootstrap',
+            status_code=500)
+        with testtools.ExpectedException(exception.ChronosException):
+            self.client.remove_job(EXAMPLE_CHRONOS_JOB['name'][1:])
+
+    @requests_mock.mock()
+    def test_remove_job_tasks(self, req_mock):
+        req_mock.get('http://localhost:4400/scheduler/jobs',
+                     json=[EXAMPLE_CHRONOS_JOB])
+        req_mock.delete(
+            'http://localhost:4400/scheduler/task/kill/keystone-bootstrap')
+        self.client.remove_job_tasks(EXAMPLE_CHRONOS_JOB['name'][1:])
+
+    @requests_mock.mock()
+    def test_remove_job_tasks_failed(self, req_mock):
+        req_mock.delete(
+            'http://localhost:4400/scheduler/task/kill/keystone-bootstrap',
+            status_code=500)
+        with testtools.ExpectedException(exception.ChronosException):
+            self.client.remove_job_tasks(EXAMPLE_CHRONOS_JOB['name'][1:])
+
+    @requests_mock.mock()
+    def test_remove_all_jobs(self, req_mock):
+        req_mock.get('http://localhost:4400/scheduler/jobs',
+                     json=[EXAMPLE_CHRONOS_JOB])
+        req_mock.delete(
+            'http://localhost:4400/scheduler/task/kill//keystone-bootstrap')
+        req_mock.delete(
+            'http://localhost:4400/scheduler/job//keystone-bootstrap')
+        self.client.remove_all_jobs()
