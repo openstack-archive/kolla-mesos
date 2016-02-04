@@ -10,7 +10,7 @@ bind_port = {{ glance_api_port }}
 registry_host = {{ kolla_internal_address }}
 
 [database]
-connection = mysql://{{ glance_database_user }}:{{ glance_database_password }}@{{ glance_database_address }}/{{ glance_database_name }}
+connection = mysql+pymysql://{{ glance_database_user }}:{{ glance_database_password }}@{{ glance_database_address }}/{{ glance_database_name }}
 
 [keystone_authtoken]
 auth_uri = http://{{ kolla_internal_address }}:{{ keystone_public_port }}
