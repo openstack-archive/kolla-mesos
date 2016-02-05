@@ -266,11 +266,11 @@ def render_template(zk, templ, variables, var_names):
     return jinja_render(templ, variables)
 
 
-def generate_configs(zk, conf, conf_base_node):
+def generate_configs(zk, files, conf_base_node):
     """Render and create all config files for this app"""
 
     variables = generate_host_vars(zk)
-    for name, item in six.iteritems(conf['config'][GROUP][ROLE]):
+    for name, item in six.iteritems(files):
         LOG.debug('Name is: %s, Item is: %s' % (name, item))
         if name == 'kolla_mesos_start.py':
             continue
@@ -302,6 +302,7 @@ def generate_main_config(zk, conf):
 
 class Command(object):
     def __init__(self, name, cmd, zk):
+        self.raw_conf = cmd
         self.name = name
         self.zk = zk
         self.command = cmd['command']
@@ -317,7 +318,7 @@ class Command(object):
         if self.daemon:
             self.timeout = -1
         else:
-            self.timeout = 60  # for now...
+            self.timeout = 120  # for now...
         self.delay = int(cmd.get('delay', 5))
         self.env = os.environ.copy()
         for ek, ev in cmd.get('env', {}).items():
@@ -383,31 +384,40 @@ class Command(object):
     def _run_command(self):
         LOG.debug("Running command: %s" % self.command)
         self.retries = self.retries - 1
-        self.proc = subprocess.Popen(self.command, shell=True, env=self.env)
+        self.proc = subprocess.Popen(self.command, shell=True,
+                                     env=self.env)
+        if self.proc is None:
+            LOG.error("Command '%s' failed (proc=None)" % self.name)
+            return 1
 
         if self.timeout > 0:
             now = datetime.datetime.now()
             while((datetime.datetime.now() - now).seconds < self.timeout):
                 ret = self.proc.poll()
+                LOG.debug("Command %s poll ret='%s'" % (self.name, ret))
                 if ret == 0:
                     self.zk.retry(self.zk.ensure_path, self.check_path)
                     LOG.debug("Command '%s' marked as done" % self.name)
                 if ret is not None:
                     return ret
-                time.sleep(1)
+                time.sleep(10)
 
             LOG.error("Command failed with timeout (%s seconds)", self.timeout)
             self.kill_process()
 
         if self.daemon:
-            time.sleep(5)
-            if self.proc and self.proc.poll() is None:
+            time.sleep(20)
+            ret = self.proc.poll()
+            LOG.debug("Daemon poll ret='%s'" % ret)
+            if ret is None:
                 self.zk.retry(self.zk.ensure_path, self.check_path)
                 LOG.debug("Daemon '%s' marked as running" % self.name)
-            self.proc.wait()
-            if self.proc.returncode != 0:
+                self.proc.wait()
+                ret = self.proc.returncode
+            if ret != 0:
                 self.zk.retry(self.zk.delete, self.check_path)
-            return self.proc.returncode
+            LOG.debug("Command %s ret='%s'" % (self.name, ret))
+            return ret
 
     def kill_process(self):
         self.proc.terminate()
@@ -418,11 +428,16 @@ class Command(object):
 
 def run_commands(zk, service_conf, conf_base_node):
     LOG.info('run_commands')
-    first_ready = False
-    conf = service_conf['commands'][GROUP][ROLE]
     cmdq = queue.Queue()
-    for name, cmd in conf.items():
-        cmdq.put(Command(name, cmd, zk))
+
+    if 'commands' in service_conf:
+        conf = service_conf['commands']
+        for name, cmd in conf.items():
+            cmdq.put(Command(name, cmd, zk))
+
+    if 'service' in service_conf:
+        service_conf['service']['daemon']['daemon'] = True
+        cmdq.put(Command('daemon', service_conf['service']['daemon'], zk))
 
     while not cmdq.empty():
         cmd = cmdq.get()
@@ -431,10 +446,8 @@ def run_commands(zk, service_conf, conf_base_node):
             cmdq.put(cmd)
             continue
         if cmd.requirements_fulfilled():
-            if not first_ready:
-                if ROLE in service_conf.get('config', {}).get(GROUP, {}):
-                    generate_configs(zk, service_conf, conf_base_node)
-                first_ready = True
+            if 'files' in cmd.raw_conf:
+                generate_configs(zk, cmd.raw_conf['files'], conf_base_node)
             if cmd.run() != 0:
                 if cmd.retries > 0:
                     cmd.sleep(cmdq.qsize(), retry=True)
@@ -451,19 +464,14 @@ def main():
     set_globals()
     LOG.info('starting')
     with zk_connection(ZK_HOSTS) as zk:
-        base_node = os.path.join('/kolla', DEPLOYMENT_ID, 'config')
+        base_node = os.path.join('/', 'kolla', DEPLOYMENT_ID, 'config')
         conf_base_node = os.path.join(base_node, GROUP, ROLE)
-        service_conf_raw, stat = zk.get(os.path.join(base_node,
-                                                     GROUP, GROUP))
+        service_conf_raw, stat = zk.get(conf_base_node)
         service_conf = json.loads(service_conf_raw)
 
         # don't join a Party if this container is not running a daemon
         # process.
-        register_group = False
-        for cmd in service_conf['commands'][GROUP][ROLE].values():
-            if cmd.get('daemon', False):
-                register_group = True
-        if register_group:
+        if 'service' in service_conf:
             register_group_and_hostvars(zk)
             service_conf = generate_main_config(zk, service_conf_raw)
             LOG.debug('Rendered service config: %s' % service_conf)

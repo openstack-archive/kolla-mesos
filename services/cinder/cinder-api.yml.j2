@@ -1,0 +1,31 @@
+name: openstack/cinder/cinder-api
+container:
+  image: "{{ cinder_api_image }}:{{ cinder_api_tag }}"
+service:
+  daemon:
+    dependencies: [cinder_ansible_tasks/create_user,
+                   keystone_ansible_tasks/running,
+                   rabbitmq/daemon,
+                   cinder-api/db_sync]
+    command: /usr/bin/cinder-api
+
+commands:
+  db_sync:
+    env:
+      KOLLA_BOOTSTRAP:
+    command: kolla_extend_start
+    run_once: True
+    dependencies: [cinder_ansible_tasks/create_database,
+                   cinder_ansible_tasks/database_user_create]
+    files:
+      cinder.conf.j2:
+        source: ["config/cinder/templates/cinder.conf.j2",
+                 "config/cinder/templates/cinder-{{ cinder_volume_driver }}.conf.j2",
+                 "/etc/kolla-mesos/config/global.conf",
+                 "/etc/kolla-mesos/config/database.conf",
+                 "/etc/kolla-mesos/config/messaging.conf",
+                 "/etc/kolla-mesos/config/cinder.conf",
+                 "/etc/kolla-mesos/config/cinder/cinder-api.conf"]
+        dest: /etc/cinder/cinder.conf
+        owner: cinder
+        perm: "0600"

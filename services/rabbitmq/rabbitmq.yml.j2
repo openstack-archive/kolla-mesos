@@ -1,6 +1,11 @@
-config:
-  rabbitmq:
-    rabbitmq:
+name: infra/rabbitmq/rabbitmq
+container:
+  image: "{{ rabbitmq_image }}:{{ rabbitmq_tag }}"
+service:
+  daemon:
+    command: rabbitmq-server
+    dependencies: [rabbitmq/bootstrap]
+    files:
       rabbitmq-env.conf.j2:
         source: config/rabbitmq/templates/rabbitmq-env.conf.j2
         dest: /etc/rabbitmq/rabbitmq-env.conf
@@ -16,16 +21,10 @@ config:
         dest: /etc/rabbitmq/rabbitmq_clusterer.config
         owner: rabbitmq
         perm: "0600"
+
 commands:
-  rabbitmq:
-    rabbitmq:
-      bootstrap:
-        run_once: True
-        command: kolla_extend_start
-        env:
-          KOLLA_BOOTSTRAP:
-          RABBITMQ_CLUSTER_COOKIE: "{{ rabbitmq_cluster_cookie }}"
-      server:
-        command: /usr/sbin/rabbitmq-server
-        daemon: True
-        dependencies: [rabbitmq/bootstrap]
+  bootstrap:
+    command: kolla_extend_start
+    env:
+      KOLLA_BOOTSTRAP:
+      RABBITMQ_CLUSTER_COOKIE: "{{ rabbitmq_cluster_cookie }}"

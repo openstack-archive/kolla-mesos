@@ -22,8 +22,8 @@ import yaml
 from kolla_mesos.common import jinja_utils
 
 CNF_FIELDS = ('source', 'dest', 'owner', 'perm')
-CMD_FIELDS = ('daemon', 'run_once', 'dependencies', 'command', 'env',
-              'delay', 'retries')
+CMD_FIELDS = ('run_once', 'dependencies', 'command', 'env',
+              'delay', 'retries', 'files')
 BASE_PATH = os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), '..')
 
 
@@ -46,43 +46,40 @@ def validate_config(conf):
                 assert os.path.exists(file_path), '%s missing' % file_path
 
 
-def validate_command(filename, cmds, deps, role):
-    daemons = []
-    for cmd in cmds:
-        for key in cmds[cmd]:
-            assert key in CMD_FIELDS, '%s not in %s' % (key, CMD_FIELDS)
-        if cmds[cmd].get('daemon', False):
-            daemons.append(cmd)
+def validate_command(filename, cmd, cmd_info, deps, role):
+    for key in cmd_info:
+        assert key in CMD_FIELDS, '%s not in %s' % (key, CMD_FIELDS)
 
-        reg = '%s/%s' % (role, cmd)
-        reqs = cmds[cmd].get('requires', [])
-        if reg not in deps:
-            deps[reg] = {'waiters': {}}
-        deps[reg]['registered_by'] = cmd
-        deps[reg]['name'] = cmd
-        deps[reg]['run_by'] = filename
-        for req in reqs:
-            if req not in deps:
-                deps[req] = {'waiters': {}}
-            deps[req]['waiters'][cmd] = reg
-
-    assert len(daemons) < 2, 'Only one daemon allowed %s' % daemons
+    reg = '%s/%s' % (role, cmd)
+    reqs = cmd_info.get('dependencies', [])
+    if reg not in deps:
+        deps[reg] = {'waiters': {}}
+    deps[reg]['registered_by'] = cmd
+    deps[reg]['name'] = cmd
+    deps[reg]['run_by'] = filename
+    for req in reqs:
+        if req not in deps:
+            deps[req] = {'waiters': {}}
+        deps[req]['waiters'][cmd] = reg
+    if 'files' in cmd_info:
+        validate_config(cmd_info['files'])
 
 
-def validate(filename, group, role, deps):
-    print(filename)
-    conf_path = os.path.join(BASE_PATH, 'config', group,
-                             '%s_config.yml.j2' % group)
+def validate(filename, deps):
     mini_vars = {'cinder_volume_driver': 'lvm',
                  'deployment_id': 'test'}
-    cnf = yaml.load(jinja_utils.jinja_render(conf_path, mini_vars))
-    validate_command(filename, cnf['commands'][group][role], deps, role)
-    if 'config' in cnf:
-        if role not in cnf['config'][group]:
-            logging.warning('No config for role %s in group %s' % (role,
-                                                                   group))
-        else:
-            validate_config(cnf['config'][group][role])
+    cnf = yaml.load(jinja_utils.jinja_render(filename, mini_vars))
+
+    def get_commands():
+        for cmd in cnf.get('commands', {}):
+            yield cmd, cnf['commands'][cmd]
+        if 'service' in cnf:
+            yield 'daemon', cnf['service']['daemon']
+
+    _, group, role = cnf['name'].split('/')
+
+    for cmd, cmd_info in get_commands():
+        validate_command(filename, cmd, cmd_info, deps, role)
 
 
 def main():
@@ -92,26 +89,7 @@ def main():
 
     deps = {}
     for filename in args.input:
-        with open(filename) as fd:
-            try:
-                group = None
-                role = None
-                js = json.load(fd)
-                if 'marathon' in filename:
-                    group = js['env']['KOLLA_GROUP']
-                    role = js['env']['KOLLA_ROLE']
-                else:
-                    for env in js['environmentVariables']:
-                        if env['name'] == 'KOLLA_GROUP':
-                            group = env['value']
-                        elif env['name'] == 'KOLLA_ROLE':
-                            role = env['value']
-
-                validate(filename, group, role, deps)
-            except ValueError as error:
-                res = 1
-                logging.error('%s failed validation: %s',
-                              filename, error)
+        validate(filename, deps)
     print(json.dumps(deps, indent=2))
     # validate the deps
     for task in deps:
