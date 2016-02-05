@@ -23,83 +23,22 @@ CONF = cfg.CONF
 CONF.import_group('kolla', 'kolla_mesos.config.kolla')
 
 YAML_SERVICES_CONFIG = """
-config:
-  source: "test1.yml"
-  keystone:
-    keystone-api:
-      keystone-api.conf:
-        source: ["config/keystone/templates/keystone-api.conf.j2",
-                 "/etc/kolla/config/keystone.conf"]
-        dest: /etc/keystone/keystone-api.conf
-        owner: glance
+name: openstack/cinder/cinder-api
+container:
+  image: "cinder-api:a.b.c"
+service:
+  daemon:
+    dependencies: [cinder-tasks/create_user,
+                   keystone-tasks/running,
+                   rabbitmq/daemon]
+    command: /usr/bin/cinder-api
+    files:
+      cinder.conf.j2:
+        source: ["config/cinder/templates/cinder.conf.j2",
+                 "/etc/kolla-mesos/config/cinder/cinder-api.conf"]
+        dest: /etc/cinder/cinder.conf
+        owner: cinder
         perm: "0600"
-  rabbitmq:
-    rabbitmq-server:
-      rabbitmq-server.conf:
-        source: ["config/rabbitmq/templates/rabbitmq-server.conf.j2",
-                 "/etc/kolla/config/rabbitmq-server.conf"]
-        dest: /etc/rabbitmq/rabbitmq-server.conf
-  mariadb:
-    mariadb-server:
-      mariadb-server.conf:
-        source: ["config/mariadb/templates/mariadb-server.conf.j2",
-                 "/etc/kolla/config/mariadb-server.conf"]
-        dest: /etc/mariadb/mariadb-server.conf
-  glance:
-    glance-api:
-      glance-api.conf:
-        source: "/config/glance/templates/glance-api.conf.j2"
-        dest: /etc/glance/glance-api.conf
-    glance-registry:
-      glance-registry.conf:
-        source: "config/glance/templates/glance-registry.conf.j2"
-        dest: /etc/glance/glance-registry.conf
-  horizon:
-    horizon:
-      openstack-horizon.conf:
-        source: "/config/horizon/templates/openstack-dashboard.conf.j2"
-        dest: /etc/horizon/openstack-dashboard.conf
-commands:
-  source: "/etc/test2.yaml"
-  glance:
-    glance-api:
-      db_sync:
-        run_once: True
-        command: kolla_extend_start
-      glance_api:
-        daemon: True
-        command: /usr/bin/glance-api
-        requires: [/kolla/1/variables/glance_database/.done,
-                   /kolla/1/variables/glance_database_user_create/.done]
-        register: /kolla/1/variables/glance_setup/.done
-    glance-registry:
-      glance-registry:
-        daemon: True
-        command: /usr/bin/glance-registry
-  keystone:
-    keystone-api:
-      keystone-api:
-        daemon: True
-        command: /usr/bin/keystone-api
-  mariadb:
-    mariadb-server:
-      mariadb-server:
-        daemon: True
-        command: service mariadb-server start
-  rabbitmq:
-    rabbitmq-server:
-      rabbitmq-server:
-        daemon: True
-        command: service rabbitmq-server start
-  horizon:
-    horizon:
-      apache:
-        daemon: False
-        command: service apache2 start
-  memcached:
-    memcached:
-       daemon: True
-       command: /usr/bin/memcached -vv
 """
 
 
@@ -150,22 +89,18 @@ class TestClient(base.BaseTestCase):
         self.worker.gen_deployment_id()
         mock_sys.exit.assert_called_once_with(1)
 
-    @mock.patch('kolla_mesos.cmd.deploy.open')
-    @mock.patch('kolla_mesos.cmd.deploy.file_utils')
     @mock.patch('kolla_mesos.cmd.deploy.yaml')
-    @mock.patch('kolla_mesos.cmd.deploy.json')
     @mock.patch('kolla_mesos.cmd.deploy.zk_utils')
-    def test_write_to_zookeeper(self, mock_utils, mock_json, mock_yaml,
-                                mock_file_utils, mock_open):
+    @mock.patch.object(deploy.KollaWorker,
+                       '_write_common_config_to_zookeeper')
+    def test_write_to_zookeeper(self, mock_common, mock_utils, mock_yaml):
         CONF.set_override('force', True)
 
         self.worker.get_jinja_vars = mock.MagicMock(
             return_value={'image': 'test1', 'test2': ''})
         mock_yaml.load = mock.MagicMock(
             return_value=yaml.load(YAML_SERVICES_CONFIG))
-        mock_file_utils = mock.MagicMock()
-        mock_file_utils.find_file = mock.MagicMock(spec=file)
-        mock_open.return_value = mock.MagicMock(spec=file)
+        mock_common.return_value = ''
 
         self.worker.setup_working_dir()
         self.worker.gen_deployment_id()

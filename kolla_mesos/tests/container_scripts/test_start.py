@@ -193,8 +193,7 @@ class RunCommandsTest(base.BaseTestCase):
             'run_once': True,
             'command': 'true'}}
 
-        conf = {'config': {'testg': {'testr': {}}},
-                'commands': {'testg': {'testr': cmd}}}
+        conf = {'commands': cmd}
         conf_base_node = '/kolla/deploy_id/config/testg/testr'
 
         m_run.return_value = 0
@@ -210,8 +209,7 @@ class RunCommandsTest(base.BaseTestCase):
             'run_once': True,
             'command': 'true'}}
 
-        conf = {'config': {'testg': {'testr': {}}},
-                'commands': {'testg': {'testr': cmd}}}
+        conf = {'commands': cmd}
         conf_base_node = '/kolla/deploy_id/config/testg/testr'
         m_run.return_value = 3
         start.run_commands(self.client, conf, conf_base_node)
@@ -228,8 +226,7 @@ class RunCommandsTest(base.BaseTestCase):
             'delay': 0,
             'command': 'true'}}
 
-        conf = {'config': {'testg': {'testr': {}}},
-                'commands': {'testg': {'testr': cmd}}}
+        conf = {'commands': cmd}
 
         conf_base_node = '/kolla/deploy_id/config/testg/testr'
         self.returns = 0
@@ -248,19 +245,18 @@ class RunCommandsTest(base.BaseTestCase):
     @mock.patch.object(start, 'generate_configs')
     @mock.patch.object(start.sys, 'exit')
     def test_daemon_last_lots(self, m_exit, m_gc):
-        conf = {'config': {'testg': {'testr': {}}},
-                'commands': {'testg': {'testr': {}}}}
+        conf = {'commands': {}}
         for cc in range(0, 99):
             cmd = {'c-%d' % cc: {'command': 'true'}}
-            conf['commands']['testg']['testr'].update(cmd)
+            conf['commands'].update(cmd)
 
-        conf['commands']['testg']['testr'].update(
+        conf['commands'].update(
             {'c-last': {'daemon': True, 'command': 'true'}})
 
         for cc in range(100, 200):
             cmd = {'c-%d' % cc: {'command': 'true'}}
-            conf['commands']['testg']['testr'].update(cmd)
-        exp = conf['commands']['testg']['testr']
+            conf['commands'].update(cmd)
+        exp = conf['commands']
 
         conf_base_node = '/kolla/deploy_id/config/testg/testr'
 
@@ -303,28 +299,27 @@ class GenerateConfigTest(base.BaseTestCase):
     @mock.patch.object(start, 'get_groups_and_hostvars')
     @mock.patch.object(start, 'write_file')
     def test_no_rendering(self, m_wf, m_gar, m_gip):
-        conf = {'config': {'testg': {'testr': {'afile': {
+        conf = {'afile': {
             'source': 'config/mariadb/templates/galera.cnf.j2',
             'dest': '/etc/mysql_dir/my.cnf',
             'owner': 'mysql',
-            'perm': "0600"}}}}}
+            'perm': "0600"}}
         conf_base_node = '/kolla/deploy_id/config/testg/testr'
         m_gar.return_value = {}, {}
         self.client.create('/kolla/deploy_id/config/testg/testr/afile', 'xyz',
                            makepath=True)
         start.generate_configs(self.client, conf, conf_base_node)
-        m_wf.assert_called_once_with(conf['config']['testg']['testr']
-                                         ['afile'], 'xyz')
+        m_wf.assert_called_once_with(conf['afile'], 'xyz')
 
     @mock.patch.object(start, 'get_ip_address')
     @mock.patch.object(start, 'get_groups_and_hostvars')
     @mock.patch.object(start, 'write_file')
     def test_simple_render(self, m_wf, m_gar, m_gip):
-        conf = {'config': {'testg': {'testr': {'afile': {
+        conf = {'afile': {
             'source': 'config/mariadb/templates/galera.cnf.j2',
             'dest': '/etc/mysql_dir/my.cnf',
             'owner': 'mysql',
-            'perm': "0600"}}}}}
+            'perm': "0600"}}
         conf_base_node = '/kolla/deploy_id/config/testg/testr'
         m_gar.return_value = {}, {}
         self.client.create('/kolla/deploy_id/variables/xyz', 'yeah',
@@ -332,27 +327,25 @@ class GenerateConfigTest(base.BaseTestCase):
         self.client.create('/kolla/deploy_id/config/testg/testr/afile',
                            '{{ xyz }}', makepath=True)
         start.generate_configs(self.client, conf, conf_base_node)
-        m_wf.assert_called_once_with(conf['config']['testg']['testr']
-                                         ['afile'], 'yeah')
+        m_wf.assert_called_once_with(conf['afile'], 'yeah')
 
     @mock.patch.object(start, 'render_template')
     @mock.patch.object(start, 'get_ip_address')
     @mock.patch.object(start, 'get_groups_and_hostvars')
     @mock.patch.object(start, 'write_file')
     def test_missing_variable(self, m_wf, m_gar, m_gip, m_rt):
-        conf = {'config': {'testg': {'testr': {'afile': {
+        conf = {'afile': {
             'source': 'config/mariadb/templates/galera.cnf.j2',
             'dest': '/etc/mysql_dir/my.cnf',
             'owner': 'mysql',
-            'perm': "0600"}}}}}
+            'perm': "0600"}}
         conf_base_node = '/kolla/deploy_id/config/testg/testr'
         m_gar.return_value = {}, {}
         m_rt.return_value = ''
         self.client.create('/kolla/deploy_id/config/testg/testr/afile',
                            '{{ xyz }}', makepath=True)
         start.generate_configs(self.client, conf, conf_base_node)
-        m_wf.assert_called_once_with(conf['config']['testg']['testr']
-                                         ['afile'], '')
+        m_wf.assert_called_once_with(conf['afile'], '')
 
 
 class MainTest(base.BaseTestCase):
@@ -385,12 +378,11 @@ class MainTest(base.BaseTestCase):
                  'dest': '/etc/somewhere.foo',
                  'owner': 'appy',
                  'perm': '0600'}
-        acmd = {'command': 'true'}
-        tconf = {'config': {'testg': {'testr': {'afile': afile}}},
-                 'commands': {'testg': {'testr': {'thing': acmd}}}}
+        acmd = {'command': 'true', 'files': {'afile': afile}}
+        tconf = {'commands': {'thing': acmd}}
         conf_base_node = '/kolla/deploy_id/config/testg/testr'
 
-        self.client.create('/kolla/deploy_id/config/testg/testg',
+        self.client.create('/kolla/deploy_id/config/testg/testr',
                            json.dumps(tconf), makepath=True)
 
         m_zk_c = mock.MagicMock()
@@ -410,12 +402,11 @@ class MainTest(base.BaseTestCase):
                  'dest': '/etc/somewhere.foo',
                  'owner': 'appy',
                  'perm': '0600'}
-        acmd = {'command': 'true', 'daemon': True}
-        tconf = {'config': {'testg': {'testr': {'afile': afile}}},
-                 'commands': {'testg': {'testr': {'thing': acmd}}}}
+        acmd = {'command': 'true', 'files': {'afile': afile}}
+        tconf = {'service': {'daemon': acmd}}
         conf_base_node = '/kolla/deploy_id/config/testg/testr'
 
-        self.client.create('/kolla/deploy_id/config/testg/testg',
+        self.client.create('/kolla/deploy_id/config/testg/testr',
                            json.dumps(tconf), makepath=True)
 
         m_gmc.return_value = tconf
