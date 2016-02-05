@@ -25,15 +25,14 @@ optional arguments:
 import argparse
 import os
 import sys
-import traceback
 import yaml
 
 from kolla_mesos.common import cli_utils
 from kolla_mesos.common import file_utils
+from kolla_mesos.common import jinja_utils
 from kolla_mesos.common import zk_utils
 
 CONFIG_SUFFIX = '_config.yml.j2'
-DEPLOY_ID_TAG = '{{ deployment_id }}'
 
 
 def get_deploy_id(ids):
@@ -104,26 +103,9 @@ def get_tasks(deploy_id):
             if CONFIG_SUFFIX not in name:
                 continue
             fpath = os.path.join(root, name)
-            cfg_string = ''
-            with open(fpath, 'r') as cfg_file:
-                for line in cfg_file:
-                    # comment out lines that cause yaml load to fail
-                    if line.startswith('{%'):
-                        line = '# ' + line
-                    else:
-                        # add the deployment_id to the path
-                        line = line.replace(DEPLOY_ID_TAG, deploy_id)
-                    # avoid yaml/j2 conflicts
-                    line = line.replace('{{ ', '<<')
-                    line = line.replace(' }}', '>>')
-                    cfg_string += line
-
-            try:
-                cfg = yaml.load(cfg_string)
-            except Exception:
-                print('exception processing file: %s\n ' % fpath +
-                      'yaml: %s' % cfg_string)
-                raise Exception(traceback.format_exc())
+            mini_vars = {'cinder_volume_driver': 'lvm',
+                         'deployment_id': deploy_id}
+            cfg = yaml.load(jinja_utils.jinja_render(fpath, mini_vars))
             if 'commands' not in cfg:
                 continue
             commands = cfg['commands']
