@@ -32,28 +32,25 @@ commands:
     glance-api:
       db_sync:
         run_once: True
-        requires: [/kolla/{{ deployment_id }}/variables/glance_database/.done,
-                   /kolla/{{ deployment_id }}/variables/glance_database_user_create/.done]
-        register: /kolla/{{ deployment_id }}/variables/glance_setup/.done
+        dependencies: [glance_ansible_tasks/create_database,
+                       glance_ansible_tasks/database_user_create]
         env:
           KOLLA_BOOTSTRAP:
         command: kolla_extend_start
       glance_api:
         daemon: True
-        requires: [/kolla/{{ deployment_id }}/variables/glance_user/.done,
-                   /kolla/{{ deployment_id }}/variables/keystone_running/.done]
+        dependencies: [glance_ansible_tasks/create_user,
+                       keystone_ansible_tasks/running]
         command: /usr/bin/glance-api
     glance-registry:
       glance-registry:
         daemon: True
-        requires: [/kolla/{{ deployment_id }}/variables/glance_user/.done,
-                   /kolla/{{ deployment_id }}/variables/keystone_running/.done]
+        dependencies: [glance_ansible_tasks/create_user, keystone_ansible_tasks/running]
         command: /usr/bin/glance-registry
     glance_ansible_tasks:
       create_database:
         run_once: True
-        requires: [/kolla/{{ deployment_id }}/variables/mariadb_bootstrap/.done]
-        register: /kolla/{{ deployment_id }}/variables/glance_database/.done
+        dependencies: [mariadb/mysqld]
         command: {{ ansible_task_cmd }}
           -m mysql_db
           -a "login_host='{{ database_address }}'
@@ -63,8 +60,7 @@ commands:
               name='{{ glance_database_name }}'"
       database_user_create:
         run_once: True
-        requires: [/kolla/{{ deployment_id }}/variables/glance_database/.done]
-        register: /kolla/{{ deployment_id }}/variables/glance_database_user_create/.done
+        dependencies: [glance_ansible_tasks/create_database]
         command: {{ ansible_task_cmd }}
           -m mysql_user
           -a "login_host='{{ database_address }}'
@@ -78,9 +74,7 @@ commands:
               append_privs='yes'"
       register_endpoint:
         run_once: True
-        requires: [/kolla/{{ deployment_id }}/variables/glance_setup/.done,
-                   /kolla/{{ deployment_id }}/variables/keystone_running/.done]
-        register: /kolla/{{ deployment_id }}/variables/glance_api_registered/.done
+        dependencies: [glance-api/db_sync, keystone_ansible_tasks/running]
         command: {{ ansible_task_cmd }}
           -m kolla_keystone_service
           -a "service_name=glance
@@ -93,11 +87,9 @@ commands:
               region_name={{ openstack_region_name }}
               auth={{ '{{ openstack_glance_auth }}' }}"
           -e "{'openstack_glance_auth':{{ openstack_glance_auth }}}"
-      create_glance_user:
+      create_user:
         run_once: True
-        requires: [/kolla/{{ deployment_id }}/variables/glance_setup/.done,
-                   /kolla/{{ deployment_id }}/variables/keystone_running/.done]
-        register: /kolla/{{ deployment_id }}/variables/glance_user/.done
+        dependencies: [glance-api/db_sync, keystone_ansible_tasks/running]
         command: {{ ansible_task_cmd }}
           -m kolla_keystone_user
           -a "project=service
@@ -107,13 +99,12 @@ commands:
               region_name={{ openstack_region_name }}
               auth={{ '{{ openstack_glance_auth }}' }}"
           -e "{'openstack_glance_auth':{{ openstack_glance_auth }}}"
-      sanity_check:
+      running:
         run_once: True
         retries: 10
         delay: 5
-        requires: [/kolla/{{ deployment_id }}/variables/glance_setup/.done,
-                   /kolla/{{ deployment_id }}/variables/keystone_running/.done]
-        register: /kolla/{{ deployment_id }}/variables/glance_running/.done
+        dependencies: [glance-api/db_sync, glance_ansible_tasks/register_endpoint,
+                       keystone_ansible_tasks/running]
         command: {{ ansible_task_cmd }}
           -m kolla_sanity
           -a "service=glance
