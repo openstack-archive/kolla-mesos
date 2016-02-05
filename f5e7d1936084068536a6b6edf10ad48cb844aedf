@@ -1,0 +1,9 @@
+Code-Review+2: Jeff Peeler <jpeeler@redhat.com>
+Code-Review+2: Michal Rostecki <mrostecki@mirantis.com>
+Workflow+1: Michal Rostecki <mrostecki@mirantis.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Fri, 05 Feb 2016 17:58:48 +0000
+Reviewed-on: https://review.openstack.org/276772
+Project: openstack/kolla-mesos
+Branch: refs/heads/master
