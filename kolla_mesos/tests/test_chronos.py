@@ -27,7 +27,7 @@ EXAMPLE_CHRONOS_JOB = {
     "cpus": 0.3,
     "container": {
         "type": "DOCKER",
-        "image": "/--kolla_ansible:",
+        "image": "/--kolla_toolbox:",
         "network": "HOST"
     },
     "environmentVariables": [

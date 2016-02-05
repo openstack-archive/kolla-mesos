@@ -51,8 +51,8 @@ docker_restart_policy: "always"
 docker_restart_policy_retry: "10"
 
 # kolla anisble image name
-kolla_ansible_image: "{{ docker_registry ~ '/' if docker_registry else '' }}{{ docker_namespace }}/{{ kolla_base_distro }}-{{ kolla_install_type }}-kolla-ansible"
-kolla_ansible_tag: "{{ openstack_release }}"
+kolla_toolbox_image: "{{ docker_registry ~ '/' if docker_registry else '' }}{{ docker_namespace }}/{{ kolla_base_distro }}-{{ kolla_install_type }}-kolla-toolbox"
+kolla_toolbox_tag: "{{ openstack_release }}"
 ansible_task_cmd: "/usr/bin/ansible localhost"
 
 # loglevel for the container init script
