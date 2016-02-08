@@ -1,0 +1,28 @@
+name: openstack/neutron/neutron-openvswitch-agent
+container:
+  image: "{{ neutron_openvswitch_agent_image }}:{{ neutron_openvswitch_agent_tag }}"
+  privileged: true
+service:
+  volumes:
+    - containerPath: "/run"
+      hostPath: "/run"
+      mode: RW
+    - containerPath: "/lib/modules"
+      hostPath: "/lib/modules"
+      mode: RO
+  daemon:
+    dependencies: [openvswitch-tasks/setup_ovs_bridge]
+    command: neutron-openvswitch-agent --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugins/ml2/ml2_conf.ini
+    files:
+      neutron.conf.j2:
+        source: ["config/neutron/templates/neutron.conf.j2",
+                 "config/neutron/templates/neutron.openvswitch.conf.j2"]
+        dest: /etc/neutron/neutron.conf
+        owner: neutron
+        perm: "0600"
+      ml2_conf.ini.j2:
+        source: ["config/neutron/templates/ml2_conf.ini.j2",
+                 "config/neutron/templates/ml2_conf.openvswitch.ini.j2"]
+        dest: /etc/neutron/plugins/ml2/ml2_conf.ini
+        owner: neutron
+        perm: "0600"
