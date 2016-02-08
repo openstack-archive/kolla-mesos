@@ -1,0 +1,31 @@
+name: openstack/nova/nova-libvirt
+container:
+  image: "{{ nova_libvirt_image }}:{{ nova_libvirt_tag }}"
+  privileged: true
+service:
+  mem: 1024
+  taskRateLimit: 600.0
+  cpus: 2
+  volumes:
+    - containerPath: "/lib/modules"
+      hostPath: "/lib/modules"
+      mode: RO
+    - containerPath: "/var/lib/nova"
+      hostPath: "/var/lib/nova"
+      mode: RW
+    - containerPath: "/var/lib/libvirt"
+      hostPath: "/var/lib/libvirt"
+      mode: RW
+    - containerPath: "/run"
+      hostPath: "/run"
+      mode: RW
+
+  daemon:
+    dependencies: [nova-conductor/db_sync]
+    command: libvirtd --listen
+    files:
+      libvirtd.conf.j2:
+        source: "config/nova/templates/libvirtd.conf.j2"
+        dest: /etc/libvirt/libvirtd.conf
+        owner: root
+        perm: "0644"
