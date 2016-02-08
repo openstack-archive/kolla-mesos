@@ -1,0 +1,12 @@
+name: openstack/neutron/neutron-agents
+container:
+  image: "{{ neutron_agents_image }}:{{ neutron_agents_tag }}"
+  privileged: true
+service:
+  volumes:
+    - containerPath: "/run"
+      hostPath: "/run"
+      mode: RW
+  daemon:
+    dependencies: [openvswitch-tasks/setup_ovs_bridge]
+    command: /start.sh
