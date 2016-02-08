@@ -66,7 +66,8 @@ storage_interface: "{{ network_interface }}"
 tunnel_interface: "{{ network_interface }}"
 
 # Valid options are [ openvswitch, linuxbridge ]
-neutron_plugin_agent: "openvswitch"
+# neutron_plugin_agent: "openvswitch"
+neutron_plugin_agent: "linuxbridge"
 
 # The default ports used by each service.
 mariadb_port: "3306"
