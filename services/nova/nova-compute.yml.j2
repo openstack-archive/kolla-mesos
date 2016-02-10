@@ -1,0 +1,47 @@
+name: openstack/nova/nova-compute
+container:
+  image: "{{ nova_compute_image }}:{{ nova_compute_tag }}"
+  privileged: true
+service:
+  mem: 1024
+  taskRateLimit: 600.0
+  cpus: 2
+  volumes:
+    - containerPath: "/lib/modules"
+      hostPath: "/lib/modules"
+      mode: RO
+    - containerPath: "/var/lib/nova"
+      hostPath: "/var/lib/nova"
+      mode: RW
+    - containerPath: "/var/lib/libvirt"
+      hostPath: "/var/lib/libvirt"
+      mode: RW
+    - containerPath: "/run"
+      hostPath: "/run"
+      mode: RW
+
+  daemon:
+    dependencies: [nova-conductor/db_sync, nova_ansible_tasks/create_user,
+                   keystone_ansible_tasks/running]
+    command: nova-compute --config-file /etc/nova/nova.conf --config-file /etc/nova/nova-override.conf
+    files:
+      nova-override.conf.j2:
+        source: ["/etc/kolla-mesos/config/global.conf",
+                 "/etc/kolla-mesos/config/database.conf",
+                 "/etc/kolla-mesos/config/messaging.conf",
+                 "/etc/kolla-mesos/config/nova.conf",
+                 "/etc/kolla-mesos/config/nova/nova-compute.conf"]
+        dest: /etc/nova/nova-override.conf
+        owner: nova
+        perm: "0600"
+      nova.conf.j2:
+        source: "config/nova/templates/nova.conf.j2"
+        dest: /etc/nova/nova.conf
+        owner: nova
+        perm: "0600"
+
+commands:
+  disable-netfilter-4:
+    command: "echo sudo sysctl net.bridge.bridge-nf-call-iptables=1"
+  disable-netfilter-6:
+    command: "echo sudo sysctl net.bridge.bridge-nf-call-ip6tables=1"
