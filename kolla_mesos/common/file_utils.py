@@ -13,6 +13,7 @@
 import errno
 import logging
 import os
+import platform
 import sys
 
 from oslo_utils import importutils
@@ -27,6 +28,10 @@ class KollaDirNotFoundException(Exception):
 
 class KollaFileNotFoundException(Exception):
     pass
+
+
+def find_os_type():
+    return platform.linux_distribution()
 
 
 def mkdir_p(path):
@@ -55,16 +60,11 @@ def find_base_dir():
         return os.path.join(script_path, '..', '..')
     if base_script_path == 'subunit':
         return get_src_dir()
-    base_dir = '/usr/share/kolla-mesos'
     if base_script_path == 'bin':
-        if os.path.exists(base_dir):
-            return base_dir
-        return get_src_dir()
-    if os.path.exists(base_dir):
-        return base_dir
-    base_dir = '/usr/local/share/kolla-mesos'
-    if os.path.exists(base_dir):
-        return base_dir
+        if find_os_type()[0] in ['Ubuntu', 'debian']:
+            return '/usr/local/share/kolla-mesos'
+        else:
+            return '/usr/share/kolla-mesos'
     raise KollaDirNotFoundException(
         'I do not know where your Kolla directory is'
     )
