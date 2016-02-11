@@ -119,16 +119,23 @@ def remove_all_volumes(dc):
 
 
 def cleanup():
+    LOG.info("Starting cleanup...")
     marathon_client = marathon.Client()
     chronos_client = chronos.Client()
 
     with zk_utils.connection() as zk:
         zk_utils.clean(zk)
+    LOG.info("Starting cleanup of apps")
     marathon_client.remove_all_apps()
+    LOG.info("Starting cleanup of groups")
     marathon_client.remove_all_groups()
+    LOG.info("Starting cleanup of chronos jobs")
     chronos_client.remove_all_jobs()
 
+    LOG.info("Checking whether all tasks in Mesos are exited")
     wait_for_mesos_cleanup()
 
+    LOG.info("Starting cleanup of Docker containers")
     remove_all_containers()
+    LOG.info("Starting cleanup of Docker volumes")
     remove_all_volumes()
