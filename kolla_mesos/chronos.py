@@ -14,10 +14,10 @@
 # remove this module when possible.
 
 import json
-import logging
 import operator
 
 from oslo_config import cfg
+from oslo_log import log as logging
 import requests
 import six
 from six.moves.urllib import parse
@@ -27,7 +27,6 @@ from kolla_mesos import exception
 
 
 LOG = logging.getLogger(__name__)
-LOG.setLevel(logging.INFO)
 
 CONF = cfg.CONF
 CONF.import_group('chronos', 'kolla_mesos.config.chronos')
@@ -92,6 +91,7 @@ class Client(object):
 
     def get_jobs(self):
         """Get list of running jobs in Chronos"""
+        LOG.debug('Requesting list of all Chronos jobs')
         url = self._create_url('scheduler/jobs')
         response = requests.get(url, timeout=CONF.chronos.timeout)
 
@@ -123,8 +123,11 @@ class Client(object):
 
     def remove_all_jobs(self, with_tasks=True):
         job_names = six.moves.map(operator.itemgetter('name'), self.get_jobs())
+        LOG.debug('Found chronos jobs: %s', list(job_names))
 
         for job_name in job_names:
             if with_tasks:
+                LOG.info('Removing chronos job: %s', job_name)
                 self.remove_job_tasks(job_name)
+            LOG.info('Removing chronos job: %s', job_name)
             self.remove_job(job_name)

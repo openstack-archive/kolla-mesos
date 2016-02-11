@@ -35,6 +35,7 @@ class Client(object):
 
     def get_state(self):
         url = self._create_url('state.json')
+        LOG.debug("Requesting current Mesos state via '%s'", url)
         response = requests.get(url, timeout=CONF.mesos.timeout)
 
         return response.json()
