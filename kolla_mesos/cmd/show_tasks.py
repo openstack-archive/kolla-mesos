@@ -98,11 +98,11 @@ def get_tasks(deploy_id):
     """
 
     def get_task_from_cmd(role, cmd, cmd_info):
-        reg = '/kolla/%s/status/%s/%s/.done' % (deploy_id, role, cmd)
+        reg = '/kolla/%s/status/%s/%s' % (deploy_id, role, cmd)
         task = {'register': reg, 'requires': []}
         for dep in cmd_info.get('dependencies', []):
             task['requires'].append(
-                '/kolla/%s/status/%s/.done' % (deploy_id, dep))
+                '/kolla/%s/status/%s' % (deploy_id, dep))
         return task
 
     tasks = {}
@@ -122,9 +122,9 @@ def get_tasks(deploy_id):
                 if 'service' in cfg:
                     yield 'daemon', cfg['service']['daemon']
 
-            _, group, role = cfg['name'].split('/')
+            _, _, role = cfg['name'].split('/')
             for cmd, cmd_info in get_commands():
-                task_name = '/%s/%s/%s' % (group, role, cmd)
+                task_name = '%s/%s' % (role, cmd)
                 tasks[task_name] = get_task_from_cmd(role, cmd,
                                                      cmd_info)
     return tasks
@@ -153,79 +153,53 @@ def get_status(tasks):
         # get status of requirements
         for task, info in tasks.items():
             status[task] = {}
-            if 'requires' in info:
-                status[task]['requirements'] = {}
-                for path in info['requires']:
-                    reqt_status = ''
-                    if zk.exists(path):
-                        reqt_status = 'done'
-                    status[task]['requirements'][path] = reqt_status
+            status[task]['requirements'] = {}
+            for path in info['requires']:
+                reqt_status = ''
+                if zk.exists(path):
+                    reqt_status, _ = zk.get(path)
+                status[task]['requirements'][path] = reqt_status
 
         # get status of registrations
         for task, info in tasks.items():
-            if 'register' in info:
-                status[task]['register'] = {}
-                reg_status = 'NOT DONE'
-                reg_path = info['register']
-                if zk.exists(reg_path):
-                    reg_status = 'done'
-                elif 'requires' in info:
-                    all_done = True
-                    for path in info['requires']:
-                        if not status[task]['requirements'][path]:
-                            all_done = False
-                            break
-                    if not all_done:
-                        reg_status = 'waiting'
+            status[task]['register'] = {}
+            reg_path = info['register']
+            reg_status = ''
+            if zk.exists(reg_path):
+                reg_status, _ = zk.get(reg_path)
 
-                status[task]['register'] = (reg_path, reg_status)
+            status[task]['register'] = (reg_path, reg_status)
     return status
 
 
 def print_status(status):
     tasknames = sorted(status)
-    header = ['Task', 'Register (/kolla/variables/)', 'Reg Sts',
-              "Reqts (/kolla/variables/)", 'Reqt Sts']
+    header = ['Command', 'Status', 'Reqts', 'Reqt Sts']
     rows = []
     for taskname in tasknames:
-        reg_path = ''
         reg_status = ''
-        if 'register' in status[taskname]:
-            reg_path, reg_status = status[taskname]['register']
-            reg_path = clean_path(reg_path)
+        _, reg_status = status[taskname]['register']
 
-        if 'requirements' in status[taskname]:
-            reqts = status[taskname]['requirements']
+        reqts = status[taskname]['requirements']
+        if reqts:
             tname = taskname
             reqt_paths = sorted(reqts)
             for reqt_path in reqt_paths:
                 reqt_status = reqts[reqt_path]
                 reqt_path = clean_path(reqt_path)
-                rows.append((tname, reg_path, reg_status,
+                rows.append((tname, reg_status,
                              reqt_path, reqt_status))
                 tname = ''
-                reg_path = ''
                 reg_status = ''
         else:
-            rows.append((taskname, reg_path, reg_status,
+            rows.append((taskname, reg_status,
                          '', ''))
     cli_utils.lister(header, rows, align='l')
 
 
 def clean_path(path):
-    """clean path to reduce output clutter
-
-    The path is either:
-        /kolla/status/.../.done (older version) or
-        /kolla/deployment_id/status/.../.done
-
-    This will remove edit down the path to just the string between
-    'status' and '.done'.
-    """
     if 'status/' in path:
-        path = path.rsplit('status/', 1)[1]
-    if '/.done' in path:
-        path = path.rsplit('/.done', 1)[0]
+        path = path.split('status/')[1]
     return path
 
 

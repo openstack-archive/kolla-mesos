@@ -36,6 +36,11 @@ from kazoo.recipe import party
 import six
 from six.moves import queue
 
+CMD_WAIT = 'waiting'
+CMD_RUN = 'running'
+CMD_ERR = 'error'
+CMD_RETRY = 'retry'
+CMD_DONE = 'done'
 
 ZK_HOSTS = None
 ROLE = None
@@ -291,11 +296,10 @@ class Command(object):
         self.command = cmd['command']
         self.run_once = cmd.get('run_once', False)
         self.daemon = cmd.get('daemon', False)
-        self.check_path = '%s/status/%s/%s/.done' % (DEPLOYMENT,
-                                                     ROLE, self.name)
-        self.requires = ['%s/status/%s/.done' % (DEPLOYMENT, req)
+        self.check_path = '/kolla/%s/status/%s/%s' % (DEPLOYMENT_ID,
+                                                      ROLE, self.name)
+        self.requires = ['/kolla/%s/status/%s' % (DEPLOYMENT_ID, req)
                          for req in cmd.get('dependencies', [])]
-        self.init_path = os.path.dirname(self.check_path)
         self.proc = None
         self.retries = int(cmd.get('retries', 0))
         if self.daemon:
@@ -310,12 +314,42 @@ class Command(object):
         self.requirements_fulfilled()
 
     def requirements_fulfilled(self):
+        """get requirements status
+
+        if the requirement ends in 'daemon', then a state of
+        running means it is fulfilled.
+
+        else, then a state of done means it is fulfilled.
+        """
         fulfilled = True
         for req in self.requires:
-            if not self.zk.retry(self.zk.exists, req):
-                LOG.warning('%s is waiting for %s', self.name, req)
+            success = CMD_DONE
+            if req.endswith('daemon'):
+                success = CMD_RUN
+            state = self.get_state(req)
+            if state != success:
+                LOG.warning('%s is waiting for %s, in state: %s'
+                            % (self.name, req, state))
                 fulfilled = False
         return fulfilled
+
+    def set_state(self, state):
+        self.zk.retry(self.zk.ensure_path, self.check_path)
+        current_state, _ = self.zk.get(self.check_path)
+        if current_state != state:
+            LOG.info('path: %s, changing state from %s to %s'
+                     % (self.check_path, current_state, state))
+            self.zk.set(self.check_path, state)
+
+    def get_state(self, path=None):
+        if not path:
+            path = self.check_path
+        state = None
+        if self.zk.exists(path):
+            state, _ = self.zk.get(str(path))
+        if not state:
+            state = None
+        return state
 
     def sleep(self, queue_size, retry=False):
         seconds = math.ceil(20 / (1.0 + queue_size))
@@ -343,22 +377,19 @@ class Command(object):
         result = 0
         LOG.info('** > Running %s', self.name)
         if self.run_once:
-            def _init_done():
-                return zk.retry(zk.exists, self.check_path)
-
-            if _init_done():
+            state = self.get_state()
+            if state == CMD_DONE:
                 LOG.info("Path '%s' exists: skipping command",
                          self.check_path)
             else:
-                LOG.info("Path '%s' does not exists: running command",
+                LOG.info("Path '%s' does not exist: running command",
                          self.check_path)
-                zk.retry(zk.ensure_path, self.init_path)
-                lock = zk.Lock(self.init_path)
-                LOG.info("Acquiring lock '%s'", self.init_path)
+                zk.retry(zk.ensure_path, self.check_path)
+                lock = zk.Lock(self.check_path)
+                LOG.info("Acquiring lock '%s'", self.check_path)
                 with lock:
-                    if not _init_done():
-                        result = self._run_command()
-                LOG.info("Releasing lock '%s'", self.init_path)
+                    result = self._run_command()
+                LOG.info("Releasing lock '%s'", self.check_path)
         else:
             result = self._run_command()
         LOG.info('** < Complete %s result: %s', self.name, result)
@@ -367,10 +398,14 @@ class Command(object):
     def _run_command(self):
         LOG.debug("Running command: %s", self.command)
         self.retries = self.retries - 1
+        if not self.daemon:
+            # daemons will be set to running a little later
+            self.set_state(CMD_RUN)
         self.proc = subprocess.Popen(self.command, shell=True,
                                      env=self.env)
         if self.proc is None:
             LOG.error("Command '%s' failed (proc=None)", self.name)
+            self.set_state(CMD_ERR)
             return 1
 
         if self.timeout > 0:
@@ -379,13 +414,18 @@ class Command(object):
                 ret = self.proc.poll()
                 LOG.debug("Command %s poll ret='%s'", self.name, ret)
                 if ret == 0:
-                    self.zk.retry(self.zk.ensure_path, self.check_path)
+                    self.set_state(CMD_DONE)
                     LOG.debug("Command '%s' marked as done", self.name)
+                    return ret
                 if ret is not None:
+                    self.set_state(CMD_ERR)
+                    LOG.error("Command '%s' failed, retval: %s"
+                              % (self.name, ret))
                     return ret
                 time.sleep(10)
 
             LOG.error("Command failed with timeout (%s seconds)", self.timeout)
+            self.set_state(CMD_ERR)
             self.kill_process()
 
         if self.daemon:
@@ -393,17 +433,14 @@ class Command(object):
             ret = self.proc.poll()
             LOG.debug("Daemon poll ret='%s'", ret)
             if ret is None:
-                self.zk.retry(self.zk.ensure_path, self.check_path)
+                self.set_state(CMD_RUN)
                 LOG.debug("Daemon '%s' marked as running", self.name)
                 self.proc.wait()
                 ret = self.proc.returncode
             if ret != 0:
-                try:
-                    self.zk.retry(self.zk.delete, self.check_path)
-                except kz_exceptions.NoNodeError:
-                    LOG.debug('Tried to delete non-existant ZK path: %s',
-                              self.check_path)
-
+                self.set_state(CMD_ERR)
+                LOG.error("Daemon '%s' exited with error: %s"
+                          % (self.name, ret))
             LOG.debug("Command %s ret='%s'", self.name, ret)
             return ret
 
@@ -431,6 +468,7 @@ def run_commands(zk, service_conf):
         cmd = cmdq.get()
         if cmd.daemon and not cmdq.empty():
             # run the daemon command last
+            cmd.set_state(CMD_WAIT)
             cmdq.put(cmd)
             continue
         if cmd.requirements_fulfilled():
@@ -438,12 +476,14 @@ def run_commands(zk, service_conf):
                 generate_configs(zk, cmd.raw_conf['files'])
             if cmd.run() != 0:
                 if cmd.retries > 0:
+                    cmd.set_state(CMD_RETRY)
                     cmd.sleep(cmdq.qsize(), retry=True)
                     cmdq.put(cmd)
                 else:
                     # command failed and no retries, so exit.
                     sys.exit(1)
         else:
+            cmd.set_state(CMD_WAIT)
             cmd.sleep(cmdq.qsize())
             cmdq.put(cmd)
 
