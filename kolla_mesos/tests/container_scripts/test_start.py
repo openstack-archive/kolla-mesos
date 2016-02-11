@@ -66,8 +66,7 @@ class CommandTest(base.BaseTestCase):
         self.assertEqual(False, cmd.run_once)
         self.assertEqual(False, cmd.daemon)
         self.assertEqual([], cmd.requires)
-        self.assertEqual('/kolla/undefined/status/testr/a', cmd.init_path)
-        self.assertEqual('/kolla/undefined/status/testr/a/.done',
+        self.assertEqual('/kolla/undefined/status/testr/a',
                          cmd.check_path)
 
     def test_requirements_fulfilled_no(self):
@@ -75,8 +74,9 @@ class CommandTest(base.BaseTestCase):
                                    'dependencies': ['q/x', 'f/y']},
                              self.client)
 
-        self.client.create('/kolla/undefined/status/q/x/.done',
-                           'one', makepath=True)
+        self.client.create('/kolla/undefined/status/q/x',
+                           'done', makepath=True)
+
         self.assertFalse(cmd1.requirements_fulfilled())
 
     def test_requirements_fulfilled_yes(self):
@@ -84,10 +84,10 @@ class CommandTest(base.BaseTestCase):
                                    'dependencies': ['w/x', 'y/l']},
                              self.client)
 
-        self.client.create('/kolla/undefined/status/w/x/.done',
-                           'one', makepath=True)
-        self.client.create('/kolla/undefined/status/y/l/.done',
-                           'one', makepath=True)
+        self.client.create('/kolla/undefined/status/w/x',
+                           'done', makepath=True)
+        self.client.create('/kolla/undefined/status/y/l',
+                           'done', makepath=True)
         self.assertTrue(cmd1.requirements_fulfilled())
 
     @mock.patch('subprocess.Popen')
@@ -110,16 +110,14 @@ class CommandTest(base.BaseTestCase):
         cmd1.run()
         cmd1.run()
         self.assertEqual(1, len(mock_popen.return_value.poll.mock_calls))
-        self.assertTrue(self.client.exists(
-                        '/kolla/undefined/status/testr/a/.done'))
+        self.assertEqual(start.CMD_DONE, cmd1.get_state())
 
     @mock.patch('subprocess.Popen')
     def test_already_run(self, mock_popen):
         cmd1 = start.Command('a', {'command': 'true',
                                    'run_once': True},
                              self.client)
-        self.client.create('/kolla/undefined/status/testr/a/.done',
-                           'one', makepath=True)
+        cmd1.set_state(start.CMD_DONE)
         mock_popen.return_value = mock.MagicMock()
         mock_popen.return_value.poll.return_value = 0
         cmd1.run()
