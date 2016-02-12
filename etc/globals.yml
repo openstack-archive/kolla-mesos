@@ -28,4 +28,4 @@ neutron_external_interface: "eth2"
 ####################
 openstack_release: "2.0.0"
 init_log_level: "debug"
-database_max_timeout: 60
+database_max_timeout: "60"
