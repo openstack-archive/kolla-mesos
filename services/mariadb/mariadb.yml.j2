@@ -10,6 +10,8 @@ service:
   daemon:
     command: /usr/bin/mysqld_safe --wsrep-new-cluster
     dependencies: [mariadb/bootstrap]
+  mem: {{ infra_mem }}
+  cpus: {{ infra_cpus }}
 
 commands:
   bootstrap:

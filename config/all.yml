@@ -203,3 +203,22 @@ ceph_nova_pool_name: "vms"
 ceph_erasure_profile: "k=4 m=2 ruleset-failure-domain=host"
 ceph_rule: "default host {{ 'indep' if ceph_pool_type == 'erasure' else 'firstn' }}"
 ceph_cache_rule: "cache host firstn"
+
+#################################
+# Resource options
+#################################
+# Resources for API endpoint services like nova-api, neutron-server etc.
+api_endpoint_mem: "128"
+api_endpoint_cpus: "0.3"
+# Resources for Neutron agents like neutron-dhcp-agent, neutron-l3-agent
+neutron_agent_mem: "128"
+neutron_agent_cpus: "0.2"
+# Resources for Horizon
+horizon_mem: "128"
+horizon_cpus: "0.3"
+# Resources for infra services like mariadb, rabbitmq etc.
+infra_mem: "128"
+infra_cpus: "0.3"
+# Resources for toolbox
+toolbox_mem: "512"
+toolbox_cpus: "0.3"
