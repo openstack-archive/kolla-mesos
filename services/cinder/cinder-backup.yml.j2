@@ -1,4 +1,5 @@
 name: openstack/cinder/cinder-backup
+enabled: {{ enable_cinder | bool }}
 container:
   image: "{{ cinder_backup_image }}:{{ cinder_backup_tag }}"
 service:

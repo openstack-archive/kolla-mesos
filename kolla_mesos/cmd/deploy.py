@@ -111,6 +111,9 @@ class Runner(object):
         self._conf = conf
         self.base_dir = os.path.abspath(file_utils.find_base_dir())
         self.type_name = None
+        self._enabled = self._conf.get('enabled', True)
+        if not self._enabled:
+            LOG.warn('Service %s disabled', self._conf['name'])
 
     def _list_commands(self):
         if 'service' in self._conf:
@@ -119,6 +122,8 @@ class Runner(object):
             yield key, self._conf['commands'][key]
 
     def write_to_zookeeper(self, zk, base_node):
+        if not self._enabled:
+            return
         for cmd_name, cmd_conf in self._list_commands():
             cmd = Command(cmd_conf, cmd_name, self._conf['name'])
             cmd.write_to_zookeeper(zk, base_node)
@@ -139,6 +144,8 @@ class Runner(object):
         return self._conf['name']
 
     def generate_deployment_files(self, kolla_config, jinja_vars, temp_dir):
+        if not self._enabled:
+            return
         _, proj, service = self._conf['name'].split('/')
         values = {
             'role': service,

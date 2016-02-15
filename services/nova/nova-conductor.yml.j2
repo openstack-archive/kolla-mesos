@@ -1,4 +1,5 @@
 name: openstack/nova/nova-conductor
+enabled: {{ enable_nova | bool }}
 container:
   image: "{{ nova_conductor_image }}:{{ nova_conductor_tag }}"
 service:

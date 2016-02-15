@@ -1,4 +1,5 @@
 name: openstack/cinder/cinder-volume
+enabled: {{ enable_cinder | bool }}
 container:
   image: "{{ cinder_volume_image }}:{{ cinder_volume_tag }}"
 service:

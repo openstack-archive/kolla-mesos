@@ -1,4 +1,5 @@
 name: openstack/cinder/cinder_ansible_tasks
+enabled: {{ enable_cinder | bool }}
 container:
   image: "{{ kolla_toolbox_image }}:{{ kolla_toolbox_tag }}"
 task:
