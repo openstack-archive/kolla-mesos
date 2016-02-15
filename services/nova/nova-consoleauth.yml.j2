@@ -1,4 +1,5 @@
 name: openstack/nova/nova-consoleauth
+enabled: {{ enable_nova | bool }}
 container:
   image: "{{ nova_consoleauth_image }}:{{ nova_consoleauth_tag }}"
 service:

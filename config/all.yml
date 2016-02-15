@@ -142,22 +142,21 @@ openstack_auth_v2:
     password: "{{ keystone_admin_password }}"
     project_name: "admin"
 
-# These roles are required for Kolla to be operation, however a savvy deployer
-# could disable some of these required roles and run thier own services.
-enable_glance: "yes"
-enable_haproxy: "yes"
-enable_keystone: "yes"
-enable_memcached: "yes"
+# Core services are required for Kolla to be operation.
 enable_mariadb: "yes"
-enable_neutron: "yes"
-enable_nova: "yes"
+enable_keystone: "yes"
 enable_rabbitmq: "yes"
+enable_glance: "yes"
+enable_nova: "yes"
+enable_neutron: "yes"
 
 # Additional optional OpenStack services are specified here
-enable_ceph: "no"
 enable_cinder: "no"
-enable_heat: "yes"
-enable_horizon: "yes"
+enable_horizon: "no"
+enable_memcached: "no"
+enable_haproxy: "no"
+enable_ceph: "no"
+enable_heat: "no"
 enable_swift: "no"
 enable_murano: "no"
 enable_ironic: "no"

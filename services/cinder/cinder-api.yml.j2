@@ -1,4 +1,5 @@
 name: openstack/cinder/cinder-api
+enabled: {{ enable_cinder | bool }}
 container:
   image: "{{ cinder_api_image }}:{{ cinder_api_tag }}"
 service:
