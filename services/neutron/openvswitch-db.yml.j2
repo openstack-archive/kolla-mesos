@@ -1,0 +1,15 @@
+name: infra/openvswitch/openvswitch-db
+enabled: {{ enable_neutron | bool and neutron_plugin_agent == 'openvswitch' }}
+container:
+  image: "{{ openvswitch_db_image }}:{{ openvswitch_db_tag }}"
+  parameters:
+    - key: volume
+      value: "openvswitch_db:/var/lib/openvswitch/"
+service:
+  volumes:
+    - containerPath: "/run"
+      hostPath: "/run"
+      mode: RW
+  daemon:
+    dependencies: [neutron-server/db_sync, neutron_ansible_tasks/create_user, rabbitmq/daemon]
+    command: /usr/sbin/ovsdb-server /etc/openvswitch/conf.db -vconsole:emer -vsyslog:err -vfile:info --remote=punix:/run/openvswitch/db.sock --log-file=/var/log/openvswitch/ovsdb-server.log
