@@ -3,6 +3,9 @@ name: infra/mariadb/mariadb
 enabled: {{ enable_mariadb | bool }}
 container:
   image: "{{ mariadb_image }}:{{ mariadb_tag }}"
+  parameters:
+    - key: volume
+      value: "mariadb_{{ deployment_id }}:/var/lib/mysql"
 service:
   daemon:
     command: /usr/bin/mysqld_safe --wsrep-new-cluster
