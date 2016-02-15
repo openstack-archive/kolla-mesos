@@ -1,0 +1,18 @@
+name: infra/openvswitch/openvswitch-vswitchd
+enabled: {{ enable_neutron | bool and neutron_plugin_agent == 'openvswitch' }}
+mem: {{ infra_mem }}
+cpus: {{ infra_cpus }}
+container:
+  image: "{{ openvswitch_vswitchd_image }}:{{ openvswitch_vswitchd_tag }}"
+  privileged: true
+service:
+  volumes:
+    - containerPath: "/run"
+      hostPath: "/run"
+      mode: RW
+    - containerPath: "/lib/modules"
+      hostPath: "/lib/modules"
+      mode: RO
+  daemon:
+    dependencies: [openvswitch-tasks/setup_ovs_bridge]
+    command: /usr/sbin/ovs-vswitchd unix:/run/openvswitch/db.sock --mlockall

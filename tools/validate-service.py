@@ -25,6 +25,29 @@ CNF_FIELDS = ('source', 'dest', 'owner', 'perm')
 CMD_FIELDS = ('run_once', 'dependencies', 'command', 'env',
               'delay', 'retries', 'files')
 BASE_PATH = os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), '..')
+# Some roles are depending on some global variables to be included in
+# configuration. The example are Neutron plugins - definitions of
+# neutron-openvswitch-agent and neutron-linuxbridge exist only when the
+# neutron_plugin_agent variable is set properly.
+# ROLE_VARS_MAP dictionary should have the following format:
+# {
+#     '<role>': {
+#         '<variable_name>': 'variable_value'
+#         [...]
+#      },
+#      [...]
+# }
+_OVS_VARS = {
+    'neutron_plugin_agent': 'openvswitch'
+}
+ROLE_VARS_MAP = {
+    'neutron-linuxbridge-agent': {
+        'neutron_plugin_agent': 'linuxbridge'
+    },
+    'neutron-openvswitch-agent': _OVS_VARS,
+    'openvswitch-db': _OVS_VARS,
+    'openvswitch-vswitchd': _OVS_VARS
+}
 
 
 def parse_args():
@@ -69,6 +92,10 @@ def validate_command(filename, cmd, cmd_info, deps, role):
 def validate(filename, deps):
     mini_vars = {'cinder_volume_driver': 'lvm',
                  'deployment_id': 'test'}
+    role = filename.replace('.yml.j2', '')
+    role_vars = ROLE_VARS_MAP.get(role, {})
+    mini_vars.update(role_vars)
+
     cnf = yaml.load(jinja_utils.jinja_render(filename, mini_vars))
 
     def get_commands():
