@@ -24,23 +24,20 @@ Overview
 Firstly let's go through how a deployment works when you run
 kolla-mesos-deploy to better understand the flow of operation.
 
-1. kolla-mesos-deploy iterates over all the projects config/<project>
-   and finds "services" these are long running process that fulfill
-   a useful role (like nova-api within the nova project).
-   The main files associated with a service are the following:
-   - config/<project>/<service>_config.yml.j2
-   - deployment_files/<project>/<service>.marathon.j2
+1. kolla-mesos-deploy iterates over all the projects specified in
+   the chosen profile. It then finds services and task definitions
+   in services/<project>/*.yml.j2.
 
-2. parse the _config.yml.j2 file and write the following to zookeeper:
+2. parse the service definition file and write the following to zookeeper:
    - the required templates and files
    - the variables that the above templates need.
-   - the commands defined in _config.yml.j2
+   - the definition it's self
 
-3. parse the marathon and chronos files and deploy them.
+3. generate the marathon and chronos files and deploy them.
 
 
-The defaults/main.yml file
---------------------------
+The config/<project>/defaults/main.yml
+--------------------------------------
 
 This file keeps the basic variables which will be used when generating the
 other files. Of course it can re-use wariables from *config/all.yml* file
@@ -73,8 +70,8 @@ An example:
   keystone_logging_debug: "{{ openstack_logging_debug }}"
 
 
-<service>/templates/* files
----------------------------
+config/<project>/templates/*
+----------------------------
 
 kolla-mesos uses these files to generate the configuration of OpenStack
 services. You can use jinja2 variables here. Generally, such a config file
@@ -92,8 +89,8 @@ An example::
   connection = mysql://{{ keystone_database_user }}:{{ keystone_database_password }}@{{ keystone_database_address }}/{{ keystone_database_name }}
 
 
-The <service>_config.yml file
------------------------------
+The service definition file
+---------------------------
 
 kolla-mesos-deploy uses this file to know what files are placed into
 zookeeper from the kolla-mesos repo. Note the config it's self is
@@ -104,48 +101,95 @@ kolla_mesos_start.py (within the running container) uses this config to:
 1. know where these files are placed within the container.
 2. run commands defined in the config
 
-The following is an example of a config with all options used.
+The following is an example of a service.
 
 .. code-block:: yaml
 
-  config:
-    project_a:
-      service_x:
-        a.cnf.j2:
-          source: config/project_a/templates/main.cnf.j2
-          dest: /etc/service_x/main.cnf
-          owner: service_user
-          perm: "0600"
+  name: openstack/cinder/cinder-api
+  enabled: {{ enable_cinder | bool }}
+  container:
+    # place any marathon/container attribute here
+    # note the container/docker attributes do not need extra nesting
+    # they will be placed correctly in container/docker/
+    privileged: false
+    image: "{{ cinder_api_image }}:{{ cinder_api_tag }}"
+  service:
+    # place any toplevel marathon attribute here
+    # see: https://mesosphere.github.io/marathon/docs/rest-api.html
+    constraints: [["attribute", "OPERATOR", "value"]]
+    cpus: 1.5
+    mem: 256.0
+    instances: 3
+    daemon:
+      dependencies: [rabbitmq/daemon, cinder-api/db_sync]
+      command: /usr/bin/cinder-api
   commands:
-    project_a:
-      service_x:
-        bootstrap:
-          command: kolla_extend_start
-          env:
-            KOLLA_BOOTSTRAP: "yes"
-          run_once: True
-          register: /kolla/variables/project_a_bootstrap/.done
-        doit_please:
-          command: /usr/bin/the_service_d
-          run_once: False
-          daemon: True
-          requires: [/kolla/variables/project_a_bootstrap/.done]
+    db_sync:
+      env:
+        KOLLA_BOOTSTRAP:
+      command: kolla_extend_start
+      run_once: True
+      dependencies: [cinder_ansible_tasks/create_database,
+                     cinder_ansible_tasks/database_user_create]
+      files:
+        cinder.conf.j2:
+          source: /etc/kolla-mesos/config/cinder/cinder-api.conf
+          dest: /etc/cinder/cinder.conf
+          owner: cinder
+          perm: "0600"
+
+
+The following is an example of a task.
+
+.. code-block:: yaml
+
+  name: openstack/cinder/task
+  enabled: {{ enable_cinder | bool }}
+  container:
+    # place any chronos/container attribute here
+    volumes:
+      -
+        containerPath: "/var/log/"
+        hostPath: "/logs/"
+        mode: "RW"
+    image: "{{ kolla_toolbox_image }}:{{ kolla_toolbox_tag }}"
+  task:
+    # place any toplevel chronos attribute here
+    # see: https://mesos.github.io/chronos/docs/api.html
+    cpus: 1.5
+    mem: 256.0
+    retries: 2
+  commands:
+    db_sync:
+      env:
+        KOLLA_BOOTSTRAP:
+      command: kolla_extend_start
+      run_once: True
+      dependencies: [cinder_ansible_tasks/create_database,
+                     cinder_ansible_tasks/database_user_create]
+      files:
+        cinder.conf.j2:
+          source: /etc/kolla-mesos/config/cinder/cinder-api.conf
+          dest: /etc/cinder/cinder.conf
+          owner: cinder
+          perm: "0600"
+
+
 
 Notes on the above config.
 
-1. In the config section, "source" is the source in the kolla-mesos
+1. In the files section, "source" is the source in the kolla-mesos
    source tree and "dest" is the destination in the container. The
    contents of the file will be placed in zookeeper in the node named:
    "/kolla/config/project_a/service_x/a.cnf.j2".
 2. kolla_mesos_start.py will render the file before placing in the
    container.
 3. In the commands section, commands will be run as soon as their
-   "requires" are fulfilled (exist in zookeeper), except that the
-   command with "daemon=True" will be kept until last. Once a command
-   has completed, kolla_mesos_start.py will create the node "register"
-   if it is provided. Command marked with "run_once" will not run
-   on more than one node (if the "register" node exists, the command
-   will be skipped).
+   "dependencies" are fulfilled (exist in zookeeper), except that the
+   daemon command will be kept until last. Once a command
+   has completed, kolla_mesos_start.py will create the node in zookeeper.
+   Commands marked with "run_once" will not run
+   on more than one node.
 
 
 Porting a service from kolla-ansible
