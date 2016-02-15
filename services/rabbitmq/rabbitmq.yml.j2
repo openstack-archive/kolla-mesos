@@ -22,6 +22,8 @@ service:
         dest: /etc/rabbitmq/rabbitmq_clusterer.config
         owner: rabbitmq
         perm: "0600"
+  mem: {{ infra_mem }}
+  cpus: {{ infra_cpus }}
 
 commands:
   bootstrap:
