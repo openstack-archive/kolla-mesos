@@ -9,6 +9,8 @@ service:
                    rabbitmq/daemon,
                    cinder-api/db_sync]
     command: /usr/bin/cinder-api
+  mem: {{ cinder_api_mem }}
+  cpus: {{ cinder_api_cpus }}
 
 commands:
   db_sync:

@@ -6,6 +6,8 @@ service:
   daemon:
     dependencies: [nova-conductor/db_sync, nova_ansible_tasks/create_user]
     command: nova-conductor --config-file /etc/nova/nova.conf --config-file /etc/nova/nova-override.conf
+  mem: {{ nova_conductor_mem }}
+  cpus: {{ nova_conductor_cpus }}
 
 commands:
   db_sync:
