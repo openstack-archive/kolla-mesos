@@ -46,3 +46,17 @@ glance_logging_debug: "{{ openstack_logging_debug }}"
 glance_keystone_user: "glance"
 
 openstack_glance_auth: "{'auth_url':'{{ openstack_auth_v2.auth_url }}','username':'{{ openstack_auth_v2.username }}','password':'{{ openstack_auth_v2.password }}','project_name':'{{ openstack_auth_v2.project_name }}'}"
+
+
+####################
+# Resources
+####################
+# glance-api
+glance_api_mem: "128"
+glance_api_cpus: "0.3"
+# glance-init
+glance_init_mem: "512"
+glance_init_cpus: "0.3"
+# glance-registry
+glance_registry_mem: "128"
+glance_registry_cpus: "0.3"

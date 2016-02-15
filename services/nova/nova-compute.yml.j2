@@ -4,9 +4,9 @@ container:
   image: "{{ nova_compute_image }}:{{ nova_compute_tag }}"
   privileged: true
 service:
-  mem: 1024
+  mem: {{ nova_compute_mem }}
   taskRateLimit: 600.0
-  cpus: 2
+  cpus: {{ nova_compute_cpus }}
   volumes:
     - containerPath: "/lib/modules"
       hostPath: "/lib/modules"

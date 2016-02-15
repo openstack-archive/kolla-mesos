@@ -16,6 +16,8 @@ service:
         dest: /etc/{{ keystone_dir }}/keystone.conf
         owner: keystone
         perm: "0600"
+  mem: {{ keystone_api_mem }}
+  cpus: {{ keystone_api_cpus }}
 
 commands:
   db_sync:

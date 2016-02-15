@@ -78,3 +78,35 @@ nova_logging_debug: "{{ openstack_logging_debug }}"
 nova_keystone_user: "nova"
 
 openstack_nova_auth: "{'auth_url':'{{ openstack_auth_v2.auth_url }}','username':'{{ openstack_auth_v2.username }}','password':'{{ openstack_auth_v2.password }}','project_name':'{{ openstack_auth_v2.project_name }}'}"
+
+
+####################
+# Resources
+####################
+# nova-api
+nova_api_mem: "128"
+nova_api_cpus: "0.3"
+# nova-compute
+nova_compute_mem: "1024"
+nova_compute_cpus: "2"
+# nova-conductor
+nova_conductor_mem: "128"
+nova_conductor_cpus: "0.3"
+# nova-consoleauth
+nova_consoleauth_mem: "128"
+nova_consoleauth_cpus: "0.3"
+# nova-init
+nova_init_mem: "512"
+nova_init_cpus: "0.3"
+# nova-libvirt
+nova_libvirt_mem: "1024"
+nova_libvirt_cpus: "2"
+# nova-novncproxy
+nova_novncproxy_mem: "128"
+nova_novncproxy_cpus: "0.3"
+# nova-scheduler
+nova_scheduler_mem: "128"
+nova_scheduler_cpus: "0.3"
+# noca-spicehtml3proxy
+nova_spicehtml3proxy_mem: "128"
+nova_spicehtml3proxy_cpus: "0.3"

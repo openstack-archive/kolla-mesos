@@ -21,3 +21,5 @@ service:
         dest: /etc/nova/nova.conf
         owner: nova
         perm: "0600"
+  mem: {{ nova_consoleauth_mem }}
+  cpus: {{ nova_consoleauth_cpus }}

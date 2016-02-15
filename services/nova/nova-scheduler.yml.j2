@@ -21,3 +21,5 @@ service:
         dest: /etc/nova/nova.conf
         owner: nova
         perm: "0600"
+  mem: {{ nova_scheduler_mem }}
+  cpus: {{ nova_scheduler_cpus }}
