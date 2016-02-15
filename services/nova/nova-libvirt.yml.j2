@@ -1,5 +1,7 @@
 name: openstack/nova/nova-libvirt
 enabled: {{ enable_nova | bool }}
+mem: {{ api_endpoint_mem }}
+cpus: {{ api_endpoint_cpus }}
 container:
   image: "{{ nova_libvirt_image }}:{{ nova_libvirt_tag }}"
   privileged: true

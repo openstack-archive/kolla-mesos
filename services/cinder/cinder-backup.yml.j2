@@ -1,5 +1,7 @@
 name: openstack/cinder/cinder-backup
 enabled: {{ enable_cinder | bool }}
+mem: {{ api_endpoint_mem }}
+cpus: {{ api_endpoint_cpus }}
 container:
   image: "{{ cinder_backup_image }}:{{ cinder_backup_tag }}"
 service:

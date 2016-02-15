@@ -1,5 +1,7 @@
 name: openstack/nova/nova-spicehtml3proxy
 enabled: {{ enable_nova | bool and nova_console == 'spice' }}
+mem: {{ api_endpoint_mem }}
+cpus: {{ api_endpoint_cpus }}
 container:
   image: "{{ nova_spicehtml3proxy_image }}:{{ nova_spicehtml3proxy_tag }}"
 service:

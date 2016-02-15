@@ -1,5 +1,7 @@
 name: openstack/nova/nova-novncproxy
 enabled: {{ enable_nova | bool and nova_console == 'novnc' }}
+mem: {{ api_endpoint_mem }}
+cpus: {{ api_endpoint_cpus }}
 container:
   image: "{{ nova_novncproxy_image }}:{{ nova_novncproxy_tag }}"
 service:

@@ -1,5 +1,7 @@
 name: openstack/glance/glance-registry
 enabled: {{ enable_horizon | bool }}
+mem: {{ api_endpoint_mem }}
+cpus: {{ api_endpoint_cpus }}
 container:
   image: "{{ glance_registry_image }}:{{ glance_registry_tag }}"
 service:

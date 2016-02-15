@@ -1,8 +1,8 @@
 {
     "id": "/{{ deployment_id }}/{{ service_name }}",
     "instances": 1,
-    "mem": 512,
-    "cpus": 0.3,
+    "mem": {{ service_mem }},
+    "cpus": {{ service_cpus }},
     "container": {
         "type": "DOCKER",
         "docker": {

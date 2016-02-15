@@ -1,6 +1,8 @@
 {% set mysql_dir = 'mysql' if kolla_base_distro in ['ubuntu', 'debian'] else '' %}
 name: infra/mariadb/mariadb
 enabled: {{ enable_mariadb | bool }}
+mem: {{ infra_mem }}
+cpus: {{ infra_cpus }}
 container:
   image: "{{ mariadb_image }}:{{ mariadb_tag }}"
   parameters:

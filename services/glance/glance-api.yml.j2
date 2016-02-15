@@ -1,5 +1,7 @@
 name: openstack/glance/glance-api
 enabled: {{ enable_glance | bool }}
+mem: {{ api_endpoint_mem }}
+cpus: {{ api_endpoint_cpus }}
 container:
   image: "{{ glance_api_image }}:{{ glance_api_tag }}"
 service:
