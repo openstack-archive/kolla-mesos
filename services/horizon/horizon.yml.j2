@@ -3,6 +3,8 @@
 {% set apache_conf = 'horizon.conf' if kolla_base_distro in ['ubuntu', 'debian'] else '000-default.conf' %}
 name: openstack/horizon/horizon
 enabled: {{ enable_horizon | bool }}
+mem: {{ horizon_mem }}
+cpus: {{ horizon_cpus }}
 container:
   image: "{{ horizon_image }}:{{ horizon_tag }}"
 service:

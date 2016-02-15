@@ -1,5 +1,7 @@
 name: infra/rabbitmq/rabbitmq
 enabled: {{ enable_rabbitmq | bool }}
+mem: {{ infra_mem }}
+cpus: {{ infra_cpus }}
 container:
   image: "{{ rabbitmq_image }}:{{ rabbitmq_tag }}"
 service:

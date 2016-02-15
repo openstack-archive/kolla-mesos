@@ -1,5 +1,7 @@
 name: openstack/glance/glance_ansible_tasks
 enabled: {{ enable_glance | bool }}
+mem: {{ toolbox_mem }}
+cpus: {{ toolbox_cpus }}
 container:
   image: "{{ kolla_toolbox_image }}:{{ kolla_toolbox_tag }}"
 task:

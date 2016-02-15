@@ -143,6 +143,12 @@ class Runner(object):
     def _get_service_name(self):
         return self._conf['name']
 
+    def _get_service_mem(self):
+        return self._conf['mem']
+
+    def _get_service_cpus(self):
+        return self._conf['cpus']
+
     def generate_deployment_files(self, kolla_config, jinja_vars, temp_dir):
         if not self._enabled:
             return
@@ -151,6 +157,8 @@ class Runner(object):
             'role': service,
             'group': proj,
             'service_name': self._get_service_name(),
+            'service_mem': self._get_service_mem(),
+            'service_cpus': self._get_service_cpus(),
             'kolla_config': kolla_config,
             'zookeeper_hosts': CONF.zookeeper.host,
             'private_interface': CONF.network.private_interface,

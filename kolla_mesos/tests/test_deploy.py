@@ -24,6 +24,8 @@ CONF.import_group('kolla', 'kolla_mesos.config.kolla')
 
 YAML_SERVICES_CONFIG = """
 name: openstack/cinder/cinder-api
+mem: 128
+cpus: 0.3
 container:
   image: "cinder-api:a.b.c"
 service:

@@ -1,5 +1,7 @@
 name: openstack/nova/nova-scheduler
 enabled: {{ enable_nova | bool }}
+mem: {{ api_endpoint_mem }}
+cpus: {{ api_endpoint_cpus }}
 container:
   image: "{{ nova_scheduler_image }}:{{ nova_scheduler_tag }}"
 service:

@@ -2,6 +2,8 @@
 {% set keystone_dir = 'apache2/conf-enabled' if kolla_base_distro in ['ubuntu', 'debian'] else 'httpd/conf.d' %}
 name: openstack/keystone/keystone-api
 enabled: {{ enable_keystone | bool }}
+mem: {{ api_endpoint_mem }}
+cpus: {{ api_endpoint_cpus }}
 container:
   image: "{{ keystone_image }}:{{ keystone_tag }}"
 service:

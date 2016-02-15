@@ -1,5 +1,7 @@
 name: openstack/cinder/cinder-volume
 enabled: {{ enable_cinder | bool }}
+mem: {{ api_endpoint_mem }}
+cpus: {{ api_endpoint_cpus }}
 container:
   image: "{{ cinder_volume_image }}:{{ cinder_volume_tag }}"
 service:

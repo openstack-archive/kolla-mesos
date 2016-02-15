@@ -1,5 +1,7 @@
 name: infra/memcached/memcached
 enabled: {{ enable_memcached | bool }}
+mem: {{ infra_mem }}
+cpus: {{ infra_cpus }}
 container:
   image: "{{ memcached_image }}:{{ memcached_tag }}"
 service:
