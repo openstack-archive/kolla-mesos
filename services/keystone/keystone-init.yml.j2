@@ -3,6 +3,8 @@ enabled: {{ enable_keystone | bool }}
 container:
   image: "{{ kolla_toolbox_image }}:{{ kolla_toolbox_tag }}"
 task:
+  mem: {{ toolbox_mem }}
+  cpus: {{ toolbox_cpus }}
 commands:
   create_database:
     run_once: True
