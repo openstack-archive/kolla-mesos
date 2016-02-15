@@ -1,0 +1,15 @@
+name: infra/openvswitch/openvswitch-tasks
+enabled: {{ enable_neutron | bool and neutron_plugin_agent == 'openvswitch' }}
+container:
+  image: "{{ openvswitch_db_image }}:{{ openvswitch_db_tag }}"
+  volumes:
+    - containerPath: "/run"
+      hostPath: "/run"
+      mode: RW
+task:
+commands:
+  setup_ovs_bridge:
+    run_once: True
+    retries: 10
+    delay: 5
+    command: /usr/local/bin/kolla_ensure_openvswitch_configured {{ neutron_bridge_name }} {{ neutron_external_interface }}
