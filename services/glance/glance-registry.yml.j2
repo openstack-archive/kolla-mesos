@@ -17,3 +17,5 @@ service:
         dest: /etc/glance/glance.conf
         owner: glance
         perm: "0600"
+  mem: {{ api_endpoint_mem }}
+  cpus: {{ api_endpoint_cpus }}
