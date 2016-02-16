@@ -161,7 +161,7 @@ def get_new_node_id(zk, path):
 
 def register_group_and_hostvars(zk):
     host = str(get_ip_address(PRIVATE_INTERFACE))
-    path = os.path.join('kolla', DEPLOYMENT_ID, 'groups', GROUP)
+    path = os.path.join('kolla', DEPLOYMENT_ID, 'groups', ROLE)
     zk.retry(zk.ensure_path, path)
     node_id = get_new_node_id(zk, path)
 
@@ -174,7 +174,7 @@ def register_group_and_hostvars(zk):
             'role': ROLE,
             'id': str(node_id)}
 
-    LOG.info('%s (%s) joining the %s party', host, node_id, GROUP)
+    LOG.info('%s (%s) joining the %s party', host, node_id, ROLE)
     party.Party(zk, path, json.dumps(data)).join()
 
 
