@@ -36,7 +36,7 @@ import xml.etree.ElementTree as etree
 import libvirt
 
 
-class NoBridgeInterfaceException(Exception):
+class NoPrivateInterfaceException(Exception):
     pass
 
 
@@ -79,15 +79,14 @@ def get_mac_address(conn, domain_name):
     devices = domain_tree.find('devices')
     interfaces = devices.iterfind('interface')
 
-    for interface in interfaces:
-        interface_type = interface.get('type')
-        if interface_type != 'bridge':
-            continue
-        mac_element = interface.find('mac')
-        mac_address = mac_element.get('address')
-        return mac_address
+    try:
+        interface = interfaces[1]
+    except KeyError:
+        raise NoPrivateInterfaceException()
 
-    raise NoBridgeInterfaceException()
+    mac_element = interface.find('mac')
+    mac_address = mac_element.get('address')
+    return mac_address
 
 
 @libvirt_conn
