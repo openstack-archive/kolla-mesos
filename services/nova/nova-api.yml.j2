@@ -2,6 +2,7 @@ name: openstack/nova/nova-api
 enabled: {{ enable_nova | bool }}
 container:
   image: "{{ nova_api_image }}:{{ nova_api_tag }}"
+  privileged: true
 service:
   daemon:
     dependencies: [nova-conductor/db_sync, nova_ansible_tasks/create_user]
