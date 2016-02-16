@@ -2,8 +2,5 @@
 - include: config.yml
   when: inventory_hostname in groups['zookeeper']
 
-- include: bootstrap.yml
-  when: inventory_hostname in groups['zookeeper']
-
 - include: start.yml
   when: inventory_hostname in groups['zookeeper']
