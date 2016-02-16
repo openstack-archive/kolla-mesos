@@ -464,7 +464,7 @@ class HostvarsAndGroupsTest(base.BaseTestCase):
         m_gethost.return_value = 'test-hostname'
         start.register_group_and_hostvars(self.client)
         groups, hostvars = start.get_groups_and_hostvars(self.client)
-        self.assertEqual({'testg': ['1.2.3.4']}, groups)
+        self.assertEqual({'testr': ['1.2.3.4']}, groups)
         exp = {'ansible_eth1': {'ipv4': {'address': '1.2.3.4'}},
                'ansible_eth2': {'ipv4': {'address': '1.2.3.4'}},
                'ansible_hostname': 'test-hostname',
@@ -489,13 +489,13 @@ class HostvarsAndGroupsTest(base.BaseTestCase):
                   'api_interface': 'eth2',
                   'role': 'testr',
                   'id': '55'}
-        party.Party(self.client, '/kolla/deploy_id/groups/testg',
+        party.Party(self.client, '/kolla/deploy_id/groups/testr',
                     json.dumps(remote)).join()
 
         # make sure this function gets both hosts information.
         groups, hostvars = start.get_groups_and_hostvars(self.client)
         self.assertEqual(sorted(['1.2.3.4', '4.4.4.4']),
-                         sorted(groups['testg']))
+                         sorted(groups['testr']))
         exp_local = {'ansible_eth1': {'ipv4': {'address': '1.2.3.4'}},
                      'ansible_eth2': {'ipv4': {'address': '1.2.3.4'}},
                      'ansible_hostname': 'test-hostname',
