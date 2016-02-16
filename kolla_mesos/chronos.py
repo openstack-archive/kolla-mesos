@@ -122,8 +122,8 @@ class Client(object):
             raise exception.ChronosException('Failed to remove tasks from job')
 
     def remove_all_jobs(self, with_tasks=True):
-        job_names = six.moves.map(operator.itemgetter('name'), self.get_jobs())
-        LOG.debug('Found chronos jobs: %s', list(job_names))
+        job_names = list(map(operator.itemgetter('name'), self.get_jobs()))
+        LOG.debug('Found chronos jobs: %s', job_names)
 
         for job_name in job_names:
             if with_tasks:
