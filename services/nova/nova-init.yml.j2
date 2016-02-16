@@ -58,7 +58,7 @@ commands:
     command: {{ ansible_task_cmd }}
       -m kolla_keystone_service
       -a "service_name=nova
-          service_type=image
+          service_type=compute
           description='Openstack Compute'
           endpoint_region={{ openstack_region_name }}
           admin_url='http://{{ kolla_internal_address }}:{{ nova_api_port }}/v2/%(tenant_id)s'
@@ -73,22 +73,6 @@ commands:
     command: {{ ansible_task_cmd }}
       -m kolla_keystone_user
       -a "project=service
-          user=nova
-          password={{ nova_keystone_password }}
-          role=admin
-          region_name={{ openstack_region_name }}
-          auth={{ '{{ openstack_nova_auth }}' }}"
-      -e "{'openstack_nova_auth':{{ openstack_nova_auth }}}"
-  running:
-    run_once: True
-    retries: 10
-    delay: 5
-    dependencies: [nova-conductor/db_sync, nova_ansible_tasks/register_endpoint,
-                   keystone_ansible_tasks/running]
-    command: {{ ansible_task_cmd }}
-      -m kolla_sanity
-      -a "service=nova
-          project=service
           user=nova
           password={{ nova_keystone_password }}
           role=admin
