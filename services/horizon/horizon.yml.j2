@@ -8,7 +8,7 @@ container:
 service:
   daemon:
     command: /usr/sbin/{{ apache_cmd }} -DFOREGROUND
-    dependencies: [horizon/bootstrap]
+    dependencies: [horizon/bootstrap, memcached/daemon]
     files:
       000-default.conf:
         source: config/horizon/templates/horizon.conf.j2
