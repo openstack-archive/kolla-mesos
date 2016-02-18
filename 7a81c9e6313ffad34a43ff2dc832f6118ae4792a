@@ -1,0 +1,9 @@
+Code-Review+2: Sam Yaple <sam@yaple.net>
+Code-Review+2: Paul Bourke <paul.bourke@oracle.com>
+Workflow+1: Paul Bourke <paul.bourke@oracle.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Thu, 18 Feb 2016 13:40:26 +0000
+Reviewed-on: https://review.openstack.org/281236
+Project: openstack/kolla-mesos
+Branch: refs/heads/master
