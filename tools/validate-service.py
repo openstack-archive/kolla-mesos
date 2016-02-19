@@ -91,6 +91,7 @@ def validate_command(filename, cmd, cmd_info, deps, role):
 
 def validate(filename, deps):
     mini_vars = {'cinder_volume_driver': 'lvm',
+                 'enable_memcached': 'yes',
                  'deployment_id': 'test'}
     role = filename.replace('.yml.j2', '')
     role_vars = ROLE_VARS_MAP.get(role, {})
