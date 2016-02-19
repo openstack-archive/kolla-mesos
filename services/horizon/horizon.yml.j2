@@ -20,6 +20,8 @@ service:
         dest: /etc/openstack-dashboard/local_settings
         owner: horizon
         perm: "0644"
+  mem: {{ horizon_mem }}
+  cpus: {{ horizon_cpus }}
 
 commands:
   bootstrap:

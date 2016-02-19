@@ -17,3 +17,5 @@ service:
         dest: /etc/glance/glance-registry.conf
         owner: glance
         perm: "0600"
+  mem: {{ glance_registry_mem }}
+  cpus: {{ glance_registry_cpus }}

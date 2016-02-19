@@ -18,3 +18,10 @@ rabbitmq_data_image_full: "{{ rabbitmq_data_image }}:{{ rabbitmq_data_tag }}"
 ####################
 rabbitmq_user: "openstack"
 rabbitmq_cluster_name: "openstack"
+
+
+####################
+# Resources
+####################
+rabbitmq_mem: "128"
+rabbitmq_cpus: "0.3"

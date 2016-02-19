@@ -8,6 +8,8 @@ service:
                    glance_ansible_tasks/database_user_create,
                    glance-api/db_sync]
     command: glance-api
+  mem: {{ glance_api_mem }}
+  cpus: {{ glance_api_cpus }}
 
 commands:
   db_sync:

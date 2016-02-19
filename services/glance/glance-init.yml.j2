@@ -3,6 +3,8 @@ enabled: {{ enable_glance | bool }}
 container:
   image: "{{ kolla_toolbox_image }}:{{ kolla_toolbox_tag }}"
 task:
+  mem: {{ glance_init_mem }}
+  cpus: {{ glance_init_cpus }}
 commands:
   create_database:
     run_once: True
