@@ -3,10 +3,6 @@ enabled: {{ enable_nova | bool }}
 container:
   image: "{{ nova_libvirt_image }}:{{ nova_libvirt_tag }}"
   privileged: true
-service:
-  mem: {{ nova_libvirt_mem }}
-  taskRateLimit: 600.0
-  cpus: {{ nova_libvirt_cpus }}
   volumes:
     - containerPath: "/lib/modules"
       hostPath: "/lib/modules"
@@ -20,7 +16,10 @@ service:
     - containerPath: "/run"
       hostPath: "/run"
       mode: RW
-
+service:
+  mem: {{ nova_libvirt_mem }}
+  taskRateLimit: 600.0
+  cpus: {{ nova_libvirt_cpus }}
   daemon:
     dependencies: [nova-conductor/db_sync]
     command: libvirtd --listen
