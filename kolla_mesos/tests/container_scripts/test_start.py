@@ -442,8 +442,7 @@ class HostvarsAndGroupsTest(base.BaseTestCase):
         exp = {'ansible_eth1': {'ipv4': {'address': '1.2.3.4'}},
                'ansible_eth2': {'ipv4': {'address': '1.2.3.4'}},
                'ansible_hostname': 'test-hostname',
-               'api_interface': 'eth2',
-               'id': '1'}
+               'api_interface': 'eth2'}
         self.assertEqual(exp, hostvars['1.2.3.4'])
 
     @mock.patch('socket.gethostname')
@@ -459,8 +458,7 @@ class HostvarsAndGroupsTest(base.BaseTestCase):
         remote = {'ansible_eth0': {'ipv4': {'address': '4.4.4.4'}},
                   'ansible_eth1': {'ipv4': {'address': '4.4.4.4'}},
                   'ansible_hostname': 'the-other-host',
-                  'api_interface': 'eth2',
-                  'id': '55'}
+                  'api_interface': 'eth2'}
         party.Party(self.client, '/kolla/deploy_id/groups/testr',
                     json.dumps(remote)).join()
 
@@ -471,8 +469,7 @@ class HostvarsAndGroupsTest(base.BaseTestCase):
         exp_local = {'ansible_eth1': {'ipv4': {'address': '1.2.3.4'}},
                      'ansible_eth2': {'ipv4': {'address': '1.2.3.4'}},
                      'ansible_hostname': 'test-hostname',
-                     'api_interface': 'eth2',
-                     'id': '1'}
+                     'api_interface': 'eth2'}
         self.assertEqual(exp_local, hostvars['1.2.3.4'])
         self.assertEqual(remote, hostvars['4.4.4.4'])
 
