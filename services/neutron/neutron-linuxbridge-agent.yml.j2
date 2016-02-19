@@ -3,7 +3,6 @@ enabled: {{ enable_neutron | bool and neutron_plugin_agent == 'linuxbridge' }}
 container:
   image: "{{ neutron_linuxbridge_agent_image }}:{{ neutron_linuxbridge_agent_tag }}"
   privileged: true
-service:
   volumes:
     - containerPath: "/run"
       hostPath: "/run"
@@ -11,6 +10,7 @@ service:
     - containerPath: "/lib/modules"
       hostPath: "/lib/modules"
       mode: RO
+service:
   daemon:
     dependencies: [neutron_ansible_tasks/create_user, rabbitmq/daemon]
     command: neutron-linuxbridge-agent --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugins/ml2/ml2_conf.ini
