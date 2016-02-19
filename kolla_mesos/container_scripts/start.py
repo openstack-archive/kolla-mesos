@@ -143,49 +143,19 @@ def zk_connection(zk_hosts):
         zk.stop()
 
 
-def get_node_ids(zk, path):
-    nodes = set()
-    try:
-        for i in zk.get_children(path):
-            if i.startswith("node-"):
-                nodes.add(int(i[5:]))
-    except kz_exceptions.NoNodeError:
-        pass
-    return nodes
-
-
-def get_new_node_id(zk, path):
-    new_id = 1
-    obtained = False
-
-    while not obtained:
-        nodes = get_node_ids(zk, path)
-        while new_id in nodes:
-            new_id += 1
-        try:
-            zk.create(path + '/node-' + str(new_id), ephemeral=True)
-            obtained = True
-        except Exception:
-            continue
-
-    return new_id
-
-
 def register_group_and_hostvars(zk):
     host = str(get_ip_address(PRIVATE_INTERFACE))
     path = os.path.join('kolla', DEPLOYMENT_ID, 'groups', ROLE)
     zk.retry(zk.ensure_path, path)
-    node_id = get_new_node_id(zk, path)
 
     data = {ANSIBLE_PUBLIC: {'ipv4': {'address':
                                       get_ip_address(PUBLIC_INTERFACE)}},
             ANSIBLE_PRIVATE: {'ipv4': {'address':
                                        get_ip_address(PRIVATE_INTERFACE)}},
             'ansible_hostname': socket.gethostname(),
-            'api_interface': PUBLIC_INTERFACE,
-            'id': str(node_id)}
+            'api_interface': PUBLIC_INTERFACE}
 
-    LOG.info('%s (%s) joining the %s party', host, node_id, SERVICE_NAME)
+    LOG.info('%s joining the %s party', host, SERVICE_NAME)
     party.Party(zk, path, json.dumps(data)).join()
 
 
