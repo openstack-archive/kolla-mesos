@@ -3,7 +3,6 @@ enabled: {{ enable_neutron | bool and neutron_plugin_agent == 'openvswitch' }}
 container:
   image: "{{ openvswitch_vswitchd_image }}:{{ openvswitch_vswitchd_tag }}"
   privileged: true
-service:
   volumes:
     - containerPath: "/run"
       hostPath: "/run"
@@ -11,6 +10,7 @@ service:
     - containerPath: "/lib/modules"
       hostPath: "/lib/modules"
       mode: RO
+service:
   daemon:
     dependencies: [openvswitch-tasks/setup_ovs_bridge]
     command: /usr/sbin/ovs-vswitchd unix:/run/openvswitch/db.sock --mlockall
