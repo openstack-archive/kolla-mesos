@@ -10,6 +10,11 @@ task:
   mem: {{ infra_mem }}
   cpus: {{ infra_cpus }}
 commands:
+  check_ovs_db:
+    run_once: True
+    retries: 30
+    delay: 5
+    command: ovs-vsctl --no-wait show
   setup_ovs_bridge:
     run_once: True
     retries: 10
