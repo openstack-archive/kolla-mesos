@@ -10,7 +10,14 @@ task:
   mem: {{ infra_mem }}
   cpus: {{ infra_cpus }}
 commands:
+  check_ovs_db:
+    dependencies: [openvswitch-db/daemon]
+    run_once: True
+    retries: 30
+    delay: 5
+    command: ovs-vsctl --no-wait show
   setup_ovs_bridge:
+    dependencies: [openvswitch-tasks/check_ovs_db]
     run_once: True
     retries: 10
     delay: 5

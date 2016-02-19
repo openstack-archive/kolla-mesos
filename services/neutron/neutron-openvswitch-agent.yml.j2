@@ -12,7 +12,7 @@ container:
       mode: RO
 service:
   daemon:
-    dependencies: [openvswitch-tasks/setup_ovs_bridge]
+    dependencies: [neutron_ansible_tasks/create_user, rabbitmq/daemon, openvswitch-tasks/setup_ovs_bridge]
     command: neutron-openvswitch-agent --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugins/ml2/ml2_conf.ini
     files:
       neutron.conf.j2:
