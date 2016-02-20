@@ -7,7 +7,7 @@ container:
   image: "{{ horizon_image }}:{{ horizon_tag }}"
 service:
   daemon:
-    command: /usr/sbin/{{ apache_cmd }} -DFOREGROUND
+    command: /usr/local/bin/apache-start.sh
     dependencies: [horizon/bootstrap, memcached/daemon]
   mem: {{ horizon_mem }}
   cpus: {{ horizon_cpus }}
@@ -28,3 +28,8 @@ commands:
         dest: /etc/{{ apache_dir }}/{{ apache_conf }}
         owner: horizon
         perm: "0644"
+      start.sh:
+        source: config/horizon/templates/start.sh
+        dest: /usr/local/bin/apache-start.sh
+        owner: horizon
+        perm: "0755"

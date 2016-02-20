@@ -7,7 +7,7 @@ container:
 service:
   daemon:
     dependencies: [keystone-api/db_sync]
-    command: "/usr/sbin/{{ keystone_cmd }} -DFOREGROUND"
+    command: /usr/local/bin/apache-start.sh
     env:
       OS_TOKEN: "password"
     files:
@@ -37,3 +37,8 @@ commands:
         dest: /etc/keystone/keystone.conf
         owner: keystone
         perm: "0600"
+      start.sh:
+        source: config/horizon/templates/start.sh
+        dest: /usr/local/bin/apache-start.sh
+        owner: horizon
+        perm: "0755"
