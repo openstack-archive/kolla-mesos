@@ -108,14 +108,17 @@ def remove_all_containers():
 @docker_utils.DockerClient()
 def remove_all_volumes(dc):
     """Remove all volumes created for containers run by Mesos."""
-    volume_names = six.moves.map(operator.itemgetter('Name'),
-                                 dc.volumes()['Volumes'])
-    for volume_name in volume_names:
-        # TODO(nihilifer): Provide a more intelligent filtering for Mesos infra
-        # volumes.
-        if 'zookeeper' not in volume_name:
-            LOG.info("Removing volume %s", volume_name)
-            dc.remove_volume(volume_name)
+    if dc.volumes()['Volumes'] is not None:
+        volume_names = six.moves.map(operator.itemgetter('Name'),
+                                     dc.volumes()['Volumes'])
+        for volume_name in volume_names:
+            # TODO(nihilifer): Provide a more intelligent filtering for Mesos
+            # infra volumes.
+            if 'zookeeper' not in volume_name:
+                LOG.info("Removing volume %s", volume_name)
+                dc.remove_volume(volume_name)
+    else:
+            LOG.info("No docker volumes found")
 
 
 def cleanup():
