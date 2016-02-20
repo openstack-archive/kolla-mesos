@@ -56,7 +56,7 @@ commands:
           append_privs='yes'"
   register_endpoint:
     run_once: True
-    dependencies: [nova-conductor/db_sync, keystone_ansible_tasks/running]
+    dependencies: [nova-api/db_sync, keystone_ansible_tasks/running]
     command: {{ ansible_task_cmd }}
       -m kolla_keystone_service
       -a "service_name=nova
@@ -71,7 +71,7 @@ commands:
       -e "{'openstack_nova_auth':{{ openstack_nova_auth }}}"
   create_user:
     run_once: True
-    dependencies: [nova-conductor/db_sync, keystone_ansible_tasks/running]
+    dependencies: [nova-api/db_sync, keystone_ansible_tasks/running]
     command: {{ ansible_task_cmd }}
       -m kolla_keystone_user
       -a "project=service

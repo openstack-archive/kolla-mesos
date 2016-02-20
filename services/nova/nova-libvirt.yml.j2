@@ -21,7 +21,7 @@ service:
   taskRateLimit: 600.0
   cpus: {{ nova_libvirt_cpus }}
   daemon:
-    dependencies: [nova-conductor/db_sync]
+    dependencies: [nova-api/db_sync]
     command: libvirtd --listen
     files:
       libvirtd.conf.j2:
@@ -29,3 +29,9 @@ service:
         dest: /etc/libvirt/libvirtd.conf
         owner: root
         perm: "0644"
+commands:
+  bootstrap:
+    env:
+      KOLLA_BOOTSTRAP:
+    command: kolla_extend_start
+    run_once: True

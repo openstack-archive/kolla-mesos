@@ -23,16 +23,11 @@ commands:
   db_sync:
     env:
       KOLLA_BOOTSTRAP:
-    command: kolla_mesos_extend_start
+    command: kolla_extend_start
     run_once: True
     dependencies: [keystone_ansible_tasks/create_database,
                    keystone_ansible_tasks/database_user_create]
     files:
-      extend_start.sh.j2:
-        source: config/keystone/templates/extend_start.sh.j2
-        dest: /usr/local/bin/kolla_mesos_extend_start
-        owner: keystone
-        perm: "0755"
       keystone.conf.j2:
         source: ["/etc/kolla-mesos/config/global.conf",
                  "/etc/kolla-mesos/config/database.conf",

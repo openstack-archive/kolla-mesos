@@ -40,3 +40,7 @@ service:
         perm: "0600"
   mem: {{ neutron_metadata_agent_mem }}
   cpus: {{ neutron_metadata_agent_cpus }}
+
+commands:
+  bootstrap:
+    command: kolla_extend_start
