@@ -283,8 +283,8 @@ class GenerateConfigTest(base.BaseTestCase):
                         newvalue='/deploy_id/testg/testr'))
         start.set_globals()
 
-    @mock.patch.object(start, 'get_ip_address')
-    @mock.patch.object(start, 'get_groups_and_hostvars')
+    @mock.patch.object(start.TemplateFunctions, 'get_ip_address')
+    @mock.patch.object(start.TemplateFunctions, 'get_groups_and_hostvars')
     @mock.patch.object(start, 'write_file')
     def test_no_rendering(self, m_wf, m_gar, m_gip):
         conf = {'afile': {
@@ -298,8 +298,8 @@ class GenerateConfigTest(base.BaseTestCase):
         start.generate_configs(self.client, conf)
         m_wf.assert_called_once_with(conf['afile'], 'xyz')
 
-    @mock.patch.object(start, 'get_ip_address')
-    @mock.patch.object(start, 'get_groups_and_hostvars')
+    @mock.patch.object(start.TemplateFunctions, 'get_ip_address')
+    @mock.patch.object(start.TemplateFunctions, 'get_groups_and_hostvars')
     @mock.patch.object(start, 'write_file')
     def test_simple_render(self, m_wf, m_gar, m_gip):
         conf = {'afile': {
@@ -316,8 +316,8 @@ class GenerateConfigTest(base.BaseTestCase):
         m_wf.assert_called_once_with(conf['afile'], 'yeah')
 
     @mock.patch.object(start, 'render_template')
-    @mock.patch.object(start, 'get_ip_address')
-    @mock.patch.object(start, 'get_groups_and_hostvars')
+    @mock.patch.object(start.TemplateFunctions, 'get_ip_address')
+    @mock.patch.object(start.TemplateFunctions, 'get_groups_and_hostvars')
     @mock.patch.object(start, 'write_file')
     def test_missing_variable(self, m_wf, m_gar, m_gip, m_rt):
         conf = {'afile': {
@@ -415,10 +415,10 @@ class LogLevelTest(base.BaseTestCase):
         m_set_l.assert_called_once_with(self.expect)
 
 
-class HostvarsAndGroupsTest(base.BaseTestCase):
+class TemplateFunctionTest(base.BaseTestCase):
 
     def setUp(self):
-        super(HostvarsAndGroupsTest, self).setUp()
+        super(TemplateFunctionTest, self).setUp()
         self.client = fake_client.FakeClient()
         self.client.start()
         self.addCleanup(self.client.stop)
@@ -432,13 +432,23 @@ class HostvarsAndGroupsTest(base.BaseTestCase):
                         newvalue='/deploy_id/testg/testr'))
         start.set_globals()
 
+    def test_get_parties(self):
+        parties = ['/a/f/z/.party', '/a/b/c/.party',
+                   '/a/b/.party', '/a/z/f/.party']
+        for p in parties:
+            party.Party(self.client, p, p).join()
+        tf = start.TemplateFunctions(self.client)
+        self.assertEqual(sorted(parties),
+                         sorted(tf._get_parties(node='/a')))
+
     @mock.patch('socket.gethostname')
-    @mock.patch.object(start, 'get_ip_address')
+    @mock.patch.object(start.TemplateFunctions, 'get_ip_address')
     def test_reg_and_retieve_single(self, m_get_ip, m_gethost):
         m_get_ip.return_value = '1.2.3.4'
         m_gethost.return_value = 'test-hostname'
         start.register_group_and_hostvars(self.client)
-        groups, hostvars = start.get_groups_and_hostvars(self.client)
+        tf = start.TemplateFunctions(self.client)
+        groups, hostvars = tf.get_groups_and_hostvars()
         self.assertEqual({'testr': ['1.2.3.4']}, groups)
         exp = {'ansible_eth1': {'ipv4': {'address': '1.2.3.4'}},
                'ansible_eth2': {'ipv4': {'address': '1.2.3.4'}},
@@ -447,7 +457,7 @@ class HostvarsAndGroupsTest(base.BaseTestCase):
         self.assertEqual(exp, hostvars['1.2.3.4'])
 
     @mock.patch('socket.gethostname')
-    @mock.patch.object(start, 'get_ip_address')
+    @mock.patch.object(start.TemplateFunctions, 'get_ip_address')
     def test_reg_and_retieve_multi(self, m_get_ip, m_gethost):
         m_get_ip.return_value = '1.2.3.4'
         m_gethost.return_value = 'test-hostname'
@@ -460,11 +470,12 @@ class HostvarsAndGroupsTest(base.BaseTestCase):
                   'ansible_eth1': {'ipv4': {'address': '4.4.4.4'}},
                   'ansible_hostname': 'the-other-host',
                   'api_interface': 'eth2'}
-        party.Party(self.client, '/kolla/deploy_id/groups/testr',
+        party.Party(self.client, '/kolla/deploy_id/testg/testr/.party',
                     json.dumps(remote)).join()
 
         # make sure this function gets both hosts information.
-        groups, hostvars = start.get_groups_and_hostvars(self.client)
+        tf = start.TemplateFunctions(self.client)
+        groups, hostvars = tf.get_groups_and_hostvars()
         self.assertEqual(sorted(['1.2.3.4', '4.4.4.4']),
                          sorted(groups['testr']))
         exp_local = {'ansible_eth1': {'ipv4': {'address': '1.2.3.4'}},
@@ -473,6 +484,12 @@ class HostvarsAndGroupsTest(base.BaseTestCase):
                      'api_interface': 'eth2'}
         self.assertEqual(exp_local, hostvars['1.2.3.4'])
         self.assertEqual(remote, hostvars['4.4.4.4'])
+        ips = tf.list_ips_by_service('testg/testr')
+        self.assertIn('1.2.3.4', ips)
+        self.assertIn('4.4.4.4', ips)
+        ipsp = tf.list_ips_by_service('testg/testr', port='3246')
+        self.assertIn('1.2.3.4:3246', ipsp)
+        self.assertIn('4.4.4.4:3246', ipsp)
 
 
 class RenderNovaConfTest(base.BaseTestCase):
@@ -505,7 +522,7 @@ class RenderNovaConfTest(base.BaseTestCase):
                       'ansible_hostname': ip,
                       'api_interface': 'eth2'}
             party.Party(self.client,
-                        '/kolla/did/groups/%s' % service_name,
+                        '/kolla/did/%s/.party' % service_name,
                         json.dumps(remote)).join()
 
     def _define_variables(self):
@@ -553,7 +570,7 @@ class RenderNovaConfTest(base.BaseTestCase):
                                makepath=True)
 
     @mock.patch('socket.gethostname')
-    @mock.patch.object(start, 'get_ip_address')
+    @mock.patch.object(start.TemplateFunctions, 'get_ip_address')
     def test_nova_conf(self, m_get_ip, m_gethost):
         m_get_ip.return_value = '1.2.3.4'
         m_gethost.return_value = 'test-hostname'
@@ -561,12 +578,12 @@ class RenderNovaConfTest(base.BaseTestCase):
         # register local host group.
         start.register_group_and_hostvars(self.client)
 
-        self._register_service('nova-compute', ['4.4.4.4'])
-        self._register_service('memcached',
+        self._register_service('openstack/nova/nova-compute', ['4.4.4.4'])
+        self._register_service('infra/memcached/memcached',
                                ['3.1.2.3', '3.1.2.4'])
-        self._register_service('rabbitmq',
+        self._register_service('infra/rabbitmq/rabbitmq',
                                ['2.1.2.3', '2.1.2.4'])
-        self._register_service('glance-api',
+        self._register_service('openstack/glance/glance-api',
                                ['1.1.2.3', '1.1.2.4'])
         self._define_variables()
 
@@ -578,8 +595,8 @@ class RenderNovaConfTest(base.BaseTestCase):
                  'perm': '0600'}
         acmd = {'command': 'true', 'files': {'afile': afile}}
         tconf = {'task': {}, 'commands': acmd}
-        self.client.create('/kolla/did/config/nova/nova-compute',
-                           json.dumps(tconf), makepath=True)
+        self.client.set('/kolla/did/openstack/nova/nova-compute',
+                        json.dumps(tconf))
         # write nova.conf.j2 to zookeeper
         mod_dir = os.path.dirname(sys.modules[__name__].__file__)
         proj_dir = os.path.abspath(os.path.join(mod_dir, '..', '..', '..'))
@@ -587,11 +604,10 @@ class RenderNovaConfTest(base.BaseTestCase):
                   'config/nova/templates/nova.conf.j2')) as nc:
             template_contents = nc.read()
             self.client.create(
-                '/kolla/did/config/nova/nova-compute/afile',
+                '/kolla/did/openstack/nova/nova-compute/files/afile',
                 template_contents, makepath=True)
 
-        conf_base_node = '/kolla/did/config/nova/nova-compute'
-        start.generate_configs(self.client, acmd['files'], conf_base_node)
+        start.generate_configs(self.client, acmd['files'])
         cmp_file = os.path.join(mod_dir, 'nova-%s.conf' % self.out)
         with open(out_file) as of:
             with open(cmp_file) as cf:

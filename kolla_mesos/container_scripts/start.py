@@ -49,7 +49,22 @@ SERVICE = None
 SERVICE_NAME = None
 
 
+# zookeeper nodes
+# SERVICE_NAME example is "openstack/nova/nova-compute"
+#
+# <root>/<dep_id>                   : DEPLOYMENT
+# <root>/<dep_id>/<SERVICE_NAME>    : SERVICE
+# SERVICE                           : service definition
+# SERVICE/.party                    : dynamic service Party
+# SERVICE/files/<file>              : file to place on the filesystem
+# <root>/<dep_id>/variables/<option>: global config values
+# SERVICE/variables/<option>        : per service config TODO(asalkeld)
+# SERVICE/variables/<host>/<option> : per host config TODO(asalkeld)
+# SERVICE/status/<cmd>/.done        : task complete
+
+
 def set_globals():
+    """Setup the globals from the environment."""
     global ZK_HOSTS, ROLE, PRIVATE_INTERFACE, PUBLIC_INTERFACE
     global ANSIBLE_PRIVATE, ANSIBLE_PUBLIC, DEPLOYMENT_ID, DEPLOYMENT
     global SERVICE, SERVICE_NAME
@@ -143,50 +158,88 @@ def zk_connection(zk_hosts):
         zk.stop()
 
 
+class TemplateFunctions(object):
+
+    def __init__(self, zk):
+        self._zk = zk
+
+    def get_ip_address(self, ifname=PUBLIC_INTERFACE):
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        return str(socket.inet_ntoa(fcntl.ioctl(
+            s.fileno(),
+            0x8915,  # SIOCGIFADDR
+            struct.pack('256s', ifname[:15])
+        )[20:24]))
+
+    def get_hostname(self):
+        return socket.gethostname()
+
+    def list_ips_by_service(self, name, port=None, separator=',', prefix=None):
+        """Converts a service to list of IP addresses
+
+        Port, prefix and separator args are optional.
+        openstack/nova/nova-compute 1234 -> 1.1.1.1:1234,1.1.1.2:1234
+        """
+        port = ':' + str(port) if port else ''
+        prefix = str(prefix) if prefix else ''
+        g_path = os.path.join(DEPLOYMENT, name, '.party')
+        ips = []
+        for host_data in party.Party(self._zk, g_path):
+            data = json.loads(host_data)
+            ips.append(data[ANSIBLE_PRIVATE]['ipv4']['address'])
+        return separator.join([prefix + ip + port for ip in sorted(ips)])
+
+    def _get_parties(self, node=None):
+        if node is None:
+            node = DEPLOYMENT
+
+        if node.endswith('.party'):
+            yield node
+        try:
+            children = self._zk.get_children(node)
+        except kz_exceptions.NoNodeError:
+            return
+
+        for child in children:
+            for p in self._get_parties(node=os.path.join(node, child)):
+                yield p
+
+    def get_groups_and_hostvars(self):
+            # DEPRECATED
+        # this returns an odd structure but it so we can re-use the
+        # ansible templates.
+        hostvars = {}
+        groups = {}
+        for p_path in self._get_parties():
+            role = p_path.split('/')[-2]
+            groups[role] = []
+            group_unsorted = []
+            for host_data in party.Party(self._zk, p_path):
+                data = json.loads(host_data)
+                host = data[ANSIBLE_PRIVATE]['ipv4']['address']
+                LOG.info('get_groups_and_hostvars %s', host)
+                group_unsorted.append(host)
+                hostvars[host] = data
+            groups[role] = sorted(group_unsorted)
+
+        return groups, hostvars
+
+
 def register_group_and_hostvars(zk):
-    host = str(get_ip_address(PRIVATE_INTERFACE))
-    path = os.path.join('kolla', DEPLOYMENT_ID, 'groups', ROLE)
+    tf = TemplateFunctions(zk)
+    addr = tf.get_ip_address(PUBLIC_INTERFACE)
+    path = os.path.join(SERVICE, '.party')
     zk.retry(zk.ensure_path, path)
 
     data = {ANSIBLE_PUBLIC: {'ipv4': {'address':
-                                      get_ip_address(PUBLIC_INTERFACE)}},
+                                      tf.get_ip_address(PUBLIC_INTERFACE)}},
             ANSIBLE_PRIVATE: {'ipv4': {'address':
-                                       get_ip_address(PRIVATE_INTERFACE)}},
-            'ansible_hostname': socket.gethostname(),
+                                       tf.get_ip_address(PRIVATE_INTERFACE)}},
+            'ansible_hostname': tf.get_hostname(),
             'api_interface': PUBLIC_INTERFACE}
 
-    LOG.info('%s joining the %s party', host, SERVICE_NAME)
+    LOG.info('%s joining the %s party', addr, SERVICE_NAME)
     party.Party(zk, path, json.dumps(data)).join()
-
-
-def get_ip_address(ifname):
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    return socket.inet_ntoa(fcntl.ioctl(
-        s.fileno(),
-        0x8915,  # SIOCGIFADDR
-        struct.pack('256s', ifname[:15])
-    )[20:24])
-
-
-def get_groups_and_hostvars(zk):
-    # this returns an odd structure but it so we can re-use the
-    # ansible templates.
-    hostvars = {}
-    groups = {}
-    path = os.path.join(DEPLOYMENT, 'groups')
-    for group in zk.get_children(path):
-        groups[group] = []
-        group_unsorted = []
-        g_path = os.path.join(path, group)
-        for host_data in party.Party(zk, g_path):
-            data = json.loads(host_data)
-            host = data[ANSIBLE_PRIVATE]['ipv4']['address']
-            LOG.info('get_groups_and_hostvars %s', host)
-            group_unsorted.append(host)
-            hostvars[host] = data
-        groups[group] = sorted(group_unsorted)
-
-    return groups, hostvars
 
 
 def write_file(conf, data):
@@ -222,11 +275,17 @@ def write_file(conf, data):
 
 
 def generate_host_vars(zk):
-    host = str(get_ip_address(PRIVATE_INTERFACE))
-    groups, hostvars = get_groups_and_hostvars(zk)
+    # Note the following are DEPRECATED
+    # hostvars, groups, inventory_hostname, ansible_hostname
+    tf = TemplateFunctions(zk)
+    host = tf.get_ip_address(PRIVATE_INTERFACE)
+    groups, hostvars = tf.get_groups_and_hostvars()
     variables = {'hostvars': hostvars, 'groups': groups,
                  'inventory_hostname': host,
                  'ansible_hostname': host,
+                 'get_hostname': tf.get_hostname,
+                 'get_ip_address': tf.get_ip_address,
+                 'list_ips_by_service': tf.list_ips_by_service,
                  'deployment_id': DEPLOYMENT_ID,
                  'service_name': SERVICE_NAME}
     return variables
