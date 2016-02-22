@@ -190,15 +190,12 @@ class RunCommandsTest(base.BaseTestCase):
     @mock.patch.object(start, 'generate_configs')
     @mock.patch.object(start.sys, 'exit')
     def test_one_good(self, m_exit, m_gc, m_run):
-        cmd = {'setup': {
+        conf = {'commands': {'setup': {
             'run_once': True,
-            'command': 'true'}}
-
-        conf = {'commands': cmd}
-        conf_base_node = '/kolla/deploy_id/config/testg/testr'
+            'command': 'true'}}}
 
         m_run.return_value = 0
-        start.run_commands(self.client, conf, conf_base_node)
+        start.run_commands(self.client, conf)
         m_run.assert_called_once_with(mock.ANY)
         self.assertEqual([], m_exit.mock_calls)
 
@@ -206,14 +203,12 @@ class RunCommandsTest(base.BaseTestCase):
     @mock.patch.object(start, 'generate_configs')
     @mock.patch.object(start.sys, 'exit')
     def test_one_bad(self, m_exit, m_gc, m_run):
-        cmd = {'setup': {
+        conf = {'commands': {'setup': {
             'run_once': True,
-            'command': 'true'}}
+            'command': 'true'}}}
 
-        conf = {'commands': cmd}
-        conf_base_node = '/kolla/deploy_id/config/testg/testr'
         m_run.return_value = 3
-        start.run_commands(self.client, conf, conf_base_node)
+        start.run_commands(self.client, conf)
         m_run.assert_called_once_with(mock.ANY)
         self.assertEqual([mock.call(1)], m_exit.mock_calls)
 
@@ -221,15 +216,12 @@ class RunCommandsTest(base.BaseTestCase):
     @mock.patch.object(start, 'generate_configs')
     @mock.patch.object(start.sys, 'exit')
     def test_one_bad_retry(self, m_exit, m_gc, m_run):
-        cmd = {'setup': {
+        conf = {'commands': {'setup': {
             'run_once': True,
             'retries': 2,
             'delay': 0,
-            'command': 'true'}}
+            'command': 'true'}}}
 
-        conf = {'commands': cmd}
-
-        conf_base_node = '/kolla/deploy_id/config/testg/testr'
         self.returns = 0
 
         def run_effect(run_self):
@@ -238,7 +230,7 @@ class RunCommandsTest(base.BaseTestCase):
                 return 3
             return 0
         m_run.side_effect = run_effect
-        start.run_commands(self.client, conf, conf_base_node)
+        start.run_commands(self.client, conf)
         self.assertEqual([mock.call(mock.ANY), mock.call(mock.ANY)],
                          m_run.mock_calls)
         self.assertEqual([], m_exit.mock_calls)
@@ -259,8 +251,6 @@ class RunCommandsTest(base.BaseTestCase):
             conf['commands'].update(cmd)
         exp = conf['commands']
 
-        conf_base_node = '/kolla/deploy_id/config/testg/testr'
-
         def run_record(run_self):
             print(run_self)
             run_self.time_slept = 120
@@ -271,7 +261,7 @@ class RunCommandsTest(base.BaseTestCase):
         # Mocking Command's method in decorator doesn't work
         with mock.patch.object(start.Command, 'run', autospec=True) as m_run:
             m_run.side_effect = run_record
-            start.run_commands(self.client, conf, conf_base_node)
+            start.run_commands(self.client, conf)
             self.assertEqual(200, len(m_run.mock_calls))
             self.assertEqual([], m_exit.mock_calls)
 
@@ -302,11 +292,10 @@ class GenerateConfigTest(base.BaseTestCase):
             'dest': '/etc/mysql_dir/my.cnf',
             'owner': 'mysql',
             'perm': "0600"}}
-        conf_base_node = '/kolla/deploy_id/config/testg/testr'
         m_gar.return_value = {}, {}
-        self.client.create('/kolla/deploy_id/config/testg/testr/afile', 'xyz',
+        self.client.create('/kolla/deploy_id/testg/testr/files/afile', 'xyz',
                            makepath=True)
-        start.generate_configs(self.client, conf, conf_base_node)
+        start.generate_configs(self.client, conf)
         m_wf.assert_called_once_with(conf['afile'], 'xyz')
 
     @mock.patch.object(start, 'get_ip_address')
@@ -318,13 +307,12 @@ class GenerateConfigTest(base.BaseTestCase):
             'dest': '/etc/mysql_dir/my.cnf',
             'owner': 'mysql',
             'perm': "0600"}}
-        conf_base_node = '/kolla/deploy_id/config/testg/testr'
         m_gar.return_value = {}, {}
         self.client.create('/kolla/deploy_id/variables/xyz', 'yeah',
                            makepath=True)
-        self.client.create('/kolla/deploy_id/config/testg/testr/afile',
+        self.client.create('/kolla/deploy_id/testg/testr/files/afile',
                            '{{ xyz }}', makepath=True)
-        start.generate_configs(self.client, conf, conf_base_node)
+        start.generate_configs(self.client, conf)
         m_wf.assert_called_once_with(conf['afile'], 'yeah')
 
     @mock.patch.object(start, 'render_template')
@@ -337,12 +325,11 @@ class GenerateConfigTest(base.BaseTestCase):
             'dest': '/etc/mysql_dir/my.cnf',
             'owner': 'mysql',
             'perm': "0600"}}
-        conf_base_node = '/kolla/deploy_id/config/testg/testr'
         m_gar.return_value = {}, {}
         m_rt.return_value = ''
-        self.client.create('/kolla/deploy_id/config/testg/testr/afile',
+        self.client.create('/kolla/deploy_id/testg/testr/files/afile',
                            '{{ xyz }}', makepath=True)
-        start.generate_configs(self.client, conf, conf_base_node)
+        start.generate_configs(self.client, conf)
         m_wf.assert_called_once_with(conf['afile'], '')
 
 
@@ -375,9 +362,7 @@ class MainTest(base.BaseTestCase):
                  'perm': '0600'}
         acmd = {'command': 'true', 'files': {'afile': afile}}
         tconf = {'commands': {'thing': acmd}}
-        conf_base_node = '/kolla/deploy_id/config/testg/testr'
-
-        self.client.create('/kolla/deploy_id/config/testg/testr',
+        self.client.create('/kolla/deploy_id/testg/testr',
                            json.dumps(tconf), makepath=True)
 
         m_zk_c = mock.MagicMock()
@@ -385,7 +370,7 @@ class MainTest(base.BaseTestCase):
             m_zk_c.return_value.__enter__.return_value = self.client
 
             start.main()
-            m_rc.assert_called_once_with(self.client, tconf, conf_base_node)
+            m_rc.assert_called_once_with(self.client, tconf)
             self.assertEqual([], m_rgah.mock_calls)
 
     @mock.patch.object(start, 'run_commands')
@@ -399,9 +384,7 @@ class MainTest(base.BaseTestCase):
                  'perm': '0600'}
         acmd = {'command': 'true', 'files': {'afile': afile}}
         tconf = {'service': {'daemon': acmd}}
-        conf_base_node = '/kolla/deploy_id/config/testg/testr'
-
-        self.client.create('/kolla/deploy_id/config/testg/testr',
+        self.client.create('/kolla/deploy_id/testg/testr',
                            json.dumps(tconf), makepath=True)
 
         m_gmc.return_value = tconf
@@ -410,7 +393,7 @@ class MainTest(base.BaseTestCase):
             m_zk_c.return_value.__enter__.return_value = self.client
 
             start.main()
-            m_rc.assert_called_once_with(self.client, tconf, conf_base_node)
+            m_rc.assert_called_once_with(self.client, tconf)
             self.assertEqual([mock.call(self.client)], m_rgah.mock_calls)
 
 
@@ -461,7 +444,6 @@ class HostvarsAndGroupsTest(base.BaseTestCase):
                'ansible_eth2': {'ipv4': {'address': '1.2.3.4'}},
                'ansible_hostname': 'test-hostname',
                'api_interface': 'eth2',
-               'role': 'testr',
                'id': '1'}
         self.assertEqual(exp, hostvars['1.2.3.4'])
 
@@ -479,7 +461,6 @@ class HostvarsAndGroupsTest(base.BaseTestCase):
                   'ansible_eth1': {'ipv4': {'address': '4.4.4.4'}},
                   'ansible_hostname': 'the-other-host',
                   'api_interface': 'eth2',
-                  'role': 'testr',
                   'id': '55'}
         party.Party(self.client, '/kolla/deploy_id/groups/testr',
                     json.dumps(remote)).join()
@@ -492,7 +473,6 @@ class HostvarsAndGroupsTest(base.BaseTestCase):
                      'ansible_eth2': {'ipv4': {'address': '1.2.3.4'}},
                      'ansible_hostname': 'test-hostname',
                      'api_interface': 'eth2',
-                     'role': 'testr',
                      'id': '1'}
         self.assertEqual(exp_local, hostvars['1.2.3.4'])
         self.assertEqual(remote, hostvars['4.4.4.4'])
@@ -624,13 +604,13 @@ class RenderNovaConfTest(base.BaseTestCase):
 class GlobalsTest(base.BaseTestCase):
     scenarios = [
         ('1', dict(prefix='/root', app_id='/dep_id/tg/tr', dep_id='dep_id',
-                   dep='/root/dep_id', role='tr', group='tg')),
+                   dep='/root/dep_id', role='tr', sn='tg/tr')),
         ('2', dict(prefix='/root', app_id='/dep_id/openstack/tg/tr',
                    dep_id='dep_id', dep='/root/dep_id', role='tr',
-                   group='tg')),
+                   sn='openstack/tg/tr')),
         ('3', dict(prefix=None, app_id='/new_id/openstack/tg/tr',
                    dep_id='new_id', dep='/kolla/new_id', role='tr',
-                   group='tg'))]
+                   sn='openstack/tg/tr'))]
 
     def test_globals(self):
         self.useFixture(fixtures.EnvironmentVariable(
@@ -643,4 +623,4 @@ class GlobalsTest(base.BaseTestCase):
         self.assertEqual(self.dep_id, start.DEPLOYMENT_ID)
         self.assertEqual(self.dep, start.DEPLOYMENT)
         self.assertEqual(self.role, start.ROLE)
-        self.assertEqual(self.group, start.GROUP)
+        self.assertEqual(self.sn, start.SERVICE_NAME)
