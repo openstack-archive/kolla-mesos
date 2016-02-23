@@ -263,6 +263,18 @@ class KollaWorker(object):
         LOG.debug('Projects are: %s' % projects)
         return projects
 
+    def get_marathon_framework(self, jvars):
+        try:
+            mframework = jvars['marathon_framework']
+        except KeyError:
+            mframework = mesos_utils.get_marathon()
+            if mframework is not None:
+                jvars.update({'marathon_framework': mframework})
+            else:
+                raise exception.UndefinedOption(
+                    'Please define marathon_framework')
+        LOG.info('Marathon framework: %s' % mframework)
+
     def _apply_deployment_vars(self, jvars):
         """Applies the orchestration logic defined in globals.yml.
 
@@ -361,6 +373,7 @@ class KollaWorker(object):
             'node_config_directory': ''
         })
         self._apply_deployment_vars(jvars)
+        self.get_marathon_framework(jvars)
         return jvars
 
     def gen_deployment_id(self):

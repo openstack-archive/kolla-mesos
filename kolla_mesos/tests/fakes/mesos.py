@@ -35,6 +35,10 @@ MESOS_STATE_TAGGED_SLAVES = {
          'hostname': 'storage02'},
         {'attributes': {'openstack_role': 'all_in_one'},
          'hostname': 'allinone'}
+    ],
+    'frameworks': [
+        {'name': 'chronos_autodetect'},
+        {'name': 'marathon_autodetect'}
     ]
 }
 MESOS_STATE_UNTAGGED_SLAVES = {
@@ -47,6 +51,12 @@ MESOS_STATE_UNTAGGED_SLAVES = {
 }
 MESOS_STATE_NO_SLAVES = {
     'slaves': []
+}
+MESOS_STATE_FRAMEWORKS = {
+    'frameworks': [
+        {'name': 'chronos_autodetect'},
+        {'name': 'marathon_autodetect'}
+    ]
 }
 
 
@@ -88,3 +98,7 @@ class FakeMesosStateUntaggedSlaves(FakeMesosState):
 
 class FakeMesosStateNoSlaves(FakeMesosState):
     mesos_state = MESOS_STATE_NO_SLAVES
+
+
+class FakeMesosStateFrameworks(FakeMesosState):
+    mesos_state = MESOS_STATE_FRAMEWORKS
