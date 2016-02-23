@@ -140,17 +140,13 @@ class Runner(object):
     def _apply_service_def(self, app_def):
         """Apply the specifics from the service definition."""
 
-    def _get_service_name(self):
-        return self._conf['name']
-
     def generate_deployment_files(self, kolla_config, jinja_vars, temp_dir):
         if not self._enabled:
             return
         _, proj, service = self._conf['name'].split('/')
         values = {
-            'role': service,
-            'group': proj,
-            'service_name': self._get_service_name(),
+            'service_name': self._conf['name'],
+            'chronos_service_id': self._conf['name'].replace('/', '-'),
             'kolla_config': kolla_config,
             'zookeeper_hosts': CONF.zookeeper.host,
             'private_interface': CONF.network.private_interface,
@@ -223,10 +219,6 @@ class ChronosTask(Runner):
     def __init__(self, conf):
         super(ChronosTask, self).__init__(conf)
         self.type_name = 'chronos'
-
-    def _get_service_name(self):
-        # chronos doesn't like '/'
-        return self._conf['name'].replace('/', '-')
 
     def _apply_service_def(self, task_def):
         """Apply the specifics from the service definition."""

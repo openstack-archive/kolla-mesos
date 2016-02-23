@@ -32,10 +32,9 @@ class CommandTest(base.BaseTestCase):
         self.client.start()
         self.addCleanup(self.client.stop)
         self.addCleanup(self.client.close)
-        self.useFixture(fixtures.EnvironmentVariable('KOLLA_GROUP',
-                                                     newvalue='testg'))
-        self.useFixture(fixtures.EnvironmentVariable('KOLLA_ROLE',
-                                                     newvalue='testr'))
+        self.useFixture(fixtures.EnvironmentVariable(
+                        'MARATHON_APP_ID',
+                        newvalue='/t1/testg/testr'))
         start.set_globals()
 
     def test_str_1(self):
@@ -69,8 +68,8 @@ class CommandTest(base.BaseTestCase):
         self.assertEqual(False, cmd.run_once)
         self.assertEqual(False, cmd.daemon)
         self.assertEqual([], cmd.requires)
-        self.assertEqual('/kolla/undefined/status/testr/a', cmd.init_path)
-        self.assertEqual('/kolla/undefined/status/testr/a/.done',
+        self.assertEqual('/kolla/t1/status/testr/a', cmd.init_path)
+        self.assertEqual('/kolla/t1/status/testr/a/.done',
                          cmd.check_path)
 
     def test_requirements_fulfilled_no(self):
@@ -78,7 +77,7 @@ class CommandTest(base.BaseTestCase):
                                    'dependencies': ['q/x', 'f/y']},
                              self.client)
 
-        self.client.create('/kolla/undefined/status/q/x/.done',
+        self.client.create('/kolla/t1/status/q/x/.done',
                            'one', makepath=True)
         self.assertFalse(cmd1.requirements_fulfilled())
 
@@ -87,9 +86,9 @@ class CommandTest(base.BaseTestCase):
                                    'dependencies': ['w/x', 'y/l']},
                              self.client)
 
-        self.client.create('/kolla/undefined/status/w/x/.done',
+        self.client.create('/kolla/t1/status/w/x/.done',
                            'one', makepath=True)
-        self.client.create('/kolla/undefined/status/y/l/.done',
+        self.client.create('/kolla/t1/status/y/l/.done',
                            'one', makepath=True)
         self.assertTrue(cmd1.requirements_fulfilled())
 
@@ -114,14 +113,14 @@ class CommandTest(base.BaseTestCase):
         cmd1.run()
         self.assertEqual(1, len(mock_popen.return_value.poll.mock_calls))
         self.assertTrue(self.client.exists(
-                        '/kolla/undefined/status/testr/a/.done'))
+                        '/kolla/t1/status/testr/a/.done'))
 
     @mock.patch('subprocess.Popen')
     def test_already_run(self, mock_popen):
         cmd1 = start.Command('a', {'command': 'true',
                                    'run_once': True},
                              self.client)
-        self.client.create('/kolla/undefined/status/testr/a/.done',
+        self.client.create('/kolla/t1/status/testr/a/.done',
                            'one', makepath=True)
         mock_popen.return_value = mock.MagicMock()
         mock_popen.return_value.poll.return_value = 0
@@ -182,10 +181,9 @@ class RunCommandsTest(base.BaseTestCase):
         self.client.start()
         self.addCleanup(self.client.stop)
         self.addCleanup(self.client.close)
-        self.useFixture(fixtures.EnvironmentVariable('KOLLA_GROUP',
-                                                     newvalue='testg'))
-        self.useFixture(fixtures.EnvironmentVariable('KOLLA_ROLE',
-                                                     newvalue='testr'))
+        self.useFixture(fixtures.EnvironmentVariable(
+                        'MARATHON_APP_ID',
+                        newvalue='/deploy_id/testg/testr'))
         start.set_globals()
 
     @mock.patch.object(start.Command, 'run', autospec=True)
@@ -286,16 +284,13 @@ class GenerateConfigTest(base.BaseTestCase):
         self.client.start()
         self.addCleanup(self.client.stop)
         self.addCleanup(self.client.close)
-        self.useFixture(fixtures.EnvironmentVariable('KOLLA_DEPLOYMENT_ID',
-                                                     newvalue='deploy_id'))
         self.useFixture(fixtures.EnvironmentVariable('KOLLA_PRIVATE_INTERFACE',
                                                      newvalue='eth1'))
         self.useFixture(fixtures.EnvironmentVariable('KOLLA_PUBLIC_INTERFACE',
                                                      newvalue='eth2'))
-        self.useFixture(fixtures.EnvironmentVariable('KOLLA_GROUP',
-                                                     newvalue='testg'))
-        self.useFixture(fixtures.EnvironmentVariable('KOLLA_ROLE',
-                                                     newvalue='testr'))
+        self.useFixture(fixtures.EnvironmentVariable(
+                        'MARATHON_APP_ID',
+                        newvalue='/deploy_id/testg/testr'))
         start.set_globals()
 
     @mock.patch.object(start, 'get_ip_address')
@@ -359,16 +354,13 @@ class MainTest(base.BaseTestCase):
         self.client.start()
         self.addCleanup(self.client.stop)
         self.addCleanup(self.client.close)
-        self.useFixture(fixtures.EnvironmentVariable('KOLLA_DEPLOYMENT_ID',
-                                                     newvalue='deploy_id'))
         self.useFixture(fixtures.EnvironmentVariable('KOLLA_PRIVATE_INTERFACE',
                                                      newvalue='eth1'))
         self.useFixture(fixtures.EnvironmentVariable('KOLLA_PUBLIC_INTERFACE',
                                                      newvalue='eth2'))
-        self.useFixture(fixtures.EnvironmentVariable('KOLLA_GROUP',
-                                                     newvalue='testg'))
-        self.useFixture(fixtures.EnvironmentVariable('KOLLA_ROLE',
-                                                     newvalue='testr'))
+        self.useFixture(fixtures.EnvironmentVariable(
+                        'MARATHON_APP_ID',
+                        newvalue='/deploy_id/testg/testr'))
         self.useFixture(fixtures.EnvironmentVariable('KOLLA_ZK_HOSTS',
                                                      newvalue='localhost'))
         start.set_globals()
@@ -448,16 +440,13 @@ class HostvarsAndGroupsTest(base.BaseTestCase):
         self.client.start()
         self.addCleanup(self.client.stop)
         self.addCleanup(self.client.close)
-        self.useFixture(fixtures.EnvironmentVariable('KOLLA_DEPLOYMENT_ID',
-                                                     newvalue='deploy_id'))
         self.useFixture(fixtures.EnvironmentVariable('KOLLA_PRIVATE_INTERFACE',
                                                      newvalue='eth1'))
         self.useFixture(fixtures.EnvironmentVariable('KOLLA_PUBLIC_INTERFACE',
                                                      newvalue='eth2'))
-        self.useFixture(fixtures.EnvironmentVariable('KOLLA_GROUP',
-                                                     newvalue='testg'))
-        self.useFixture(fixtures.EnvironmentVariable('KOLLA_ROLE',
-                                                     newvalue='testr'))
+        self.useFixture(fixtures.EnvironmentVariable(
+                        'MARATHON_APP_ID',
+                        newvalue='/deploy_id/testg/testr'))
         start.set_globals()
 
     @mock.patch('socket.gethostname')
@@ -523,16 +512,13 @@ class RenderNovaConfTest(base.BaseTestCase):
         self.client.start()
         self.addCleanup(self.client.stop)
         self.addCleanup(self.client.close)
-        self.useFixture(fixtures.EnvironmentVariable('KOLLA_DEPLOYMENT_ID',
-                                                     newvalue='did'))
         self.useFixture(fixtures.EnvironmentVariable('KOLLA_PRIVATE_INTERFACE',
                                                      newvalue='eth1'))
         self.useFixture(fixtures.EnvironmentVariable('KOLLA_PUBLIC_INTERFACE',
                                                      newvalue='eth2'))
-        self.useFixture(fixtures.EnvironmentVariable('KOLLA_GROUP',
-                                                     newvalue='nova'))
-        self.useFixture(fixtures.EnvironmentVariable('KOLLA_ROLE',
-                                                     newvalue='nova-compute'))
+        self.useFixture(fixtures.EnvironmentVariable(
+                        'MARATHON_APP_ID',
+                        newvalue='/did/openstack/nova/nova-compute'))
         start.set_globals()
 
     def _register_service(self, service_name, ips):
@@ -633,3 +619,28 @@ class RenderNovaConfTest(base.BaseTestCase):
         with open(out_file) as of:
             with open(cmp_file) as cf:
                 self.assertMultiLineEqual(cf.read(), of.read())
+
+
+class GlobalsTest(base.BaseTestCase):
+    scenarios = [
+        ('1', dict(prefix='/root', app_id='/dep_id/tg/tr', dep_id='dep_id',
+                   dep='/root/dep_id', role='tr', group='tg')),
+        ('2', dict(prefix='/root', app_id='/dep_id/openstack/tg/tr',
+                   dep_id='dep_id', dep='/root/dep_id', role='tr',
+                   group='tg')),
+        ('3', dict(prefix=None, app_id='/new_id/openstack/tg/tr',
+                   dep_id='new_id', dep='/kolla/new_id', role='tr',
+                   group='tg'))]
+
+    def test_globals(self):
+        self.useFixture(fixtures.EnvironmentVariable(
+                        'MARATHON_APP_ID',
+                        newvalue=self.app_id))
+        self.useFixture(fixtures.EnvironmentVariable(
+                        'KOLLA_SYSTEM_PREFIX',
+                        newvalue=self.prefix))
+        start.set_globals()
+        self.assertEqual(self.dep_id, start.DEPLOYMENT_ID)
+        self.assertEqual(self.dep, start.DEPLOYMENT)
+        self.assertEqual(self.role, start.ROLE)
+        self.assertEqual(self.group, start.GROUP)

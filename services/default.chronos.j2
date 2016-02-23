@@ -1,5 +1,5 @@
 {
-    "name": "{{ deployment_id }}-{{ service_name }}",
+    "name": "{{ deployment_id }}-{{ chronos_service_id }}",
     "mem": 512.0,
     "cpus": 0.3,
     "command": "kolla_start",
@@ -12,11 +12,9 @@
         {"name": "KOLLA_CONFIG_STRATEGY", "value": "{{ config_strategy }}"},
         {"name": "KOLLA_CONFIG", "value": "{{ kolla_config }}"},
         {"name": "KOLLA_LOGLEVEL", "value": "{{ init_log_level }}"},
-        {"name": "KOLLA_GROUP", "value": "{{ group }}"},
-        {"name": "KOLLA_ROLE", "value": "{{ role }}"},
         {"name": "KOLLA_ZK_HOSTS", "value": "{{ zookeeper_hosts }}"},
         {"name": "KOLLA_PRIVATE_INTERFACE", "value": "{{ private_interface }}"},
         {"name": "KOLLA_PUBLIC_INTERFACE", "value": "{{ public_interface }}"},
-        {"name": "KOLLA_DEPLOYMENT_ID", "value":  "{{ deployment_id }}"},
+        {"name": "MARATHON_APP_ID", "value":  "/{{ deployment_id }}/{{ service_name }}"},
         {"name": "ANSIBLE_LIBRARY", "value": "/usr/share/ansible/"}]
 }
