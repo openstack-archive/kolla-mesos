@@ -5,6 +5,9 @@ container:
   parameters:
     - key: volume
       value: "openvswitch_db:/var/lib/openvswitch/"
+parameters:
+    - key: volume
+      value: "kolla_logs_{{ deployment_id }}:/var/log/kolla"
   volumes:
     - containerPath: "/run"
       hostPath: "/run"

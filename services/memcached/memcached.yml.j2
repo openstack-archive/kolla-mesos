@@ -2,6 +2,9 @@ name: infra/memcached/memcached
 enabled: {{ enable_memcached | bool }}
 container:
   image: "{{ memcached_image }}:{{ memcached_tag }}"
+  parameters:
+    - key: volume
+      value: "kolla_logs_{{ deployment_id }}:/var/log/kolla"
 service:
   daemon:
     {% raw %}

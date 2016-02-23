@@ -2,6 +2,9 @@ name: openstack/glance-registry/glance-registry
 enabled: {{ enable_glance | bool }}
 container:
   image: "{{ glance_registry_image }}:{{ glance_registry_tag }}"
+  parameters:
+    - key: volume
+      value: "kolla_logs_{{ deployment_id }}:/var/log/kolla"
 service:
   daemon:
     dependencies: [glance_ansible_tasks/create_user, keystone_ansible_tasks/running]

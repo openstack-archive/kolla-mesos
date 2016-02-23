@@ -2,6 +2,9 @@ name: openstack/glance-api/glance-api
 enabled: {{ enable_glance | bool }}
 container:
   image: "{{ glance_api_image }}:{{ glance_api_tag }}"
+  parameters:
+    - key: volume
+      value: "kolla_logs_{{ deployment_id }}:/var/log/kolla"
 service:
   daemon:
     dependencies: [glance_ansible_tasks/create_database,
