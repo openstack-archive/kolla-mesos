@@ -1,6 +1,7 @@
 {% set keystone_cmd = 'apache2' if kolla_base_distro in ['ubuntu', 'debian'] else 'httpd' %}
 {% set keystone_dir = 'apache2/conf-enabled' if kolla_base_distro in ['ubuntu', 'debian'] else 'httpd/conf.d' %}
 name: openstack/keystone/keystone-api
+openstack_roles: [controller]
 enabled: {{ enable_keystone | bool }}
 container:
   image: "{{ keystone_image }}:{{ keystone_tag }}"
