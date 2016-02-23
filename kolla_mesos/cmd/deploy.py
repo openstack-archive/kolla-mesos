@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import collections
+import copy
 import datetime
 import json
 import os
@@ -140,12 +141,14 @@ class Runner(object):
     def _apply_service_def(self, app_def):
         """Apply the specifics from the service definition."""
 
-    def generate_deployment_files(self, kolla_config, jinja_vars, temp_dir):
-        if not self._enabled:
-            return
-        _, proj, service = self._conf['name'].split('/')
-        values = {
-            'service_name': self._conf['name'],
+    def _get_service_name(self):
+        return self._conf['name']
+
+    def get_extra_values(self, kolla_config, proj, service):
+        return {
+            'role': service,
+            'group': proj,
+            'service_name': self._get_service_name(),
             'chronos_service_id': self._conf['name'].replace('/', '-'),
             'kolla_config': kolla_config,
             'zookeeper_hosts': CONF.zookeeper.host,
@@ -153,6 +156,11 @@ class Runner(object):
             'public_interface': CONF.network.public_interface,
         }
 
+    def generate_deployment_files(self, kolla_config, jinja_vars, temp_dir):
+        if not self._enabled:
+            return
+        _, proj, service = self._conf['name'].split('/')
+        values = self.get_extra_values(kolla_config, proj, service)
         app_file = os.path.join(self.base_dir, 'services',
                                 'default.%s.j2' % self.type_name)
         content = jinja_utils.jinja_render(app_file, jinja_vars,
@@ -183,6 +191,14 @@ class MarathonApp(Runner):
     def __init__(self, conf):
         super(MarathonApp, self).__init__(conf)
         self.type_name = 'marathon'
+
+    def _get_service_openstack_roles(self):
+        return self._conf['openstack_roles']
+
+    def get_extra_values(self, *args, **kwargs):
+        values = super(MarathonApp, self).get_extra_values(*args, **kwargs)
+        values['service_openstack_roles'] = self._get_service_openstack_roles()
+        return values
 
     def _apply_service_def(self, app_def):
         """Apply the specifics from the service definition."""
@@ -287,8 +303,14 @@ class KollaWorker(object):
             raw_vars = yaml.load(af)
         raw_vars.update(global_vars)
         jvars = yaml.load(jinja_utils.jinja_render(all_yml_name, raw_vars))
+        common_vars = copy.deepcopy(jvars)
 
         jvars.update(global_vars)
+
+        # Add deployment_id
+        common_vars.update({'deployment_id': self.deployment_id})
+        # override node_config_directory to empty
+        common_vars.update({'node_config_directory': ''})
 
         for proj in self.get_projects():
             proj_yml_name = os.path.join(self.config_dir, proj,
@@ -301,11 +323,7 @@ class KollaWorker(object):
             else:
                 LOG.warning('Path missing %s' % proj_yml_name)
 
-        # Add deployment_id
-        jvars.update({'deployment_id': self.deployment_id})
-        # override node_config_directory to empty
-        jvars.update({'node_config_directory': ''})
-        return jvars
+        return jvars, common_vars
 
     def gen_deployment_id(self):
 
@@ -371,9 +389,9 @@ class KollaWorker(object):
         return kolla_config
 
     def write_config_to_zookeeper(self, zk):
-        jinja_vars = self.get_jinja_vars()
+        jinja_vars, common_vars = self.get_jinja_vars()
         LOG.debug('Jinja_vars is: %s' % jinja_vars)
-        self.required_vars = jinja_vars
+        self.required_vars = common_vars
 
         for var in jinja_vars:
             if jinja_vars[var] is None:
