@@ -29,7 +29,7 @@ kolla_external_address: "{{ kolla_internal_address }}"
 ####################
 # Database options
 ####################
-database_address: "{{ kolla_internal_address }}"
+database_address: "mariadb-mariadb-infra-{{ deployment_id }}.{{ marathon_framework }}.{{ mesos_dns_domain }}"
 database_user: "root"
 
 
