@@ -205,7 +205,7 @@ class TemplateFunctions(object):
                 yield p
 
     def get_groups_and_hostvars(self):
-            # DEPRECATED
+        # DEPRECATED
         # this returns an odd structure but it so we can re-use the
         # ansible templates.
         hostvars = {}
