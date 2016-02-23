@@ -10,10 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import mock
 from oslo_config import cfg
 from zake import fake_client
 
 from kolla_mesos import configuration
+from kolla_mesos import exception
 from kolla_mesos.tests import base
 from kolla_mesos.tests.fakes import mesos as fake_mesos
 
@@ -88,3 +90,23 @@ class TestConfiguration(base.BaseTestCase):
                          '[["hostname", "CLUSTER", "test-slave"]]')
         self.assertEqual(result['storage_constraints'],
                          '[["hostname", "CLUSTER", "test-slave"]]')
+
+    @fake_mesos.FakeMesosStateTaggedSlaves()
+    def test_get_marathon_framework_without_frm(self):
+        result = {}
+        configuration.get_marathon_framework(result)
+        self.assertEqual('marathon_autodetect',
+                         result['marathon_framework'])
+
+    def test_get_marathon_framework_with_frm(self):
+        result = {
+            'marathon_framework': 'marathon'}
+        configuration.get_marathon_framework(result)
+        self.assertEqual('marathon', result['marathon_framework'])
+
+    def test_get_marathon_framework_errror(self):
+        with mock.patch.object(configuration.mesos_utils,
+                               'get_marathon') as m_gm:
+            m_gm.return_value = None
+            self.assertRaises(exception.UndefinedOption,
+                              configuration.get_marathon_framework, {})

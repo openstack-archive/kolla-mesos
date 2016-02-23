@@ -18,6 +18,7 @@ import yaml
 from kolla_mesos.cmd import deploy
 from kolla_mesos.tests import base
 
+
 CONF = cfg.CONF
 CONF.import_group('kolla', 'kolla_mesos.config.kolla')
 CONF.import_group('mesos', 'kolla_mesos.config.mesos')
