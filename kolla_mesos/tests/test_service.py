@@ -32,9 +32,10 @@ class TestAPI(base.BaseTestCase):
         self.addCleanup(self.client.close)
         cfg.CONF.set_override('deployment_id', 'did', group='kolla')
 
+    @mock.patch.object(service.config, 'get_marathon_framework')
     @mock.patch.object(service.config, 'apply_deployment_vars')
     @mock.patch.object(service.MarathonApp, 'run')
-    def test_run_marathon(self, m_run, m_apply):
+    def test_run_marathon(self, m_run, m_apply, m_gmf):
         with mock.patch.object(service.zk_utils,
                                'connection') as m_zk_c:
             m_zk_c.return_value.__enter__.return_value = self.client
@@ -49,9 +50,10 @@ class TestAPI(base.BaseTestCase):
         for node in exp_nodes:
             self.assertTrue(self.client.exists(node), node)
 
+    @mock.patch.object(service.config, 'get_marathon_framework')
     @mock.patch.object(service.config, 'apply_deployment_vars')
     @mock.patch.object(service.ChronosTask, 'run')
-    def test_run_chronos(self, m_run, m_apply):
+    def test_run_chronos(self, m_run, m_apply, m_gmf):
         with mock.patch.object(service.zk_utils,
                                'connection') as m_zk_c:
             m_zk_c.return_value.__enter__.return_value = self.client
@@ -119,9 +121,10 @@ class TestAPI(base.BaseTestCase):
             service.scale_service('openstack/nova/nova-api', 2, force=False)
             m_scale.assert_called_once_with(2, False)
 
+    @mock.patch.object(service.config, 'get_marathon_framework')
     @mock.patch.object(service.config, 'apply_deployment_vars')
     @mock.patch.object(service.MarathonApp, 'update')
-    def test_update_marathon(self, m_update, m_apply):
+    def test_update_marathon(self, m_update, m_apply, m_gmf):
         self.client.create('/kolla/did/openstack/nova/nova-api',
                            json.dumps({'name': 'openstack/nova/nova-api',
                                        'service': {}}),

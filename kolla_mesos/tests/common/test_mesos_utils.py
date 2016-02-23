@@ -35,3 +35,8 @@ class TestMesosUtils(base.BaseTestCase):
         self.assertEqual(2, compute_nodes)
         self.assertEqual(2, storage_nodes)
         self.assertEqual(7, all_nodes)
+
+    @fake_mesos.FakeMesosStateFrameworks()
+    def test_get_marathon(self):
+        marathon_framework = mesos_utils.get_marathon()
+        self.assertEqual(marathon_framework, 'marathon_autodetect')
