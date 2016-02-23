@@ -38,7 +38,6 @@ from six.moves import queue
 
 
 ZK_HOSTS = None
-GROUP = None
 ROLE = None
 PRIVATE_INTERFACE = None
 PUBLIC_INTERFACE = None
@@ -46,11 +45,14 @@ ANSIBLE_PRIVATE = None
 ANSIBLE_PUBLIC = None
 DEPLOYMENT_ID = None
 DEPLOYMENT = None
+SERVICE = None
+SERVICE_NAME = None
 
 
 def set_globals():
-    global ZK_HOSTS, GROUP, ROLE, PRIVATE_INTERFACE, PUBLIC_INTERFACE
+    global ZK_HOSTS, ROLE, PRIVATE_INTERFACE, PUBLIC_INTERFACE
     global ANSIBLE_PRIVATE, ANSIBLE_PUBLIC, DEPLOYMENT_ID, DEPLOYMENT
+    global SERVICE, SERVICE_NAME
     ZK_HOSTS = os.environ.get('KOLLA_ZK_HOSTS')
     PRIVATE_INTERFACE = os.environ.get('KOLLA_PRIVATE_INTERFACE', 'undefined')
     PUBLIC_INTERFACE = os.environ.get('KOLLA_PUBLIC_INTERFACE', 'undefined')
@@ -64,9 +66,10 @@ def set_globals():
     app_split = app_id.split('/')
     DEPLOYMENT_ID = app_split[1]
     DEPLOYMENT = os.path.join(system_prefix, DEPLOYMENT_ID)
-    # TODO(asalkeld) remove the concept of role and group
+    SERVICE = os.path.join(DEPLOYMENT, '/'.join(app_split[2:]))
+    SERVICE_NAME = '/'.join(app_split[2:])
+    # TODO(asalkeld) remove the concept of role
     ROLE = app_split[-1]
-    GROUP = app_split[-2]
 
 
 logging.basicConfig()
@@ -180,10 +183,9 @@ def register_group_and_hostvars(zk):
                                        get_ip_address(PRIVATE_INTERFACE)}},
             'ansible_hostname': socket.gethostname(),
             'api_interface': PUBLIC_INTERFACE,
-            'role': ROLE,
             'id': str(node_id)}
 
-    LOG.info('%s (%s) joining the %s party', host, node_id, ROLE)
+    LOG.info('%s (%s) joining the %s party', host, node_id, SERVICE_NAME)
     party.Party(zk, path, json.dumps(data)).join()
 
 
@@ -256,7 +258,7 @@ def generate_host_vars(zk):
                  'inventory_hostname': host,
                  'ansible_hostname': host,
                  'deployment_id': DEPLOYMENT_ID,
-                 'service_name': ROLE}
+                 'service_name': SERVICE_NAME}
     return variables
 
 
@@ -277,7 +279,7 @@ def render_template(zk, templ, variables, var_names):
     return jinja_render(templ, variables)
 
 
-def generate_configs(zk, files, conf_base_node):
+def generate_configs(zk, files):
     """Render and create all config files for this app"""
 
     variables = generate_host_vars(zk)
@@ -285,7 +287,7 @@ def generate_configs(zk, files, conf_base_node):
         LOG.debug('Name is: %s, Item is: %s', name, item)
         if name == 'kolla_mesos_start.py':
             continue
-        raw_content, stat = zk.get(os.path.join(conf_base_node, name))
+        raw_content, stat = zk.get(os.path.join(SERVICE, 'files', name))
         templ = raw_content.encode('utf-8')
         var_names = jinja_find_required_variables(templ, name)
         if not var_names:
@@ -437,7 +439,7 @@ class Command(object):
         self.proc.wait()
 
 
-def run_commands(zk, service_conf, conf_base_node):
+def run_commands(zk, service_conf):
     LOG.info('run_commands')
     cmdq = queue.Queue()
 
@@ -458,7 +460,7 @@ def run_commands(zk, service_conf, conf_base_node):
             continue
         if cmd.requirements_fulfilled():
             if 'files' in cmd.raw_conf:
-                generate_configs(zk, cmd.raw_conf['files'], conf_base_node)
+                generate_configs(zk, cmd.raw_conf['files'])
             if cmd.run() != 0:
                 if cmd.retries > 0:
                     cmd.sleep(cmdq.qsize(), retry=True)
@@ -475,9 +477,7 @@ def main():
     set_globals()
     LOG.info('starting')
     with zk_connection(ZK_HOSTS) as zk:
-        base_node = os.path.join(DEPLOYMENT, 'config')
-        conf_base_node = os.path.join(base_node, GROUP, ROLE)
-        service_conf_raw, stat = zk.get(conf_base_node)
+        service_conf_raw, stat = zk.get(SERVICE)
         service_conf = json.loads(service_conf_raw)
 
         # don't join a Party if this container is not running a daemon
@@ -487,7 +487,7 @@ def main():
             service_conf = generate_main_config(zk, service_conf_raw)
             LOG.debug('Rendered service config: %s', service_conf)
 
-        run_commands(zk, service_conf, conf_base_node)
+        run_commands(zk, service_conf)
 
 
 if __name__ == '__main__':
