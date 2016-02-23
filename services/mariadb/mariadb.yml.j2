@@ -6,6 +6,8 @@ container:
   parameters:
     - key: volume
       value: "mariadb_{{ deployment_id }}:/var/lib/mysql"
+    - key: volume
+      value: "kolla_logs_{{ deployment_id }}:/var/log/kolla"
 service:
   daemon:
     command: /usr/bin/mysqld_safe --wsrep-new-cluster

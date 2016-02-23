@@ -5,6 +5,9 @@ name: openstack/horizon/horizon
 enabled: {{ enable_horizon | bool }}
 container:
   image: "{{ horizon_image }}:{{ horizon_tag }}"
+  parameters:
+    - key: volume
+      value: "kolla_logs_{{ deployment_id }}:/var/log/kolla"
 service:
   daemon:
     command: /usr/sbin/{{ apache_cmd }} -DFOREGROUND

@@ -8,6 +8,9 @@ container:
       value: "/run/netns:/run/netns:shared"
     - key: volume
       value: "neutron_metadata_socket:/var/lib/neutron/kolla/"
+parameters:
+    - key: volume
+      value: "kolla_logs_{{ deployment_id }}:/var/log/kolla"
 service:
   daemon:
     dependencies: [neutron_ansible_tasks/create_user, rabbitmq/daemon]

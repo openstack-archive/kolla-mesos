@@ -3,6 +3,9 @@ enabled: {{ enable_nova | bool }}
 container:
   image: "{{ nova_api_image }}:{{ nova_api_tag }}"
   privileged: true
+  parameters:
+    - key: volume
+      value: "kolla_logs_{{ deployment_id }}:/var/log/kolla"
 service:
   daemon:
     dependencies: [nova-conductor/db_sync, nova_ansible_tasks/create_user]

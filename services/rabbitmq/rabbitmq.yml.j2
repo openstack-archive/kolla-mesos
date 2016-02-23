@@ -2,6 +2,9 @@ name: infra/rabbitmq/rabbitmq
 enabled: {{ enable_rabbitmq | bool }}
 container:
   image: "{{ rabbitmq_image }}:{{ rabbitmq_tag }}"
+  parameters:
+    - key: volume
+      value: "kolla_logs_{{ deployment_id }}:/var/log/kolla"
 service:
   daemon:
     command: rabbitmq-server

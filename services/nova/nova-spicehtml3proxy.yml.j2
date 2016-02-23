@@ -2,6 +2,9 @@ name: openstack/nova/nova-spicehtml3proxy
 enabled: {{ enable_nova | bool and nova_console == 'spice' }}
 container:
   image: "{{ nova_spicehtml3proxy_image }}:{{ nova_spicehtml3proxy_tag }}"
+  parameters:
+    - key: volume
+      value: "kolla_logs_{{ deployment_id }}:/var/log/kolla"
 service:
   daemon:
     dependencies: [nova-conductor/db_sync, nova_ansible_tasks/create_user]
