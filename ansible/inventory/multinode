@@ -11,6 +11,9 @@ controller03
 [compute]
 compute01
 
+[mesos-dns:children]
+master
+
 [zookeeper:children]
 master
 

@@ -1,0 +1,9 @@
+---
+- name: Starting Mesos DNS container
+  kolla_docker:
+    action: "start_container"
+    common_options: "{{ docker_common_options }}"
+    image: "{{ mesos_dns_image_full }}"
+    name: "mesos-dns"
+    volumes:
+      - "{{ node_config_directory }}/mesos-dns/:{{ container_config_directory }}/:ro"

@@ -12,6 +12,9 @@ operator
 [compute]
 operator
 
+[mesos-dns:children]
+master
+
 [zookeeper:children]
 master
 
