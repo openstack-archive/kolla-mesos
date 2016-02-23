@@ -67,3 +67,8 @@ enable_heat: "no"
 enable_swift: "no"
 enable_murano: "no"
 enable_ironic: "no"
+
+#Mesos settings
+mesos_dns_domain: "mesos"
+deployment_id: "kolla"
+marathon_framework: "marathon"
