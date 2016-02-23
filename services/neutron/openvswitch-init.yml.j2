@@ -2,6 +2,9 @@ name: infra/openvswitch/openvswitch-tasks
 enabled: {{ enable_neutron | bool and neutron_plugin_agent == 'openvswitch' }}
 container:
   image: "{{ openvswitch_db_image }}:{{ openvswitch_db_tag }}"
+  parameters:
+    - key: volume
+      value: "kolla_logs_{{ deployment_id }}:/var/log/kolla"
   volumes:
     - containerPath: "/run"
       hostPath: "/run"

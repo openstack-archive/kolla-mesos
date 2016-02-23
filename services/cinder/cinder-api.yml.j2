@@ -2,6 +2,9 @@ name: openstack/cinder/cinder-api
 enabled: {{ enable_cinder | bool }}
 container:
   image: "{{ cinder_api_image }}:{{ cinder_api_tag }}"
+  parameters:
+    - key: volume
+      value: "kolla_logs_{{ deployment_id }}:/var/log/kolla"
 service:
   daemon:
     dependencies: [cinder_ansible_tasks/create_user,

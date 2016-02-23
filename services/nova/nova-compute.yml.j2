@@ -3,6 +3,9 @@ enabled: {{ enable_nova | bool }}
 container:
   image: "{{ nova_compute_image }}:{{ nova_compute_tag }}"
   privileged: true
+  parameters:
+    - key: volume
+      value: "kolla_logs_{{ deployment_id }}:/var/log/kolla"
   volumes:
     - containerPath: "/lib/modules"
       hostPath: "/lib/modules"

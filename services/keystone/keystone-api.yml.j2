@@ -4,6 +4,9 @@ name: openstack/keystone/keystone-api
 enabled: {{ enable_keystone | bool }}
 container:
   image: "{{ keystone_image }}:{{ keystone_tag }}"
+  parameters:
+    - key: volume
+      value: "kolla_logs_{{ deployment_id }}:/var/log/kolla"
 service:
   daemon:
     dependencies: [keystone-api/db_sync]

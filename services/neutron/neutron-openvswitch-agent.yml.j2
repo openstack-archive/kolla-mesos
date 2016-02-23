@@ -3,6 +3,9 @@ enabled: {{ enable_neutron | bool and neutron_plugin_agent == 'openvswitch' }}
 container:
   image: "{{ neutron_openvswitch_agent_image }}:{{ neutron_openvswitch_agent_tag }}"
   privileged: true
+  parameters:
+    - key: volume
+      value: "kolla_logs_{{ deployment_id }}:/var/log/kolla"
   volumes:
     - containerPath: "/run"
       hostPath: "/run"

@@ -2,6 +2,9 @@ name: openstack/neutron/neutron-server
 enabled: {{ enable_neutron | bool }}
 container:
   image: "{{ neutron_server_image }}:{{ neutron_server_tag }}"
+  parameters:
+    - key: volume
+      value: "kolla_logs_{{ deployment_id }}:/var/log/kolla"
 service:
   daemon:
     dependencies: [neutron-server/db_sync, neutron_ansible_tasks/create_user, rabbitmq/daemon]
