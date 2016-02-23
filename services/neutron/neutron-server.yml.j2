@@ -1,4 +1,5 @@
 name: openstack/neutron/neutron-server
+openstack_roles: [controller]
 enabled: {{ enable_neutron | bool }}
 container:
   image: "{{ neutron_server_image }}:{{ neutron_server_tag }}"
