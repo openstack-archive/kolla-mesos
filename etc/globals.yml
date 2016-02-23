@@ -67,3 +67,10 @@ enable_heat: "no"
 enable_swift: "no"
 enable_murano: "no"
 enable_ironic: "no"
+
+# If marathon_framework is not set then script
+# # will try to autodetect it from mesos
+# # marathon_framework: "marathon"
+#
+# Domain configured in mesos-dns
+mesos_dns_domain: "mesos"
