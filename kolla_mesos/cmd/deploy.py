@@ -143,11 +143,8 @@ class Runner(object):
     def _get_service_name(self):
         return self._conf['name']
 
-    def generate_deployment_files(self, kolla_config, jinja_vars, temp_dir):
-        if not self._enabled:
-            return
-        _, proj, service = self._conf['name'].split('/')
-        values = {
+    def get_extra_values(self, kolla_config, proj, service):
+        return {
             'role': service,
             'group': proj,
             'service_name': self._get_service_name(),
@@ -157,6 +154,11 @@ class Runner(object):
             'public_interface': CONF.network.public_interface,
         }
 
+    def generate_deployment_files(self, kolla_config, jinja_vars, temp_dir):
+        if not self._enabled:
+            return
+        _, proj, service = self._conf['name'].split('/')
+        values = self.get_extra_values(kolla_config, proj, service)
         app_file = os.path.join(self.base_dir, 'services',
                                 'default.%s.j2' % self.type_name)
         content = jinja_utils.jinja_render(app_file, jinja_vars,
@@ -187,6 +189,14 @@ class MarathonApp(Runner):
     def __init__(self, conf):
         super(MarathonApp, self).__init__(conf)
         self.type_name = 'marathon'
+
+    def _get_service_openstack_roles(self):
+        return self._conf['openstack_roles']
+
+    def get_extra_values(self, *args, **kwargs):
+        values = super(MarathonApp, self).get_extra_values(*args, **kwargs)
+        values['service_openstack_roles'] = self._get_service_openstack_roles()
+        return values
 
     def _apply_service_def(self, app_def):
         """Apply the specifics from the service definition."""

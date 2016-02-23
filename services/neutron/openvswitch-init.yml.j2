@@ -1,4 +1,5 @@
 name: infra/openvswitch/openvswitch-tasks
+openstack_roles: [controller, compute]
 enabled: {{ enable_neutron | bool and neutron_plugin_agent == 'openvswitch' }}
 container:
   image: "{{ openvswitch_db_image }}:{{ openvswitch_db_tag }}"
