@@ -1,4 +1,5 @@
 name: openstack/glance-registry/glance-registry
+openstack_roles: [controller]
 enabled: {{ enable_glance | bool }}
 container:
   image: "{{ glance_registry_image }}:{{ glance_registry_tag }}"
