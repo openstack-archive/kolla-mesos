@@ -432,13 +432,8 @@ class KollaWorker(object):
                     var_value = json.dumps(self.required_vars[var])
                 var_path = os.path.join(base_node, 'variables', var)
                 zk.ensure_path(var_path)
-                try:
-                    zk.set(var_path, "" if var_value is None else var_value)
-                    LOG.debug('Updated "%s" node in zookeeper.' % var_path)
-                except Exception as te:
-                    LOG.error('Cant create "%s" node with "%s" item in '
-                              'Zookeeper. Error was: "%s"' %
-                              (var_path, var_value, te))
+                zk.set(var_path, "" if var_value is None else var_value)
+                LOG.debug('Updated "%s" node in zookeeper.' % var_path)
 
     def _start_marathon_app(self, app_resource):
         if CONF.update:
