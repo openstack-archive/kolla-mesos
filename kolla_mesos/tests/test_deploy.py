@@ -171,6 +171,7 @@ class TestClient(base.BaseTestCase):
         self.assertEqual(result['storage_nodes'], '2')
         self.assertEqual(result['all_nodes'], '7')
 
+    @fake_mesos.FakeMesosStateFrameworks()
     @mock.patch('kolla_mesos.cmd.deploy.jinja_utils')
     @mock.patch('kolla_mesos.cmd.deploy.yaml')
     @mock.patch('kolla_mesos.cmd.deploy.open')
@@ -196,6 +197,7 @@ class TestClient(base.BaseTestCase):
         self.assertEqual(result['storage_nodes'], '2')
         self.assertEqual(result['all_nodes'], '7')
 
+    @fake_mesos.FakeMesosStateFrameworks()
     @mock.patch('kolla_mesos.cmd.deploy.jinja_utils')
     @mock.patch('kolla_mesos.cmd.deploy.yaml')
     @mock.patch('kolla_mesos.cmd.deploy.open')
@@ -218,6 +220,7 @@ class TestClient(base.BaseTestCase):
         self.assertEqual(result['controller_compute_constraints'], '')
         self.assertEqual(result['storage_constraints'], '')
 
+    @fake_mesos.FakeMesosStateFrameworks()
     @mock.patch('kolla_mesos.cmd.deploy.jinja_utils')
     @mock.patch('kolla_mesos.cmd.deploy.yaml')
     @mock.patch('kolla_mesos.cmd.deploy.open')
@@ -245,3 +248,111 @@ class TestClient(base.BaseTestCase):
                          '[["hostname", "CLUSTER", "test-slave"]]')
         self.assertEqual(result['storage_constraints'],
                          '[["hostname", "CLUSTER", "test-slave"]]')
+
+    @fake_mesos.FakeMesosStateTaggedSlaves()
+    @mock.patch('kolla_mesos.cmd.deploy.jinja_utils')
+    @mock.patch('kolla_mesos.cmd.deploy.yaml')
+    @mock.patch('kolla_mesos.cmd.deploy.open')
+    def test_get_jinja_vars_multinode_autodetect_res_with_frm(self, mock_open,
+                                                              mock_yaml,
+                                                              mock_jutils):
+        CONF.set_override('deployment_id', 'test', group='kolla')
+        mock_yaml.load = mock.MagicMock(return_value={
+            'multinode': 'yes',
+            'autodetect_resources': 'yes',
+            'marathon_framework': 'marathon'})
+        self.worker.setup_working_dir()
+        self.worker.gen_deployment_id()
+        result = self.worker.get_jinja_vars()
+
+        self.assertIsInstance(result, dict)
+        self.assertEqual(result['deployment_id'], 'test')
+        self.assertEqual(result['node_config_directory'], '')
+        self.assertEqual(result['controller_nodes'], '3')
+        self.assertEqual(result['compute_nodes'], '2')
+        self.assertEqual(result['storage_nodes'], '2')
+        self.assertEqual(result['all_nodes'], '7')
+
+    @mock.patch('kolla_mesos.cmd.deploy.jinja_utils')
+    @mock.patch('kolla_mesos.cmd.deploy.yaml')
+    @mock.patch('kolla_mesos.cmd.deploy.open')
+    def test_get_jinja_vars_multinode_no_autodetect_res_with_frm(self,
+                                                                 mock_open,
+                                                                 mock_yaml,
+                                                                 mock_jutils):
+        CONF.set_override('deployment_id', 'test', group='kolla')
+        mock_yaml.load = mock.MagicMock(return_value={
+            'multinode': 'yes',
+            'autodetect_resources': 'no',
+            'controller_nodes': 3,
+            'compute_nodes': 2,
+            'storage_nodes': 2,
+            'marathon_framework': 'marathon'})
+        self.worker.setup_working_dir()
+        self.worker.gen_deployment_id()
+        result = self.worker.get_jinja_vars()
+
+        self.assertIsInstance(result, dict)
+        self.assertEqual(result['deployment_id'], 'test')
+        self.assertEqual(result['node_config_directory'], '')
+        self.assertEqual(result['controller_nodes'], '3')
+        self.assertEqual(result['compute_nodes'], '2')
+        self.assertEqual(result['storage_nodes'], '2')
+        self.assertEqual(result['all_nodes'], '7')
+        self.assertEqual(result['marathon_framework'], 'marathon')
+
+    @mock.patch('kolla_mesos.cmd.deploy.jinja_utils')
+    @mock.patch('kolla_mesos.cmd.deploy.yaml')
+    @mock.patch('kolla_mesos.cmd.deploy.open')
+    def test_get_jinja_vars_aio_with_framework(self, mock_open, mock_yaml,
+                                               mock_jutils):
+        CONF.set_override('deployment_id', 'test', group='kolla')
+        mock_yaml.load = mock.MagicMock(return_value={
+            'multinode': 'no',
+            'marathon_framework': 'marathon'})
+        self.worker.setup_working_dir()
+        self.worker.gen_deployment_id()
+        result = self.worker.get_jinja_vars()
+
+        self.assertIsInstance(result, dict)
+        self.assertEqual(result['deployment_id'], 'test')
+        self.assertEqual(result['node_config_directory'], '')
+        self.assertEqual(result['controller_nodes'], '1')
+        self.assertEqual(result['storage_nodes'], '1')
+        self.assertEqual(result['all_nodes'], '1')
+        self.assertEqual(result['controller_constraints'], '')
+        self.assertEqual(result['compute_constraints'], '')
+        self.assertEqual(result['controller_compute_constraints'], '')
+        self.assertEqual(result['storage_constraints'], '')
+        self.assertEqual(result['marathon_framework'], 'marathon')
+
+    @mock.patch('kolla_mesos.cmd.deploy.jinja_utils')
+    @mock.patch('kolla_mesos.cmd.deploy.yaml')
+    @mock.patch('kolla_mesos.cmd.deploy.open')
+    def test_get_jinja_vars_hostname_aio_with_framework(self, mock_open,
+                                                        mock_yaml,
+                                                        mock_jutils):
+        CONF.set_override('deployment_id', 'test', group='kolla')
+        mock_yaml.load = mock.MagicMock(return_value={
+            'multinode': 'no',
+            'mesos_aio_hostname': 'test-slave',
+            'marathon_framework': 'marathon'})
+        self.worker.setup_working_dir()
+        self.worker.gen_deployment_id()
+        result = self.worker.get_jinja_vars()
+
+        self.assertIsInstance(result, dict)
+        self.assertEqual(result['deployment_id'], 'test')
+        self.assertEqual(result['node_config_directory'], '')
+        self.assertEqual(result['controller_nodes'], '1')
+        self.assertEqual(result['storage_nodes'], '1')
+        self.assertEqual(result['all_nodes'], '1')
+        self.assertEqual(result['controller_constraints'],
+                         '[["hostname", "CLUSTER", "test-slave"]]')
+        self.assertEqual(result['compute_constraints'],
+                         '[["hostname", "CLUSTER", "test-slave"]]')
+        self.assertEqual(result['controller_compute_constraints'],
+                         '[["hostname", "CLUSTER", "test-slave"]]')
+        self.assertEqual(result['storage_constraints'],
+                         '[["hostname", "CLUSTER", "test-slave"]]')
+        self.assertEqual(result['marathon_framework'], 'marathon')
