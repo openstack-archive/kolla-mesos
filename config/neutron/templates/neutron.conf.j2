@@ -4,7 +4,7 @@ debug = {{ keystone_logging_debug }}
 use_syslog = {{ openstack_use_syslog }}
 use_stderr = {{ openstack_use_stderr }}
 
-bind_host = {{ hostvars[inventory_hostname]['ansible_' + api_interface]['ipv4']['address'] }}
+bind_host = {{ get_ip_address(api_interface) }}
 bind_port = {{ neutron_server_port }}
 
 #lock_path = /var/lock/neutron
@@ -31,7 +31,7 @@ lock_path = /var/lib/neutron/tmp
 rabbit_userid = {{ rabbitmq_user }}
 rabbit_password = {{ rabbitmq_password }}
 rabbit_ha_queues = true
-rabbit_hosts = {% for host in groups['rabbitmq'] %}{{ hostvars[host]['ansible_' + api_interface]['ipv4']['address'] }}:{{ rabbitmq_port }}{% if not loop.last %},{% endif %}{% endfor %}
+rabbit_hosts = {{ list_ips_by_service('infra/rabbitmq/rabbitmq', rabbitmq_port) }}
 
 [agent]
 root_helper = sudo neutron-rootwrap /etc/neutron/rootwrap.conf

@@ -9,4 +9,4 @@ physical_interface_mappings = physnet1:{{ neutron_external_interface }}
 
 [vxlan]
 l2_population = true
-local_ip = {{ hostvars[inventory_hostname]['ansible_' + tunnel_interface]['ipv4']['address'] }}
+local_ip = {{ get_ip_address(tunnel_interface) }}

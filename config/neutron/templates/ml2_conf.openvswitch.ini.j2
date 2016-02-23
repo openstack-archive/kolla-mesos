@@ -11,4 +11,4 @@ arp_responder = true
 
 [ovs]
 bridge_mappings = physnet1:{{ neutron_bridge_name }}
-local_ip = {{ hostvars[inventory_hostname]['ansible_' + tunnel_interface]['ipv4']['address'] }}
+local_ip = {{ get_ip_address(tunnel_interface) }}
