@@ -1,4 +1,5 @@
 name: infra/rabbitmq/rabbitmq
+openstack_role: controller
 enabled: {{ enable_rabbitmq | bool }}
 container:
   image: "{{ rabbitmq_image }}:{{ rabbitmq_tag }}"
