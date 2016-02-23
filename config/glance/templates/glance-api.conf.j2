@@ -3,7 +3,7 @@ debug = {{ glance_logging_debug }}
 use_syslog = {{ openstack_use_syslog }}
 use_stderr = {{ openstack_use_stderr }}
 
-bind_host = {{ hostvars[inventory_hostname]['ansible_' + api_interface]['ipv4']['address'] }}
+bind_host = {{ get_ip_address(api_interface) }}
 bind_port = {{ glance_api_port }}
 
 
