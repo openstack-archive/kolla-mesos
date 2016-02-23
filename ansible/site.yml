@@ -28,3 +28,9 @@
   roles:
     - { role: mesos-slave,
         tags: mesos-slave }
+- hosts:
+    - mesos-dns
+  roles:
+    - { role: mesos-dns,
+        tags: mesos-dns }
+
