@@ -32,7 +32,7 @@ service:
         perm: "0600"
   mem: {{ neutron_server_mem }}
   cpus: {{ neutron_server_cpus }}
-
+  constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "controller"]]
 commands:
   db_sync:
     run_once: True

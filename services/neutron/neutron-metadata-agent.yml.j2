@@ -42,3 +42,4 @@ service:
         perm: "0600"
   mem: {{ neutron_metadata_agent_mem }}
   cpus: {{ neutron_metadata_agent_cpus }}
+  constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "controller"]]

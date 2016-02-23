@@ -42,7 +42,7 @@ service:
         dest: /etc/nova/nova.conf
         owner: nova
         perm: "0600"
-
+  constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "compute"]]
 commands:
   disable-netfilter-4:
     command: "echo sudo sysctl net.bridge.bridge-nf-call-iptables=1"
