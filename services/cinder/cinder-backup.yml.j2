@@ -1,4 +1,5 @@
 name: openstack/cinder/cinder-backup
+openstack_roles: [storage]
 enabled: {{ enable_cinder | bool }}
 container:
   image: "{{ cinder_backup_image }}:{{ cinder_backup_tag }}"
@@ -28,3 +29,4 @@ service:
         perm: "0600"
   mem: {{ cinder_backup_mem }}
   cpus: {{ cinder_backup_cpus }}
+  constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "storage"]]

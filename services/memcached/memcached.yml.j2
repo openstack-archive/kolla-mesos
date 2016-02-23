@@ -12,3 +12,4 @@ service:
     {% endraw %}
   mem: {{ memcached_mem }}
   cpus: {{ memcached_cpus }}
+  constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "controller"]]

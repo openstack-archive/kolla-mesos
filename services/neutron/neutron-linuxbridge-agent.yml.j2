@@ -32,3 +32,4 @@ service:
         perm: "0600"
   mem: {{ neutron_linuxbridge_agent_mem }}
   cpus: {{ neutron_linuxbridge_agent_cpus }}
+  constraints: [["hostname", "UNIQUE"], ["openstack_role", "LIKE", "(controller|compute)"]]

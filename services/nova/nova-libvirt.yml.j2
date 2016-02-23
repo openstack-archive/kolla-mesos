@@ -32,3 +32,4 @@ service:
         dest: /etc/libvirt/libvirtd.conf
         owner: root
         perm: "0644"
+  constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "compute"]]

@@ -1,4 +1,5 @@
 name: openstack/nova/nova-novncproxy
+openstack_roles: [controller]
 enabled: {{ enable_nova | bool and nova_console == 'novnc' }}
 container:
   image: "{{ nova_novncproxy_image }}:{{ nova_novncproxy_tag }}"
@@ -26,3 +27,4 @@ service:
         perm: "0600"
   mem: {{ nova_novncproxy_mem }}
   cpus: {{ nova_novncproxy_cpus }}
+  constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "controller"]]

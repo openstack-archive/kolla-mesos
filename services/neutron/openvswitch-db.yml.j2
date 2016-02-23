@@ -17,3 +17,4 @@ service:
     command: /usr/sbin/ovsdb-server /etc/openvswitch/conf.db -vconsole:emer -vsyslog:err -vfile:info --remote=punix:/run/openvswitch/db.sock --log-file=/var/log/openvswitch/ovsdb-server.log
   mem: {{ openvswitch_db_mem }}
   cpus: {{ openvswitch_db_cpus }}
+  constraints: [["hostname", "UNIQUE"], ["openstack_role", "LIKE", "(controller|compute)"]]

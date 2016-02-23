@@ -29,7 +29,7 @@ service:
         perm: "0644"
   mem: {{ horizon_mem }}
   cpus: {{ horizon_cpus }}
-
+  constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "controller"]]
 commands:
   bootstrap:
     command: bash kolla_mesos_extend_start
