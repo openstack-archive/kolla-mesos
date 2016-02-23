@@ -7,6 +7,10 @@
             "network": "HOST"
         }
     },
+    "constraints": [
+        ["hostname", "UNIQUE"],
+        ["openstack_role", "CLUSTER", "{{ service_openstack_role }}"]
+    ],
     "env": {
         "KOLLA_CONFIG_STRATEGY": "{{ config_strategy }}",
         "KOLLA_CONFIG": "{{ kolla_config }}",
