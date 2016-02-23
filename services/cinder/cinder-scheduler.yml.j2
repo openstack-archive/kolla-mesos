@@ -1,4 +1,5 @@
 name: openstack/cinder/cinder-scheduler
+openstack_roles: [controller]
 enabled: {{ enable_cinder | bool }}
 container:
   image: "{{ cinder_scheduler_image }}:{{ cinder_scheduler_tag }}"
