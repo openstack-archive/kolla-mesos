@@ -1,5 +1,6 @@
 {% set mysql_dir = 'mysql' if kolla_base_distro in ['ubuntu', 'debian'] else '' %}
 name: infra/mariadb/mariadb
+openstack_roles: [controller]
 enabled: {{ enable_mariadb | bool }}
 container:
   image: "{{ mariadb_image }}:{{ mariadb_tag }}"
