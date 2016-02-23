@@ -11,6 +11,8 @@
       MESOS_LOG_DIR: "/var/log/mesos"
       MESOS_LOGGING_LEVEL: "INFO"
       MESOS_DOCKER_REMOVE_DELAY: "{{ mesos_docker_remove_delay }}"
+      MESOS_ATTRIBUTES: "openstack_role:{% if 'controller' in group_names %}controller{% elif 'compute' in group_names %}compute{% endif %}"
+      MESOS_SYSTEMD_ENABLE_SUPPORT: "false"
     image: "{{ mesos_slave_image_full }}"
     name: "mesos_slave"
     privileged: True
