@@ -477,6 +477,7 @@ def _load_variables_from_file(service_dir, project_name):
     # override node_config_directory to empty
     jvars.update({'node_config_directory': ''})
     config.apply_deployment_vars(jvars)
+#    config.get_marathon_framework(jvars)
     return jvars
 
 
