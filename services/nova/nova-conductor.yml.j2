@@ -11,7 +11,7 @@ service:
     command: nova-conductor --config-file /etc/nova/nova.conf --config-file /etc/nova/nova-override.conf
   mem: {{ nova_conductor_mem }}
   cpus: {{ nova_conductor_cpus }}
-
+  constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "controller"]]
 commands:
   db_sync:
     run_once: True

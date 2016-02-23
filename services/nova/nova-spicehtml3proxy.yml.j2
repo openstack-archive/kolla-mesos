@@ -26,3 +26,4 @@ service:
         perm: "0600"
   mem: {{ nova_spicehtml3proxy_mem }}
   cpus: {{ nova_spicehtml3proxy_cpus }}
+  constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "controller"]]

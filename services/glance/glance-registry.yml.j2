@@ -22,3 +22,4 @@ service:
         perm: "0600"
   mem: {{ glance_registry_mem }}
   cpus: {{ glance_registry_cpus }}
+  constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "controller"]]
