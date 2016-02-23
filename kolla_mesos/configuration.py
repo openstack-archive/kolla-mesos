@@ -160,3 +160,16 @@ def apply_deployment_vars(jvars):
         'storage_nodes': str(storage_nodes),
         'all_nodes': str(all_nodes)
     })
+
+
+def get_marathon_framework(jvars):
+    try:
+        mframework = jvars['marathon_framework']
+    except KeyError:
+        mframework = mesos_utils.get_marathon()
+        if mframework is not None:
+            jvars.update({'marathon_framework': mframework})
+        else:
+            raise exception.UndefinedOption(
+                'Please define marathon_framework')
+    LOG.info('Marathon framework: %s' % mframework)

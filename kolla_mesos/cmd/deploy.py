@@ -112,6 +112,7 @@ class KollaWorker(object):
             'node_config_directory': ''
         })
         configuration.apply_deployment_vars(jvars)
+        configuration.get_marathon_framework(jvars)
         return jvars
 
     def gen_deployment_id(self):
