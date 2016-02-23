@@ -11,6 +11,7 @@
 # limitations under the License.
 
 import functools
+import operator
 
 from kolla_mesos import mesos
 
@@ -55,3 +56,15 @@ def get_number_of_nodes(mesos_client):
     all_nodes = controller_nodes + compute_nodes + storage_nodes
 
     return controller_nodes, compute_nodes, storage_nodes, all_nodes
+
+
+@MesosClient()
+def get_marathon(mesos_client):
+    frameworks = mesos_client.get_frameworks()
+    frameworks_names = map(operator.itemgetter('name'), frameworks)
+    for framework_name in frameworks_names:
+        if "marathon" in framework_name:
+            marathon_framework = framework_name
+        else:
+            marathon_framework = None
+    return marathon_framework
