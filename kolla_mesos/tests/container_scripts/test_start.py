@@ -11,10 +11,13 @@
 # limitations under the License.
 
 import fixtures
+import getpass
 import json
 from kazoo.recipe import party
 import logging
 import mock
+import os.path
+import sys
 from zake import fake_client
 
 from kolla_mesos.container_scripts import start
@@ -504,3 +507,129 @@ class HostvarsAndGroupsTest(base.BaseTestCase):
                      'id': '1'}
         self.assertEqual(exp_local, hostvars['1.2.3.4'])
         self.assertEqual(remote, hostvars['4.4.4.4'])
+
+
+class RenderNovaConfTest(base.BaseTestCase):
+
+    scenarios = [
+        ('basic', dict(out='basic')),
+        ('vswitch', dict(neutron_plugin_agent='openvswitch', out='vswitch')),
+        ('ceph', dict(enable_ceph='yes', out='ceph')),
+        ('ironic', dict(enable_ironic='yes', out='ironic'))]
+
+    def setUp(self):
+        super(RenderNovaConfTest, self).setUp()
+        self.client = fake_client.FakeClient()
+        self.client.start()
+        self.addCleanup(self.client.stop)
+        self.addCleanup(self.client.close)
+        self.useFixture(fixtures.EnvironmentVariable('KOLLA_DEPLOYMENT_ID',
+                                                     newvalue='did'))
+        self.useFixture(fixtures.EnvironmentVariable('KOLLA_PRIVATE_INTERFACE',
+                                                     newvalue='eth1'))
+        self.useFixture(fixtures.EnvironmentVariable('KOLLA_PUBLIC_INTERFACE',
+                                                     newvalue='eth2'))
+        self.useFixture(fixtures.EnvironmentVariable('KOLLA_GROUP',
+                                                     newvalue='nova'))
+        self.useFixture(fixtures.EnvironmentVariable('KOLLA_ROLE',
+                                                     newvalue='nova-compute'))
+        start.set_globals()
+
+    def _register_service(self, service_name, ips):
+        for ip in ips:
+            remote = {'ansible_eth1': {'ipv4': {'address': ip}},
+                      'ansible_eth2': {'ipv4': {'address': ip}},
+                      'ansible_hostname': ip,
+                      'api_interface': 'eth2'}
+            party.Party(self.client,
+                        '/kolla/did/groups/%s' % service_name,
+                        json.dumps(remote)).join()
+
+    def _define_variables(self):
+        variables = {'enable_ironic': 'no',
+                     'enable_ceph': 'no',
+                     'nova_console': 'yes',
+                     'neutron_plugin_agent': 'linuxbridge',
+                     'ironic_keystone_user': 'irony',
+                     'memcached_port': '1357',
+                     'nova_database_name': 'noova',
+                     'nova_logging_debug': 'yes',
+                     'nova_metadata_port': '4229',
+                     'ironic_keystone_password': 'letmein',
+                     'nova_api_port': '0987',
+                     'rabbitmq_user': 'jump',
+                     'glance_api_port': '8776',
+                     'nova_database_address': '3.3.3.3',
+                     'ironic_api_port': '3085',
+                     'nova_keystone_password': 'noo_go',
+                     'nova_api_database_name': 'noova_api',
+                     'api_interface': 'eth2',
+                     'neutron_server_port': '4422',
+                     'nova_api_database_password': 'noo',
+                     'neutron_keystone_password': 'yees',
+                     'nova_novncproxy_port': '3333',
+                     'ceph_nova_pool_name': 'fred',
+                     'metadata_secret': 'shshsh',
+                     'nova_api_database_address': '1.2.3.4',
+                     'enable_nova_fake': 'no',
+                     'rbd_secret_uuid': '1029384785',
+                     'openstack_auth_v2': 'stuff',
+                     'nova_database_user': 'nova_dba',
+                     'nova_spicehtml5proxy_port': '5503',
+                     'kolla_internal_address': '5.5.5.5',
+                     'nova_api_ec2_port': '3410',
+                     'keystone_admin_port': '2084',
+                     'nova_database_password': 'yikes',
+                     'keystone_public_port': '1111',
+                     'rabbitmq_password': 'jumpforjoy',
+                     'rabbitmq_port': '9090',
+                     'nova_api_database_user': 'sucker'}
+        for nam, val in variables.iteritems():
+            self.client.create('/kolla/did/variables/%s' % nam,
+                               getattr(self, nam, val),
+                               makepath=True)
+
+    @mock.patch('socket.gethostname')
+    @mock.patch.object(start, 'get_ip_address')
+    def test_nova_conf(self, m_get_ip, m_gethost):
+        m_get_ip.return_value = '1.2.3.4'
+        m_gethost.return_value = 'test-hostname'
+
+        # register local host group.
+        start.register_group_and_hostvars(self.client)
+
+        self._register_service('nova-compute', ['4.4.4.4'])
+        self._register_service('memcached',
+                               ['3.1.2.3', '3.1.2.4'])
+        self._register_service('rabbitmq',
+                               ['2.1.2.3', '2.1.2.4'])
+        self._register_service('glance-api',
+                               ['1.1.2.3', '1.1.2.4'])
+        self._define_variables()
+
+        out_file = self.create_tempfiles([('nova.conf', '')])[0]
+
+        afile = {'source': 'nova.conf.j2',
+                 'dest': out_file,
+                 'owner': getpass.getuser(),
+                 'perm': '0600'}
+        acmd = {'command': 'true', 'files': {'afile': afile}}
+        tconf = {'task': {}, 'commands': acmd}
+        self.client.create('/kolla/did/config/nova/nova-compute',
+                           json.dumps(tconf), makepath=True)
+        # write nova.conf.j2 to zookeeper
+        mod_dir = os.path.dirname(sys.modules[__name__].__file__)
+        proj_dir = os.path.abspath(os.path.join(mod_dir, '..', '..', '..'))
+        with open(os.path.join(proj_dir,
+                  'config/nova/templates/nova.conf.j2')) as nc:
+            template_contents = nc.read()
+            self.client.create(
+                '/kolla/did/config/nova/nova-compute/afile',
+                template_contents, makepath=True)
+
+        conf_base_node = '/kolla/did/config/nova/nova-compute'
+        start.generate_configs(self.client, acmd['files'], conf_base_node)
+        cmp_file = os.path.join(mod_dir, 'nova-%s.conf' % self.out)
+        with open(out_file) as of:
+            with open(cmp_file) as cf:
+                self.assertMultiLineEqual(cf.read(), of.read())

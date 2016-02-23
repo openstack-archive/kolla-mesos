@@ -195,13 +195,15 @@ def get_groups_and_hostvars(zk):
     path = os.path.join('kolla', DEPLOYMENT_ID, 'groups')
     for group in zk.get_children(path):
         groups[group] = []
+        group_unsorted = []
         g_path = os.path.join(path, group)
         for host_data in party.Party(zk, g_path):
             data = json.loads(host_data)
             host = data[ANSIBLE_PRIVATE]['ipv4']['address']
             LOG.info('get_groups_and_hostvars %s', host)
-            groups[group].append(host)
+            group_unsorted.append(host)
             hostvars[host] = data
+        groups[group] = sorted(group_unsorted)
 
     return groups, hostvars
 
@@ -255,13 +257,13 @@ def render_template(zk, templ, variables, var_names):
             try:
                 value, stat = zk.get(os.path.join('kolla', DEPLOYMENT_ID,
                                                   'variables', var))
+                if stat.dataLength == 0:
+                    value = ''
+                    LOG.warning('missing required variable value %s', var)
             except kz_exceptions.NoNodeError:
                 value = ''
                 LOG.error('missing required variable %s', var)
 
-            if stat.dataLength == 0:
-                value = ''
-                LOG.warning('missing required variable value %s', var)
             variables[var] = value.encode('utf-8')
     return jinja_render(templ, variables)
 
