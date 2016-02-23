@@ -8,7 +8,6 @@ container:
       value: "/run/netns:/run/netns:shared"
     - key: volume
       value: "neutron_metadata_socket:/var/lib/neutron/kolla/"
-parameters:
     - key: volume
       value: "kolla_logs_{{ deployment_id }}:/var/log/kolla"
 service:
@@ -43,3 +42,4 @@ service:
         perm: "0600"
   mem: {{ neutron_metadata_agent_mem }}
   cpus: {{ neutron_metadata_agent_cpus }}
+  constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "controller"]]

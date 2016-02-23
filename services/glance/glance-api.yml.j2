@@ -13,7 +13,7 @@ service:
     command: glance-api
   mem: {{ glance_api_mem }}
   cpus: {{ glance_api_cpus }}
-
+  constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "controller"]]
 commands:
   db_sync:
     run_once: True
