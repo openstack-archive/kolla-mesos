@@ -1,4 +1,5 @@
 name: infra/memcached/memcached
+openstack_roles: [controller]
 enabled: {{ enable_memcached | bool }}
 container:
   image: "{{ memcached_image }}:{{ memcached_tag }}"

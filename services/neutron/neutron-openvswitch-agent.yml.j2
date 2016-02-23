@@ -1,4 +1,5 @@
 name: openstack/neutron/neutron-openvswitch-agent
+openstack_roles: [controller, compute]
 enabled: {{ enable_neutron | bool and neutron_plugin_agent == 'openvswitch' }}
 container:
   image: "{{ neutron_openvswitch_agent_image }}:{{ neutron_openvswitch_agent_tag }}"

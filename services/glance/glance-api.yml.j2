@@ -1,4 +1,5 @@
 name: openstack/glance-api/glance-api
+openstack_roles: [controller]
 enabled: {{ enable_glance | bool }}
 container:
   image: "{{ glance_api_image }}:{{ glance_api_tag }}"

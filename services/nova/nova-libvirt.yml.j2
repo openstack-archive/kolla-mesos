@@ -1,4 +1,5 @@
 name: openstack/nova/nova-libvirt
+openstack_roles: [compute]
 enabled: {{ enable_nova | bool }}
 container:
   image: "{{ nova_libvirt_image }}:{{ nova_libvirt_tag }}"
