@@ -45,19 +45,28 @@ PUBLIC_INTERFACE = None
 ANSIBLE_PRIVATE = None
 ANSIBLE_PUBLIC = None
 DEPLOYMENT_ID = None
+DEPLOYMENT = None
 
 
 def set_globals():
     global ZK_HOSTS, GROUP, ROLE, PRIVATE_INTERFACE, PUBLIC_INTERFACE
-    global ANSIBLE_PRIVATE, ANSIBLE_PUBLIC, DEPLOYMENT_ID
+    global ANSIBLE_PRIVATE, ANSIBLE_PUBLIC, DEPLOYMENT_ID, DEPLOYMENT
     ZK_HOSTS = os.environ.get('KOLLA_ZK_HOSTS')
-    GROUP = os.environ.get('KOLLA_GROUP', 'undefined')
-    ROLE = os.environ.get('KOLLA_ROLE', 'undefined')
     PRIVATE_INTERFACE = os.environ.get('KOLLA_PRIVATE_INTERFACE', 'undefined')
     PUBLIC_INTERFACE = os.environ.get('KOLLA_PUBLIC_INTERFACE', 'undefined')
+    system_prefix = os.environ.get('KOLLA_SYSTEM_PREFIX', '/kolla')
+    app_id = os.environ['MARATHON_APP_ID']
+
+    # All these are derived
     ANSIBLE_PRIVATE = 'ansible_%s' % PRIVATE_INTERFACE
     ANSIBLE_PUBLIC = 'ansible_%s' % PUBLIC_INTERFACE
-    DEPLOYMENT_ID = os.environ.get('KOLLA_DEPLOYMENT_ID', 'undefined')
+
+    app_split = app_id.split('/')
+    DEPLOYMENT_ID = app_split[1]
+    DEPLOYMENT = os.path.join(system_prefix, DEPLOYMENT_ID)
+    # TODO(asalkeld) remove the concept of role and group
+    ROLE = app_split[-1]
+    GROUP = app_split[-2]
 
 
 logging.basicConfig()
@@ -192,7 +201,7 @@ def get_groups_and_hostvars(zk):
     # ansible templates.
     hostvars = {}
     groups = {}
-    path = os.path.join('kolla', DEPLOYMENT_ID, 'groups')
+    path = os.path.join(DEPLOYMENT, 'groups')
     for group in zk.get_children(path):
         groups[group] = []
         group_unsorted = []
@@ -255,8 +264,8 @@ def render_template(zk, templ, variables, var_names):
     for var in var_names:
         if var not in variables:
             try:
-                value, stat = zk.get(os.path.join('kolla', DEPLOYMENT_ID,
-                                                  'variables', var))
+                value, stat = zk.get(os.path.join(DEPLOYMENT,
+                                     'variables', var))
                 if stat.dataLength == 0:
                     value = ''
                     LOG.warning('missing required variable value %s', var)
@@ -310,9 +319,9 @@ class Command(object):
         self.command = cmd['command']
         self.run_once = cmd.get('run_once', False)
         self.daemon = cmd.get('daemon', False)
-        self.check_path = '/kolla/%s/status/%s/%s/.done' % (DEPLOYMENT_ID,
-                                                            ROLE, self.name)
-        self.requires = ['/kolla/%s/status/%s/.done' % (DEPLOYMENT_ID, req)
+        self.check_path = '%s/status/%s/%s/.done' % (DEPLOYMENT,
+                                                     ROLE, self.name)
+        self.requires = ['%s/status/%s/.done' % (DEPLOYMENT, req)
                          for req in cmd.get('dependencies', [])]
         self.init_path = os.path.dirname(self.check_path)
         self.proc = None
@@ -466,7 +475,7 @@ def main():
     set_globals()
     LOG.info('starting')
     with zk_connection(ZK_HOSTS) as zk:
-        base_node = os.path.join('/', 'kolla', DEPLOYMENT_ID, 'config')
+        base_node = os.path.join(DEPLOYMENT, 'config')
         conf_base_node = os.path.join(base_node, GROUP, ROLE)
         service_conf_raw, stat = zk.get(conf_base_node)
         service_conf = json.loads(service_conf_raw)
