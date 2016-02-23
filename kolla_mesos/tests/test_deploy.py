@@ -24,6 +24,7 @@ CONF.import_group('kolla', 'kolla_mesos.config.kolla')
 
 YAML_SERVICES_CONFIG = """
 name: openstack/cinder/cinder-api
+openstack_roles: [controller]
 container:
   image: "cinder-api:a.b.c"
 service:
@@ -94,10 +95,15 @@ class TestClient(base.BaseTestCase):
     @mock.patch.object(deploy.KollaWorker,
                        '_write_common_config_to_zookeeper')
     def test_write_to_zookeeper(self, mock_common, mock_utils, mock_yaml):
+        # TODO(nihilifer): Write unit test(s) which check the project vars
+        # as well.
         CONF.set_override('force', True)
 
         self.worker.get_jinja_vars = mock.MagicMock(
-            return_value={'image': 'test1', 'test2': ''})
+            return_value=[
+                {'image': 'test1', 'test2': '', 'keystone_something': ''},
+                {'image': 'test1', 'test2': ''}
+            ])
         mock_yaml.load = mock.MagicMock(
             return_value=yaml.load(YAML_SERVICES_CONFIG))
         mock_common.return_value = ''
@@ -150,8 +156,11 @@ class TestClient(base.BaseTestCase):
         mock_yaml.load = mock.MagicMock(return_value={})
         self.worker.setup_working_dir()
         self.worker.gen_deployment_id()
-        result = self.worker.get_jinja_vars()
+        all_vars, common_vars = self.worker.get_jinja_vars()
 
-        self.assertIsInstance(result, dict)
-        self.assertEqual(result['deployment_id'], 'test')
-        self.assertEqual(result['node_config_directory'], '')
+        self.assertIsInstance(all_vars, dict)
+        self.assertEqual(all_vars['deployment_id'], 'test')
+        self.assertEqual(all_vars['node_config_directory'], '')
+        self.assertIsInstance(common_vars, dict)
+        self.assertEqual(common_vars['deployment_id'], 'test')
+        self.assertEqual(common_vars['node_config_directory'], '')

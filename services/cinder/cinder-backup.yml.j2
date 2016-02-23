@@ -1,4 +1,5 @@
 name: openstack/cinder/cinder-backup
+openstack_roles: [storage]
 enabled: {{ enable_cinder | bool }}
 container:
   image: "{{ cinder_backup_image }}:{{ cinder_backup_tag }}"

@@ -1,4 +1,5 @@
 name: openstack/neutron/neutron-l3-agent
+openstack_roles: [controller]
 enabled: {{ enable_neutron | bool }}
 container:
   image: "{{ neutron_l3_agent_image }}:{{ neutron_l3_agent_tag }}"
