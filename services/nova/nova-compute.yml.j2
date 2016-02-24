@@ -21,8 +21,8 @@ service:
   taskRateLimit: 600.0
   cpus: {{ nova_compute_cpus }}
   daemon:
-    dependencies: [nova-conductor/db_sync, nova_ansible_tasks/create_user,
-                   keystone_ansible_tasks/running]
+    dependencies: [nova-api/db_sync, nova_ansible_tasks/create_user,
+                   keystone_ansible_tasks/running, nova-compute/bootstrap]
     command: nova-compute --config-file /etc/nova/nova.conf --config-file /etc/nova/nova-override.conf
     files:
       nova-override.conf.j2:
@@ -45,3 +45,7 @@ commands:
     command: "echo sudo sysctl net.bridge.bridge-nf-call-iptables=1"
   disable-netfilter-6:
     command: "echo sudo sysctl net.bridge.bridge-nf-call-ip6tables=1"
+  bootstrap:
+    command: kolla_extend_start
+    env:
+      KOLLA_BOOTSTRAP:
