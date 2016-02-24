@@ -126,10 +126,19 @@ openstack_region_name: "RegionOne"
 # Valid options are [ novnc, spice ]
 nova_console: "novnc"
 
+####################
+# Mesos-dns hosts
+####################
+keystrone_auth_host: "keystone-api-keystone-openstack-{{ deployment_id }}.{{ marathon_framework }}.{{ mesos_dns_domain }}" 
+neutron_server_host: "neutron-server-neutron-openstack-{{ deployment_id }}.{{ marathon_framework }}.{{ mesos_dns_domain }}"
+glance_api_host: "glance-api-glance-api-openstack-{{ deployment_id }}.{{ marathon_framework }}.{{ mesos_dns_domain }}"
+cinder_api_host: "cinder-api-cinder-openstack-{{ deployment_id }}.{{ marathon_framework }}.{{ mesos_dns_domain }}"
+nova_api_host: "http://nova-api-nova-openstack-{{ deployment_id }}.{{ marathon_framework }}.{{ mesos_dns_domain }}"
+
 # Openstack authentication string. You should only need to override these if you
 # are changing the admin tenant/project or user.
 openstack_auth:
-    auth_url: "http://{{ kolla_internal_address }}:{{ keystone_admin_port }}"
+    auth_url: "http://{{ keystone_auth_host }}:{{ keystone_admin_port }}"
     username: "admin"
     password: "{{ keystone_admin_password }}"
     project_name: "admin"
@@ -137,7 +146,7 @@ openstack_auth:
 # This shouldn't be needed for long. It is only temporary until we get the
 # ansible modules sorted out
 openstack_auth_v2:
-    auth_url: "http://{{ kolla_internal_address }}:{{ keystone_admin_port }}/v2.0"
+    auth_url: "http://{{ keystone_auth_host }}:{{ keystone_admin_port }}/v2.0"
     username: "admin"
     password: "{{ keystone_admin_password }}"
     project_name: "admin"
@@ -174,7 +183,6 @@ rabbitmq_user: "openstack"
 # HAProxy options
 ####################
 haproxy_user: "openstack"
-
 
 #################################
 # Cinder - Block Storage options
