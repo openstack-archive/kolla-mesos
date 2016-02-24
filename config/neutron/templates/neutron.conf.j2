@@ -15,7 +15,7 @@ core_plugin = ml2
 service_plugins = router
 
 [nova]
-auth_url = http://{{ kolla_internal_address }}:{{ keystone_admin_port }}
+auth_url = http://keystone-api-keystone-openstack-{{ deployment_id }}.{{ marathon_framework }}.{{ mesos_dns_domain }}:{{ keystone_admin_port }}
 auth_plugin = password
 project_domain_id = default
 user_domain_id = default
@@ -40,8 +40,8 @@ root_helper = sudo neutron-rootwrap /etc/neutron/rootwrap.conf
 connection = mysql+pymysql://{{ neutron_database_user }}:{{ neutron_database_password }}@{{ neutron_database_address }}/{{ neutron_database_name }}
 
 [keystone_authtoken]
-auth_uri = http://{{ kolla_internal_address }}:{{ keystone_public_port }}
-auth_url = http://{{ kolla_internal_address }}:{{ keystone_admin_port }}
+auth_uri = http://keystone-api-keystone-openstack-{{ deployment_id }}.{{ marathon_framework }}.{{ mesos_dns_domain }}:{{ keystone_public_port }}
+auth_url = http://keystone-api-keystone-openstack-{{ deployment_id }}.{{ marathon_framework }}.{{ mesos_dns_domain }}:{{ keystone_admin_port }}
 auth_plugin = password
 project_domain_id = default
 user_domain_id = default

@@ -58,7 +58,7 @@ novncproxy_port = {{ nova_novncproxy_port }}
 vncserver_listen = {{ get_ip_address(api_interface) }}
 vncserver_proxyclient_address = {{ get_ip_address(api_interface) }}
 {% if service_name == "openstack/nova/nova-compute" %}
-novncproxy_base_url = http://{{ kolla_internal_address }}:{{ nova_novncproxy_port }}/vnc_auto.html
+novncproxy_base_url = http://nova-novncproxy-nova-openstack-{{ deployment_id }}.{{ marathon_framework }}.{{ mesos_dns_domain }}:{{ nova_novncproxy_port }}/vnc_auto.html
 {% endif %}
 {% elif nova_console == 'spice' %}
 [vnc]
@@ -68,7 +68,7 @@ enabled = false
 server_listen = {{ get_ip_address(api_interface) }}
 server_proxyclient_address = {{ get_ip_address(api_interface) }}
 {% if service_name == "openstack/nova/nova-compute" %}
-html5proxy_base_url = http://{{ kolla_internal_address }}:{{ nova_spicehtml5proxy_port }}/spice_auto.html
+html5proxy_base_url = http://nova-spicehtml5proxy-nova-openstack-{{ deployment_id }}.{{ marathon_framework }}.{{ mesos_dns_domain }}:{{ nova_spicehtml5proxy_port }}/spice_auto.html
 {% endif %}
 html5proxy_host = {{ get_ip_address(api_interface) }}
 html5proxy_port = {{ nova_spicehtml5proxy_port }}
@@ -94,25 +94,19 @@ rabbit_hosts = {{ list_ips_by_service('infra/rabbitmq/rabbitmq', rabbitmq_port) 
 lock_path = /var/lib/nova/tmp
 
 [glance]
-{% if enable_ceph | bool %}
-host = {{ kolla_internal_address }}
-port = {{ glance_api_port }}
-{% else %}
-api_servers = {{ list_ips_by_service('openstack/glance/glance-api', glance_api_port) }}
-
+api_servers = glance-api-glance-api-openstack-{{ deployment_id }}.{{ marathon_framework }}.{{ mesos_dns_domain }}:{{ glance_api_port }}
 num_retries = {{ list_ips_by_service('openstack/glance/glance-api').split(',') | length }}
-{% endif %}
 
 [cinder]
 catalog_info = volume:cinder:internalURL
 
 [neutron]
-url = http://{{ kolla_internal_address }}:{{ neutron_server_port }}
+url = http://neutron-server-neutron-openstack-{{ deployment_id }}.{{ marathon_framework }}.{{ mesos_dns_domain }}:{{ neutron_server_port }}
 auth_strategy = keystone
 metadata_proxy_shared_secret = {{ metadata_secret }}
 service_metadata_proxy = true
 
-auth_url = http://{{ kolla_internal_address }}:{{ keystone_admin_port }}
+auth_url = http://keystone-api-keystone-openstack-{{ deployment_id }}.{{ marathon_framework }}.{{ mesos_dns_domain }}:{{ keystone_admin_port }}
 auth_plugin = password
 project_domain_name = default
 user_domain_id = default
@@ -127,8 +121,8 @@ connection = mysql+pymysql://{{ nova_database_user }}:{{ nova_database_password 
 connection = mysql+pymysql://{{ nova_api_database_user }}:{{ nova_api_database_password }}@{{ nova_api_database_address }}/{{ nova_api_database_name }}
 
 [keystone_authtoken]
-auth_uri = http://{{ kolla_internal_address }}:{{ keystone_public_port }}
-auth_url = http://{{ kolla_internal_address }}:{{ keystone_admin_port }}
+auth_uri = http://keystone-api-keystone-openstack-{{ deployment_id }}.{{ marathon_framework }}.{{ mesos_dns_domain }}:{{ keystone_public_port }}
+auth_url = http://keystone-api-keystone-openstack-{{ deployment_id }}.{{ marathon_framework }}.{{ mesos_dns_domain }}:{{ keystone_admin_port }}
 auth_plugin = password
 project_domain_id = default
 user_domain_id = default
@@ -151,3 +145,4 @@ hw_disk_discard = unmap
 
 [upgrade_levels]
 compute = auto
+

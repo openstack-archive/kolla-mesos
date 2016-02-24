@@ -602,7 +602,9 @@ class RenderNovaConfTest(base.BaseTestCase):
                      'keystone_public_port': '1111',
                      'rabbitmq_password': 'jumpforjoy',
                      'rabbitmq_port': '9090',
-                     'nova_api_database_user': 'sucker'}
+                     'nova_api_database_user': 'sucker',
+                     'marathon_framework':'mfrm',
+                     'mesos_dns_domain':'mdom'}
         for nam, val in variables.iteritems():
             self.client.create('/kolla/did/variables/%s' % nam,
                                getattr(self, nam, val),
