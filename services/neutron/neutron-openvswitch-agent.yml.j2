@@ -15,7 +15,7 @@ container:
       mode: RO
 service:
   daemon:
-    dependencies: [neutron_ansible_tasks/create_user, rabbitmq/daemon, openvswitch-tasks/setup_ovs_bridge]
+    dependencies: [neutron-server/db_sync, neutron_ansible_tasks/create_user, rabbitmq/daemon, openvswitch-tasks/setup_ovs_bridge]
     command: neutron-openvswitch-agent --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugins/ml2/ml2_conf.ini
     files:
       neutron.conf.j2:
@@ -33,3 +33,6 @@ service:
   mem: {{ neutron_openvswitch_agent_mem }}
   cpus: {{ neutron_openvswitch_agent_cpus }}
   constraints: [["hostname", "UNIQUE"], ["openstack_role", "LIKE", "(controller|compute)"]]
+commands:
+  extend_start:
+    command: kolla_extend_start

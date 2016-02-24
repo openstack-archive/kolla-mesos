@@ -16,6 +16,8 @@ service:
   cpus: {{ cinder_api_cpus }}
   constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "controller"]]
 commands:
+  extend_start:
+    command: kolla_extend_start
   db_sync:
     env:
       KOLLA_BOOTSTRAP:
