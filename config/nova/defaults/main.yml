@@ -79,7 +79,8 @@ nova_keystone_user: "nova"
 
 openstack_nova_auth: "{'auth_url':'{{ openstack_auth_v2.auth_url }}','username':'{{ openstack_auth_v2.username }}','password':'{{ openstack_auth_v2.password }}','project_name':'{{ openstack_auth_v2.project_name }}'}"
 
-
+nova_novncproxy_host: "nova-novncproxy-nova-openstack-{{ deployment_id }}.{{ marathon_framework }}.{{ mesos_dns_domain }}"
+nova_spicehtml5proxy_host: "nova-spicehtml5proxy-nova-openstack-{{ deployment_id }}.{{ marathon_framework }}.{{ mesos_dns_domain }}"
 ####################
 # Resources
 ####################
