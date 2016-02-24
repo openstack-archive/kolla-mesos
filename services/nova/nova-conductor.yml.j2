@@ -23,3 +23,7 @@ service:
         perm: "0600"
   mem: {{ nova_conductor_mem }}
   cpus: {{ nova_conductor_cpus }}
+
+commands:
+  extend_start:
+    command: kolla_extend_start

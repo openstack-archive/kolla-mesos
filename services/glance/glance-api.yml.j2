@@ -12,6 +12,8 @@ service:
   cpus: {{ glance_api_cpus }}
 
 commands:
+  extend_start:
+    command: kolla_extend_start
   db_sync:
     run_once: True
     dependencies: [glance_ansible_tasks/create_database,

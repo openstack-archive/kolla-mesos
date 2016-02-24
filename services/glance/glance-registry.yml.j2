@@ -19,3 +19,6 @@ service:
         perm: "0600"
   mem: {{ glance_registry_mem }}
   cpus: {{ glance_registry_cpus }}
+commands:
+  extend_start:
+    command: kolla_extend_start

@@ -20,6 +20,8 @@ service:
   cpus: {{ keystone_api_cpus }}
 
 commands:
+  extend_start:
+    command: kolla_extend_start
   db_sync:
     env:
       KOLLA_BOOTSTRAP:

@@ -12,7 +12,7 @@ container:
       mode: RO
 service:
   daemon:
-    dependencies: [neutron_ansible_tasks/create_user, rabbitmq/daemon]
+    dependencies: [neutron-server/db_sync, neutron_ansible_tasks/create_user, rabbitmq/daemon]
     command: neutron-linuxbridge-agent --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugins/ml2/ml2_conf.ini
     files:
       neutron.conf.j2:
@@ -29,3 +29,6 @@ service:
         perm: "0600"
   mem: {{ neutron_linuxbridge_agent_mem }}
   cpus: {{ neutron_linuxbridge_agent_cpus }}
+commands:
+  extend_start:
+    command: kolla_extend_start

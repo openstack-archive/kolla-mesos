@@ -12,7 +12,7 @@ container:
       value: "neutron_metadata_socket:/var/lib/neutron/kolla/"
 service:
   daemon:
-    dependencies: [neutron_ansible_tasks/create_user, rabbitmq/daemon]
+    dependencies: [neutron-server/db_sync, neutron_ansible_tasks/create_user, rabbitmq/daemon]
     command: neutron-l3-agent --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/l3_agent.ini --config-file /etc/neutron/fwaas_driver.ini --config-file /etc/neutron/plugins/ml2/ml2_conf.ini
     files:
       neutron.conf.j2:
@@ -47,3 +47,6 @@ service:
         perm: "0600"
   mem: {{ neutron_l3_agent_mem }}
   cpus: {{ neutron_l3_agent_cpus }}
+commands:
+  extend_start:
+    command: kolla_extend_start

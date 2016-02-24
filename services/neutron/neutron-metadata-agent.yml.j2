@@ -10,7 +10,7 @@ container:
       value: "neutron_metadata_socket:/var/lib/neutron/kolla/"
 service:
   daemon:
-    dependencies: [neutron_ansible_tasks/create_user, rabbitmq/daemon]
+    dependencies: [neutron-server/db_sync, neutron_ansible_tasks/create_user, rabbitmq/daemon]
     command: neutron-metadata-agent --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/metadata_agent.ini
     files:
       neutron.conf.j2:
@@ -40,3 +40,6 @@ service:
         perm: "0600"
   mem: {{ neutron_metadata_agent_mem }}
   cpus: {{ neutron_metadata_agent_cpus }}
+commands:
+  extend_start:
+    command: bash kolla_extend_start

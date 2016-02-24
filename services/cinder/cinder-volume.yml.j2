@@ -22,3 +22,6 @@ service:
         perm: "0600"
   mem: {{ cinder_volume_mem }}
   cpus: {{ cinder_volume_cpus }}
+commands:
+  extend_start:
+    command: kolla_extend_start
