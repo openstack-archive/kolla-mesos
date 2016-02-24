@@ -34,7 +34,8 @@ class TestWriteOpenRC(base.BaseTestCase):
         variables = {'keystone_admin_password': 'foofee',
                      'kolla_internal_address': 'here.not',
                      'keystone_admin_port': '4511',
-                     'openstack_region_name': 'there'}
+                     'openstack_region_name': 'there',
+                     'keystone_auth_host': 'not.here'}
 
         configuration.write_variables_zookeeper(self.client, variables)
         mock_open.return_value = mock.MagicMock(spec=file)
