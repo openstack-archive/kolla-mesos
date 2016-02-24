@@ -7,14 +7,14 @@ bind_host = {{ get_ip_address(api_interface) }}
 bind_port = {{ glance_api_port }}
 
 
-registry_host = {{ kolla_internal_address }}
+registry_host = glance-registry-glance-registry-openstack-{{ deployment_id }}.{{ marathon_framework }}.{{ mesos_dns_domain }}
 
 [database]
 connection = mysql+pymysql://{{ glance_database_user }}:{{ glance_database_password }}@{{ glance_database_address }}/{{ glance_database_name }}
 
 [keystone_authtoken]
-auth_uri = http://{{ kolla_internal_address }}:{{ keystone_public_port }}
-auth_url = http://{{ kolla_internal_address }}:{{ keystone_admin_port }}
+auth_uri = http://keystone-api-keystone-openstack-{{ deployment_id }}.{{ marathon_framework }}.{{ mesos_dns_domain }}:{{ keystone_public_port }}
+auth_url = http://keystone-api-keystone-openstack-{{ deployment_id }}.{{ marathon_framework }}.{{ mesos_dns_domain }}:{{ keystone_admin_port }}
 auth_type = password
 project_domain_id = default
 user_domain_id = default
