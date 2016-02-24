@@ -1,4 +1,3 @@
-{% set apache_cmd = 'apache2' if kolla_base_distro in ['ubuntu', 'debian'] else 'httpd' %}
 {% set apache_dir = 'apache2/conf-enabled' if kolla_base_distro in ['ubuntu', 'debian'] else 'httpd/conf.d' %}
 {% set apache_conf = 'horizon.conf' if kolla_base_distro in ['ubuntu', 'debian'] else '000-default.conf' %}
 name: openstack/horizon/horizon
@@ -7,12 +6,26 @@ container:
   image: "{{ horizon_image }}:{{ horizon_tag }}"
 service:
   daemon:
-    command: /usr/sbin/{{ apache_cmd }} -DFOREGROUND
+    command: /usr/local/bin/kolla_apache_wrapper.sh
     dependencies:
       - horizon/bootstrap
     {% if enable_memcached | bool %}
       - memcached/daemon
     {% endif %}
+    files:
+      apache_wrapper.sh:
+        source: config/common/apache_wrapper.sh.j2
+        dest: /usr/local/bin/kolla_apache_wrapper.sh
+        owner: horizon
+        perm: "0755"
+  mem: {{ horizon_mem }}
+  cpus: {{ horizon_cpus }}
+
+commands:
+  bootstrap:
+    command: kolla_extend_start
+    env:
+      KOLLA_BOOTSTRAP:
     files:
       000-default.conf:
         source: config/horizon/templates/horizon.conf.j2
@@ -24,17 +37,3 @@ service:
         dest: /etc/openstack-dashboard/local_settings
         owner: horizon
         perm: "0644"
-  mem: {{ horizon_mem }}
-  cpus: {{ horizon_cpus }}
-
-commands:
-  bootstrap:
-    command: bash kolla_mesos_extend_start
-    env:
-      KOLLA_BOOTSTRAP:
-    files:
-      extend_start.sh.j2:
-        source: config/horizon/templates/extend_start.sh.j2
-        dest: /usr/local/bin/kolla_mesos_extend_start
-        owner: horizon
-        perm: "0755"
