@@ -619,7 +619,18 @@ class RenderNovaConfTest(base.BaseTestCase):
                      'keystone_public_port': '1111',
                      'rabbitmq_password': 'jumpforjoy',
                      'rabbitmq_port': '9090',
-                     'nova_api_database_user': 'sucker'}
+                     'nova_api_database_user': 'sucker',
+                     'marathon_framework': 'mfrm',
+                     'mesos_dns_domain': 'mdom',
+                     'keystone_auth_host':
+                     'keystone-api-keystone-openstack-did.mfrm.mdom',
+                     'neutron_server_host':
+                     'neutron-server-neutron-openstack-did.mfrm.mdom',
+                     'glance_api_host':
+                     'glance-api-glance-api-openstack-did.mfrm.mdom',
+                     'cinder_api_host':
+                     'cinder-api-cinder-openstack-did.mfrm.mdom',
+                     'nova_api_host': 'nova-api-nova-openstack-did.mfrm.mdom'}
         for nam, val in variables.items():
             self.client.create('/kolla/did/variables/%s' % nam,
                                getattr(self, nam, val),
