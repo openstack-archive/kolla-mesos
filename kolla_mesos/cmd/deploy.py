@@ -77,11 +77,8 @@ class File(object):
         return merged_f.getvalue()
 
     def write_to_zookeeper(self, zk, base_node):
-        _, proj, service = self._service_name.split('/')
-        # for the moment keep the config/files in the same location
-        # TODO(asalkeld) move to a child of the command.
-        dest_node = os.path.join(base_node, 'config', proj,
-                                 service, self._name)
+        dest_node = os.path.join(base_node, self._service_name,
+                                 'files', self._name)
         zk.ensure_path(dest_node)
         if isinstance(self._conf['source'], list):
             content = self.merge_ini_files(self._conf['source'])
@@ -128,9 +125,7 @@ class Runner(object):
             cmd = Command(cmd_conf, cmd_name, self._conf['name'])
             cmd.write_to_zookeeper(zk, base_node)
 
-        _, proj, service = self._conf['name'].split('/')
-        dest_node = os.path.join(base_node, 'config', proj,
-                                 service)
+        dest_node = os.path.join(base_node, self._conf['name'])
         zk.ensure_path(dest_node)
         try:
             zk.set(dest_node, json.dumps(self._conf))
