@@ -26,4 +26,13 @@ service:
         perm: "0600"
   mem: {{ nova_conductor_mem }}
   cpus: {{ nova_conductor_cpus }}
+  instances: {{ controller_nodes }}
   constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "controller"]]
+commands:
+  db_sync:
+    run_once: True
+    dependencies: [nova_ansible_tasks/create_database,
+                   nova_ansible_tasks/database_user_create]
+    command: kolla_extend_start
+    env:
+      KOLLA_BOOTSTRAP:

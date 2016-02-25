@@ -21,6 +21,7 @@ service:
         perm: "0600"
   mem: {{ keystone_api_mem }}
   cpus: {{ keystone_api_cpus }}
+  instances: {{ controller_nodes }}
   constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "controller"]]
 commands:
   db_sync:
