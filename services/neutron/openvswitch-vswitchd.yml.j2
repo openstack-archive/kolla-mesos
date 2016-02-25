@@ -19,4 +19,5 @@ service:
     command: /usr/sbin/ovs-vswitchd unix:/run/openvswitch/db.sock --mlockall
   mem: {{ openvswitch_vswitchd_mem }}
   cpus: {{ openvswitch_vswitchd_cpus }}
+  instances: {{ compute_nodes|int + controller_nodes|int }}
   constraints: [["hostname", "UNIQUE"], ["openstack_role", "LIKE", "(controller|compute)"]]
