@@ -32,6 +32,8 @@ service:
         dest: /etc/libvirt/libvirtd.conf
         owner: root
         perm: "0644"
+    env:
+      KOLLA_USE_HOSTNAME_IN_ZK_PATHS:
   instances: {{ compute_nodes }}
   constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "compute"]]
 commands:
