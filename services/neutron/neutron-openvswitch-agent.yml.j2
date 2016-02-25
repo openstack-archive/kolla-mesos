@@ -32,7 +32,9 @@ service:
         perm: "0600"
   mem: {{ neutron_openvswitch_agent_mem }}
   cpus: {{ neutron_openvswitch_agent_cpus }}
+  instances: {{ controller_nodes|int + compute_nodes|int }}
   constraints: [["hostname", "UNIQUE"], ["openstack_role", "LIKE", "(controller|compute)"]]
 commands:
   extend_start:
     command: kolla_extend_start
+  constraints: [["hostname", "UNIQUE"], ["openstack_role", "LIKE", "(controller|compute)"]]
