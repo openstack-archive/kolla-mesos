@@ -8,7 +8,8 @@ task:
 commands:
   create_database:
     run_once: True
-    dependencies: [mariadb/daemon]
+    dependencies:
+     - path: mariadb/daemon
     command: {{ ansible_task_cmd }}
       -m mysql_db
       -a "login_host='{{ database_address }}'
@@ -18,7 +19,8 @@ commands:
           name='{{ glance_database_name }}'"
   database_user_create:
     run_once: True
-    dependencies: [glance_ansible_tasks/create_database]
+    dependencies:
+     - path: glance_ansible_tasks/create_database
     command: {{ ansible_task_cmd }}
       -m mysql_user
       -a "login_host='{{ database_address }}'
@@ -32,7 +34,9 @@ commands:
           append_privs='yes'"
   register_endpoint:
     run_once: True
-    dependencies: [glance-api/db_sync, keystone_ansible_tasks/running]
+    dependencies:
+     - path: glance-api/db_sync
+     - path: keystone_ansible_tasks/running
     command: {{ ansible_task_cmd }}
       -m kolla_keystone_service
       -a "service_name=glance
@@ -47,7 +51,9 @@ commands:
       -e "{'openstack_glance_auth':{{ openstack_glance_auth }}}"
   create_user:
     run_once: True
-    dependencies: [glance-api/db_sync, keystone_ansible_tasks/running]
+    dependencies:
+     - path: glance-api/db_sync
+     - path: keystone_ansible_tasks/running
     command: {{ ansible_task_cmd }}
       -m kolla_keystone_user
       -a "project=service
@@ -59,8 +65,10 @@ commands:
       -e "{'openstack_glance_auth':{{ openstack_glance_auth }}}"
   running:
     run_once: True
-    dependencies: [glance-api/db_sync, glance_ansible_tasks/register_endpoint,
-                   keystone_ansible_tasks/running]
+    dependencies:
+     - path: glance-api/db_sync
+     - path: glance_ansible_tasks/register_endpoint
+     - path: keystone_ansible_tasks/running
     retries: 10
     delay: 5
     command: {{ ansible_task_cmd }}

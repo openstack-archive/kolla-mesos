@@ -7,7 +7,10 @@ container:
       value: "kolla_logs_{{ deployment_id }}:/var/log/kolla"
 service:
   daemon:
-    dependencies: [neutron-server/db_sync, neutron_ansible_tasks/create_user, rabbitmq/daemon]
+    dependencies:
+     - path: neutron-server/db_sync
+     - path: neutron_ansible_tasks/create_user
+     - path: rabbitmq/daemon
     command: neutron-server --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugins/ml2/ml2_conf.ini
     files:
       neutron.conf.j2:
@@ -37,8 +40,9 @@ service:
 commands:
   db_sync:
     run_once: True
-    dependencies: [neutron_ansible_tasks/create_database,
-                   neutron_ansible_tasks/database_user_create]
+    dependencies:
+     - path: neutron_ansible_tasks/create_database
+     - path: neutron_ansible_tasks/database_user_create
     command: bash kolla_extend_start
     env:
       KOLLA_BOOTSTRAP:

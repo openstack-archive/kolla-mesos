@@ -15,7 +15,9 @@ container:
       mode: RO
 service:
   daemon:
-    dependencies: [openvswitch-vswitchd/bootstrap, openvswitch-vswitchd/setup_ovs_bridge]
+    dependencies:
+     - path: openvswitch-vswitchd/bootstrap
+     - path: openvswitch-vswitchd/setup_ovs_bridge
     command: /usr/sbin/ovs-vswitchd unix:/run/openvswitch/db.sock --mlockall
   mem: {{ openvswitch_vswitchd_mem }}
   cpus: {{ openvswitch_vswitchd_cpus }}

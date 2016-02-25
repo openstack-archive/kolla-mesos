@@ -67,8 +67,8 @@ class CommandTest(base.BaseTestCase):
         self.assertEqual(False, cmd.run_once)
         self.assertEqual(False, cmd.daemon)
         self.assertEqual([], cmd.requires)
-        self.assertEqual('/kolla/t1/status/testr/a',
-                         cmd.check_path)
+        self.assertEqual(['/kolla/t1/status/testr/a'],
+                         cmd.check_paths)
 
     def test_requirements_fulfilled_no(self):
         cmd1 = start.Command('a', {'command': 'true',
@@ -617,15 +617,31 @@ class GlobalsTest(base.BaseTestCase):
                    dep_id='new_id', dep='/kolla/new_id', role='tr',
                    sn='openstack/tg/tr'))]
 
-    def test_globals(self):
+    def setUp(self):
+        super(GlobalsTest, self).setUp()
         self.useFixture(fixtures.EnvironmentVariable(
                         'MARATHON_APP_ID',
                         newvalue=self.app_id))
         self.useFixture(fixtures.EnvironmentVariable(
                         'KOLLA_SYSTEM_PREFIX',
                         newvalue=self.prefix))
+
+    def test_globals(self):
         start.set_globals()
         self.assertEqual(self.dep_id, start.DEPLOYMENT_ID)
         self.assertEqual(self.dep, start.DEPLOYMENT)
         self.assertEqual(self.role, start.ROLE)
         self.assertEqual(self.sn, start.SERVICE_NAME)
+
+    @mock.patch('socket.gethostname')
+    def test_check_path_pattern_with_hostname(self, m_gethost):
+        m_gethost.return_value = 'test-hostname'
+        self.useFixture(fixtures.EnvironmentVariable(
+                        'KOLLA_USE_HOSTNAME_IN_ZK_PATHS',
+                        ''))
+        start.set_globals()
+        self.assertEqual('', start.HOSTNAME_IN_ZK_PATHS)
+
+    def test_check_path_pattern_without_hostname(self):
+        start.set_globals()
+        self.assertIsNone(start.HOSTNAME_IN_ZK_PATHS)
