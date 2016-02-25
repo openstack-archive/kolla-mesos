@@ -66,29 +66,29 @@ openstack_neutron_auth: "{'auth_url':'{{ openstack_auth_v2.auth_url }}','usernam
 # Resources
 ####################
 # neutron-dhcp-agent
-neutron_dhcp_agent_mem: "128"
-neutron_dhcp_agent_cpus: "0.2"
+neutron_dhcp_agent_mem: "{{ neutron_dhcp_agent_mem|default('128') }}"
+neutron_dhcp_agent_cpus: "{{ neutron_dhcp_agent_cpus|default('0.2') }}"
 # neutron-init
-neutron_init_mem: "512"
-neutron_init_cpus: "0.3"
+neutron_init_mem: "{{ neutron_init_mem|default('512') }}"
+neutron_init_cpus: "{{ neutron_init_cpus|default('0.3') }}"
 # neutron-l3-agent
-neutron_l3_agent_mem: "128"
-neutron_l3_agent_cpus: "0.2"
+neutron_l3_agent_mem: "{{ neutron_l3_agent_mem|default('128') }}"
+neutron_l3_agent_cpus: "{{ neutron_l3_agent_cpus|default('0.2') }}"
 # neutron-linuxbridge-agent
-neutron_linuxbridge_agent_mem: "128"
-neutron_linuxbridge_agent_cpus: "0.2"
+neutron_linuxbridge_agent_mem: "{{ neutron_linuxbridge_agent_mem|default('128') }}"
+neutron_linuxbridge_agent_cpus: "{{ neutron_linuxbridfe_agent_cpus|default('0.2') }}"
 # neutron-metadata-agent
-neutron_metadata_agent_mem: "128"
-neutron_metadata_agent_cpus: "0.2"
+neutron_metadata_agent_mem: "{{ neutron_metadata_agent_mem|default('128') }}"
+neutron_metadata_agent_cpus: "{{ neutron_metadata_agent_cpus|default('0.2') }}"
 # neutron-openvswitch-agent
-neutron_openvswitch_agent_mem: "128"
-neutron_openvswitch_agent_cpus: "0.2"
+neutron_openvswitch_agent_mem: "{{ neutron_openvswitch_agent_mem|default('128') }}"
+neutron_openvswitch_agent_cpus: "{{ neutron_openvswitch_agent_cpus|default('0.2') }}"
 # neutron-server
-neutron_server_mem: "128"
-neutron_server_cpus: "0.3"
+neutron_server_mem: "{{ neutron_server_mem|default('128') }}"
+neutron_server_cpus: "{{ neutron_server_cpus|default('0.3') }}"
 # openvswitch-db
-openvswitch_db_mem: "128"
-openvswitch_db_cpus: "0.3"
+openvswitch_db_mem: "{{ openvswitch_db_mem|default('128') }}"
+openvswitch_db_cpus: "{{ openvswitch_db_cpus|default('0.3') }}"
 # openvswitch-vswitchd
-openvswitch_vswitchd_mem: "128"
-openvswitch_vswitchd_cpus: "0.3"
+openvswitch_vswitchd_mem: "{{ openvswitch_vswitchd_mem|default('128') }}"
+openvswitch_vswitchd_cpus: "{{ openvswitch_vswitchd_cpus|default('0.3') }}"
