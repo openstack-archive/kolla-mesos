@@ -23,6 +23,7 @@ service:
         perm: "0755"
   mem: {{ horizon_mem }}
   cpus: {{ horizon_cpus }}
+  instances: {{ controller_nodes }}
   constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "controller"]]
 commands:
   bootstrap:
