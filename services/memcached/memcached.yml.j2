@@ -13,4 +13,6 @@ service:
   mem: {{ memcached_mem }}
   cpus: {{ memcached_cpus }}
   instances: {{ controller_nodes }}
+  {% if multinode %}
   constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "controller"]]
+  {% endif %}
