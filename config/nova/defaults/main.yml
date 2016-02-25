@@ -84,29 +84,29 @@ openstack_nova_auth: "{'auth_url':'{{ openstack_auth_v2.auth_url }}','username':
 # Resources
 ####################
 # nova-api
-nova_api_mem: "128"
-nova_api_cpus: "0.3"
+nova_api_mem: "{{ nova_api_mem|default('128') }}"
+nova_api_cpus: "{{ nova_api_cpus|default('0.3') }}"
 # nova-compute
-nova_compute_mem: "1024"
-nova_compute_cpus: "2"
+nova_compute_mem: "{{ nova_compute_mem|default('1024') }}"
+nova_compute_cpus: "{{ nova_compute_cpus|default('2') }}"
 # nova-conductor
-nova_conductor_mem: "128"
-nova_conductor_cpus: "0.3"
+nova_conductor_mem: "{{ nova_conductor_mem|default('128') }}"
+nova_conductor_cpus: "{{ nova_conductor_cpus|default('0.3') }}"
 # nova-consoleauth
-nova_consoleauth_mem: "128"
-nova_consoleauth_cpus: "0.3"
+nova_consoleauth_mem: "{{ nova_consoleauth_mem|default('128') }}"
+nova_consoleauth_cpus: "{{ nova_consoleauth_cpus|default('0.3') }}"
 # nova-init
-nova_init_mem: "512"
-nova_init_cpus: "0.3"
+nova_init_mem: "{{ nova_init_mem|default('512') }}"
+nova_init_cpus: "{{ nova_init_cpus|default('0.3') }}"
 # nova-libvirt
-nova_libvirt_mem: "1024"
-nova_libvirt_cpus: "2"
+nova_libvirt_mem: "{{ nova_libvirt_mem|default('1024') }}"
+nova_libvirt_cpus: "{{ nova_libvirt_cpus|default('2') }}"
 # nova-novncproxy
-nova_novncproxy_mem: "128"
-nova_novncproxy_cpus: "0.3"
+nova_novncproxy_mem: "{{ nova_novncproxy_mem|default('128') }}"
+nova_novncproxy_cpus: "{{ nova_novncproxy_cpus|default('0.3') }}"
 # nova-scheduler
-nova_scheduler_mem: "128"
-nova_scheduler_cpus: "0.3"
+nova_scheduler_mem: "{{ nova_scheduler_mem|default('128') }}"
+nova_scheduler_cpus: "{{ nova_scheduler_cpus|default('0.3') }}"
 # noca-spicehtml3proxy
-nova_spicehtml3proxy_mem: "128"
-nova_spicehtml3proxy_cpus: "0.3"
+nova_spicehtml3proxy_mem: "{{ nova_spicehtml3proxy_mem|default('128') }}"
+nova_spicehtml3proxy_cpus: "{{ nova_spicehtml3proxy_cpus|default('0.3') }}"
