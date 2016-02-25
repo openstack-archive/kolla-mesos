@@ -32,8 +32,9 @@ service:
         dest: /etc/libvirt/libvirtd.conf
         owner: root
         perm: "0644"
+    env:
+      KOLLA_USE_HOSTNAME_IN_ZK_PATHS:
   instances: {{ compute_nodes }}
-  constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "compute"]]
-commands:
+  constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "compute"]]commands:
   extend_start:
     command: kolla_extend_start
