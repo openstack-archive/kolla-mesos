@@ -35,8 +35,8 @@ openstack_keystone_token_auth: "{'endpoint':'{{ openstack_auth_v2.auth_url }}','
 # Resources
 ####################
 # keystone-api
-keystone_api_mem: "128"
-keystone_api_cpus: "0.3"
+keystone_api_mem: "{{ keystone_api_mem|default('128') }}"
+keystone_api_cpus: "{{ keystone_api_cpus|default('0.3') }}"
 # keystone-init
-keystone_init_mem: "512"
-keystone_init_cpus: "0.3"
+keystone_init_mem: "{{ keystone_init_mem|default('512') }}"
+keystone_init_cpus: "{{ keystone_init_cpus|default('0.3') }}"
