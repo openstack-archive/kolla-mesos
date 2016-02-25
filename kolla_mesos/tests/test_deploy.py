@@ -17,6 +17,7 @@ import yaml
 
 from kolla_mesos.cmd import deploy
 from kolla_mesos.tests import base
+from kolla_mesos.tests.fakes import mesos as fake_mesos
 
 
 CONF = cfg.CONF
@@ -97,7 +98,10 @@ class TestClient(base.BaseTestCase):
         CONF.set_override('force', True)
 
         self.worker.get_jinja_vars = mock.MagicMock(
-            return_value={'image': 'test1', 'test2': ''})
+            return_value={'image': 'test1',
+                          'test2': '',
+                          'controller_nodes': '1',
+                          'compute_nodes': '1'})
         mock_yaml.load = mock.MagicMock(
             return_value=yaml.load(YAML_SERVICES_CONFIG))
         mock_common.return_value = ''
@@ -142,6 +146,7 @@ class TestClient(base.BaseTestCase):
         self.assertEqual(self.worker._start_chronos_job.call_count, 1)
         self.assertEqual(self.worker._start_marathon_app.call_count, 2)
 
+    @fake_mesos.FakeMesosStateSlaves()
     @mock.patch('kolla_mesos.cmd.deploy.jinja_utils')
     @mock.patch('kolla_mesos.cmd.deploy.yaml')
     @mock.patch('kolla_mesos.cmd.deploy.open')
