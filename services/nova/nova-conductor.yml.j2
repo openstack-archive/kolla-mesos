@@ -7,19 +7,8 @@ container:
       value: "kolla_logs_{{ deployment_id }}:/var/log/kolla"
 service:
   daemon:
-    dependencies: [nova-conductor/db_sync, nova_ansible_tasks/create_user]
+    dependencies: [nova-api/db_sync, nova_ansible_tasks/create_user]
     command: nova-conductor --config-file /etc/nova/nova.conf --config-file /etc/nova/nova-override.conf
-  mem: {{ nova_conductor_mem }}
-  cpus: {{ nova_conductor_cpus }}
-  constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "controller"]]
-commands:
-  db_sync:
-    run_once: True
-    dependencies: [nova_ansible_tasks/create_database,
-                   nova_ansible_tasks/database_user_create]
-    command: kolla_extend_start
-    env:
-      KOLLA_BOOTSTRAP:
     files:
       nova-override.conf:
         source: ["/etc/kolla-mesos/config/global.conf",
@@ -35,3 +24,6 @@ commands:
         dest: /etc/nova/nova.conf
         owner: nova
         perm: "0600"
+  mem: {{ nova_conductor_mem }}
+  cpus: {{ nova_conductor_cpus }}
+  constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "controller"]]
