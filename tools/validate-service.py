@@ -16,6 +16,7 @@ import argparse
 import json
 import logging
 import os.path
+import socket
 import sys
 import yaml
 
@@ -74,17 +75,24 @@ def validate_command(filename, cmd, cmd_info, deps, role):
     for key in cmd_info:
         assert key in CMD_FIELDS, '%s not in %s' % (key, CMD_FIELDS)
 
-    reg = '%s/%s' % (role, cmd)
+    regs = ['%s/%s' % (role, cmd),
+            '%s/%s/%s' % (socket.gethostname(), role, cmd)]
     reqs = cmd_info.get('dependencies', [])
-    if reg not in deps:
-        deps[reg] = {'waiters': {}}
-    deps[reg]['registered_by'] = cmd
-    deps[reg]['name'] = cmd
-    deps[reg]['run_by'] = filename
+    for reg in regs:
+        if reg not in deps:
+            deps[reg] = {'waiters': {}}
+        deps[reg]['registered_by'] = cmd
+        deps[reg]['name'] = cmd
+        deps[reg]['run_by'] = filename
     for req in reqs:
-        if req not in deps:
-            deps[req] = {'waiters': {}}
-        deps[req]['waiters'][cmd] = reg
+        scope = req.get('scope', 'global')
+        req_path = req['path']
+        if scope == 'local':
+            req_path = os.path.join(socket.gethostname(), req_path)
+        if req_path not in deps:
+            deps[req_path] = {'waiters': {}}
+        for reg in regs:
+            deps[req_path]['waiters'][cmd] = reg
     if 'files' in cmd_info:
         validate_config(filename, cmd_info['files'])
 
