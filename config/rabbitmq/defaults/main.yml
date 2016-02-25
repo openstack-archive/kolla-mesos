@@ -23,5 +23,5 @@ rabbitmq_cluster_name: "openstack"
 ####################
 # Resources
 ####################
-rabbitmq_mem: "128"
-rabbitmq_cpus: "0.3"
+rabbitmq_mem: "{{ rabbitmq_mem|default('128') }}"
+rabbitmq_cpus: "{{ rabbitmq_cpus|default('0.3') }}"
