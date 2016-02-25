@@ -12,5 +12,5 @@ memcached_image_full: "{{ memcached_image }}:{{ memcached_tag }}"
 ####################
 # Resources
 ####################
-memcached_mem: "128"
-memcached_cpus: "0.3"
+memcached_mem: "{{ memcached_mem|default('128') }}"
+memcached_cpus: "{{ memcached_cpus|default('0.3') }}"

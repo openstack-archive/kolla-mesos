@@ -22,5 +22,5 @@ mariadb_tag: "{{ openstack_release }}"
 ####################
 # Resources
 ####################
-mariadb_mem: "128"
-mariadb_cpus: "0.3"
+mariadb_mem: "{{ mariadb_mem|default('128') }}"
+mariadb_cpus: "{{ mariadb_cpus|default('0.3') }}"
