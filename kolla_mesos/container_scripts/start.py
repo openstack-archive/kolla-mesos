@@ -47,17 +47,19 @@ DEPLOYMENT_ID = None
 DEPLOYMENT = None
 SERVICE = None
 SERVICE_NAME = None
+CHECK_PATH_PATTERN = None
 
 
 def set_globals():
     global ZK_HOSTS, ROLE, PRIVATE_INTERFACE, PUBLIC_INTERFACE
-    global ANSIBLE_PRIVATE, ANSIBLE_PUBLIC, DEPLOYMENT_ID, DEPLOYMENT
-    global SERVICE, SERVICE_NAME
+    global WITH_HOSTNAME, ANSIBLE_PRIVATE, ANSIBLE_PUBLIC, DEPLOYMENT_ID
+    global DEPLOYMENT, SERVICE, SERVICE_NAME, CHECK_PATH_PATTERN
     ZK_HOSTS = os.environ.get('KOLLA_ZK_HOSTS')
     PRIVATE_INTERFACE = os.environ.get('KOLLA_PRIVATE_INTERFACE', 'undefined')
     PUBLIC_INTERFACE = os.environ.get('KOLLA_PUBLIC_INTERFACE', 'undefined')
     system_prefix = os.environ.get('KOLLA_SYSTEM_PREFIX', '/kolla')
     app_id = os.environ['MARATHON_APP_ID']
+    hostname_in_paths = os.environ.get('KOLLA_USE_HOSTNAME_IN_ZK_PATHS')
 
     # All these are derived
     ANSIBLE_PRIVATE = 'ansible_%s' % PRIVATE_INTERFACE
@@ -70,6 +72,12 @@ def set_globals():
     SERVICE_NAME = '/'.join(app_split[2:])
     # TODO(asalkeld) remove the concept of role
     ROLE = app_split[-1]
+
+    if hostname_in_paths is not None:
+        CHECK_PATH_PATTERN = '%%s/status/%s/%%s/%%s/.done' % (
+            socket.gethostname())
+    else:
+        CHECK_PATH_PATTERN = '%s/status/%s/%s/.done'
 
 
 logging.basicConfig()
@@ -291,9 +299,10 @@ class Command(object):
         self.command = cmd['command']
         self.run_once = cmd.get('run_once', False)
         self.daemon = cmd.get('daemon', False)
-        self.check_path = '%s/status/%s/%s/.done' % (DEPLOYMENT,
-                                                     ROLE, self.name)
-        self.requires = ['%s/status/%s/.done' % (DEPLOYMENT, req)
+        self.check_path = CHECK_PATH_PATTERN % (DEPLOYMENT, ROLE, self.name)
+        self.requires = ['%s/status/%s/.done' %
+                         (DEPLOYMENT,
+                          re.sub(r'<hostname>', socket.gethostname(), req))
                          for req in cmd.get('dependencies', [])]
         self.init_path = os.path.dirname(self.check_path)
         self.proc = None
