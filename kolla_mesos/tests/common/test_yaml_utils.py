@@ -10,11 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from kolla_mesos.common import jinja_utils
+from kolla_mesos.common import yaml_utils
 from kolla_mesos.tests import base
 
 
-class FilterBoolTest(base.BaseTestCase):
+class StrToBoolTest(base.BaseTestCase):
 
     scenarios = [
         ('none', dict(text=None, expect=False)),
@@ -31,5 +31,5 @@ class FilterBoolTest(base.BaseTestCase):
         ('shouty', dict(text='TRUE', expect=True)),
     ]
 
-    def test_filter_bool(self):
-        self.assertEqual(self.expect, jinja_utils.jinja_filter_bool(self.text))
+    def test_str_to_bool(self):
+        self.assertEqual(self.expect, yaml_utils.str_to_bool(self.text))
