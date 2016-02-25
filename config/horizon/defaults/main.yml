@@ -11,5 +11,5 @@ horizon_tag: "{{ openstack_release }}"
 ####################
 # Resources
 ####################
-horizon_mem: "128"
-horizon_cpus: "0.3"
+horizon_mem: "{{ horizon_mem|default('128') }}"
+horizon_cpus: "{{ horizon_cpus|default('0.3') }}"
