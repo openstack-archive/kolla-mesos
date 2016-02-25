@@ -15,6 +15,7 @@
 import contextlib
 import datetime
 import fcntl
+import filecmp
 import json
 import logging
 import math
@@ -47,15 +48,23 @@ DEPLOYMENT_ID = None
 DEPLOYMENT = None
 SERVICE = None
 SERVICE_NAME = None
+COPY_ALWAYS = None
 
 
 def set_globals():
     global ZK_HOSTS, ROLE, PRIVATE_INTERFACE, PUBLIC_INTERFACE
     global ANSIBLE_PRIVATE, ANSIBLE_PUBLIC, DEPLOYMENT_ID, DEPLOYMENT
-    global SERVICE, SERVICE_NAME
+    global SERVICE, SERVICE_NAME, COPY_ALWAYS
     ZK_HOSTS = os.environ.get('KOLLA_ZK_HOSTS')
     PRIVATE_INTERFACE = os.environ.get('KOLLA_PRIVATE_INTERFACE', 'undefined')
     PUBLIC_INTERFACE = os.environ.get('KOLLA_PUBLIC_INTERFACE', 'undefined')
+    strategy = os.environ.get('KOLLA_CONFIG_STRATEGY',
+                              'COPY_ALWAYS')
+    if strategy not in ('COPY_ALWAYS', 'COPY_ONCE'):
+        LOG.error('Unknown KOLLA_CONFIG_STRATEGY %s,'
+                  ' defaulting to COPY_ALWAYS', strategy)
+        strategy = 'COPY_ALWAYS'
+    COPY_ALWAYS = strategy == 'COPY_ALWAYS'
     system_prefix = os.environ.get('KOLLA_SYSTEM_PREFIX', '/kolla')
     app_id = os.environ['MARATHON_APP_ID']
 
@@ -210,6 +219,8 @@ def write_file(conf, data):
         tf.write(data)
         tf.flush()
         tf_name = tf.name
+
+    changed = filecmp.cmp(tf_name, dest)
     try:
         inst_cmd = ' '.join(['sudo', 'install', '-v',
                              '--no-target-directory',
@@ -219,6 +230,7 @@ def write_file(conf, data):
     except subprocess.CalledProcessError as exc:
         LOG.error(exc)
         LOG.exception(inst_cmd)
+    return changed
 
 
 def generate_host_vars(zk):
@@ -247,26 +259,6 @@ def render_template(zk, templ, variables, var_names):
 
             variables[var] = value.encode('utf-8')
     return jinja_render(templ, variables)
-
-
-def generate_configs(zk, files):
-    """Render and create all config files for this app"""
-
-    variables = generate_host_vars(zk)
-    for name, item in six.iteritems(files):
-        LOG.debug('Name is: %s, Item is: %s', name, item)
-        if name == 'kolla_mesos_start.py':
-            continue
-        raw_content, stat = zk.get(os.path.join(SERVICE, 'files', name))
-        templ = raw_content.encode('utf-8')
-        var_names = jinja_find_required_variables(templ, name)
-        if not var_names:
-            # not a template, doesn't need rendering.
-            write_file(item, templ)
-            continue
-
-        content = render_template(zk, templ, variables, var_names)
-        write_file(item, content)
 
 
 def generate_main_config(zk, conf):
@@ -339,6 +331,7 @@ class Command(object):
             self.name, extra, self.command)
 
     def run(self):
+        self.generate_configs()
         zk = self.zk
         result = 0
         LOG.info('** > Running %s', self.name)
@@ -364,41 +357,77 @@ class Command(object):
         LOG.info('** < Complete %s result: %s', self.name, result)
         return result
 
+    def generate_configs(self):
+        """Render and create all config files for this command."""
+        changes = False
+        if 'files' not in self.raw_conf:
+            return changes
+
+        variables = generate_host_vars(self.zk)
+        for name, item in six.iteritems(self.raw_conf['files']):
+            LOG.debug('Name is: %s, Item is: %s', name, item)
+            if name == 'kolla_mesos_start.py':
+                continue
+            raw_content, stat = self.zk.get(os.path.join(SERVICE, 'files',
+                                                         name))
+            templ = raw_content.encode('utf-8')
+            var_names = jinja_find_required_variables(templ, name)
+            if not var_names:
+                # not a template, doesn't need rendering.
+                if write_file(item, templ):
+                    changes = True
+                continue
+
+            content = render_template(self.zk, templ, variables, var_names)
+            if write_file(item, content):
+                changes = True
+        return changes
+
     def _run_command(self):
         LOG.debug("Running command: %s", self.command)
         self.retries = self.retries - 1
-        self.proc = subprocess.Popen(self.command, shell=True,
-                                     env=self.env)
-        if self.proc is None:
-            LOG.error("Command '%s' failed (proc=None)", self.name)
+
+        def start_process():
+            self.proc = subprocess.Popen(self.command, shell=True,
+                                         env=self.env)
+            if self.proc is None:
+                LOG.error("Command '%s' failed (proc=None)", self.name)
+                return 1
+
+        def poll(timeout=-1, sleep=10):
+            now = datetime.datetime.now()
+            while((datetime.datetime.now() - now).seconds < timeout or
+                  timeout < 0):
+                ret = self.proc.poll()
+                LOG.debug("Command %s poll ret='%s'", self.name, ret)
+                yield ret
+                time.sleep(10)
+
+        if start_process() == 1:
             return 1
 
         if self.timeout > 0:
-            now = datetime.datetime.now()
-            while((datetime.datetime.now() - now).seconds < self.timeout):
-                ret = self.proc.poll()
-                LOG.debug("Command %s poll ret='%s'", self.name, ret)
+            for ret in poll(timeout=self.timeout, sleep=10):
                 if ret == 0:
                     self.zk.retry(self.zk.ensure_path, self.check_path)
                     LOG.debug("Command '%s' marked as done", self.name)
                 if ret is not None:
                     return ret
-                time.sleep(10)
 
             LOG.error("Command failed with timeout (%s seconds)", self.timeout)
             self.kill_process()
 
         if self.daemon:
             time.sleep(20)
-            ret = self.proc.poll()
-            LOG.debug("Daemon poll ret='%s'", ret)
-            if ret is None:
-                self.zk.retry(self.zk.ensure_path, self.check_path)
-                LOG.debug("Daemon '%s' marked as running", self.name)
-                self.proc.wait()
-                ret = self.proc.returncode
-            if ret != 0:
-                self.zk.retry(self.zk.delete, self.check_path)
+            for ret in poll():
+                if ret is None:
+                    self.zk.retry(self.zk.ensure_path, self.check_path)
+                    LOG.debug("Daemon '%s' marked as running", self.name)
+                if COPY_ALWAYS and self.generate_configs():
+                    self.kill_process()
+                    if start_process() == 1:
+                        return 1
+
             LOG.debug("Command %s ret='%s'", self.name, ret)
             return ret
 
@@ -429,8 +458,6 @@ def run_commands(zk, service_conf):
             cmdq.put(cmd)
             continue
         if cmd.requirements_fulfilled():
-            if 'files' in cmd.raw_conf:
-                generate_configs(zk, cmd.raw_conf['files'])
             if cmd.run() != 0:
                 if cmd.retries > 0:
                     cmd.sleep(cmdq.qsize(), retry=True)

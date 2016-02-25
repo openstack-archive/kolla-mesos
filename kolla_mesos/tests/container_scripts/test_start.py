@@ -186,7 +186,7 @@ class RunCommandsTest(base.BaseTestCase):
         start.set_globals()
 
     @mock.patch.object(start.Command, 'run', autospec=True)
-    @mock.patch.object(start, 'generate_configs')
+    @mock.patch.object(start.Command, 'generate_configs', autospec=True)
     @mock.patch.object(start.sys, 'exit')
     def test_one_good(self, m_exit, m_gc, m_run):
         conf = {'commands': {'setup': {
@@ -199,7 +199,7 @@ class RunCommandsTest(base.BaseTestCase):
         self.assertEqual([], m_exit.mock_calls)
 
     @mock.patch.object(start.Command, 'run', autospec=True)
-    @mock.patch.object(start, 'generate_configs')
+    @mock.patch.object(start.Command, 'generate_configs', autospec=True)
     @mock.patch.object(start.sys, 'exit')
     def test_one_bad(self, m_exit, m_gc, m_run):
         conf = {'commands': {'setup': {
@@ -212,7 +212,7 @@ class RunCommandsTest(base.BaseTestCase):
         self.assertEqual([mock.call(1)], m_exit.mock_calls)
 
     @mock.patch.object(start.Command, 'run', autospec=True)
-    @mock.patch.object(start, 'generate_configs')
+    @mock.patch.object(start.Command, 'generate_configs', autospec=True)
     @mock.patch.object(start.sys, 'exit')
     def test_one_bad_retry(self, m_exit, m_gc, m_run):
         conf = {'commands': {'setup': {
@@ -234,7 +234,7 @@ class RunCommandsTest(base.BaseTestCase):
                          m_run.mock_calls)
         self.assertEqual([], m_exit.mock_calls)
 
-    @mock.patch.object(start, 'generate_configs')
+    @mock.patch.object(start.Command, 'generate_configs', autospec=True)
     @mock.patch.object(start.sys, 'exit')
     def test_daemon_last_lots(self, m_exit, m_gc):
         conf = {'commands': {}}
@@ -282,54 +282,65 @@ class GenerateConfigTest(base.BaseTestCase):
                         newvalue='/deploy_id/testg/testr'))
         start.set_globals()
 
+    @mock.patch('time.sleep')
     @mock.patch.object(start, 'get_ip_address')
     @mock.patch.object(start, 'get_groups_and_hostvars')
     @mock.patch.object(start, 'write_file')
-    def test_no_rendering(self, m_wf, m_gar, m_gip):
-        conf = {'afile': {
+    def test_no_rendering(self, m_wf, m_gar, m_gip, m_sleep):
+        afile = {'afile': {
             'source': 'config/mariadb/templates/galera.cnf.j2',
             'dest': '/etc/mysql_dir/my.cnf',
             'owner': 'mysql',
             'perm': "0600"}}
+
+        conf = {'commands': {'setup': {
+            'command': 'true', 'files': afile}}}
+
         m_gar.return_value = {}, {}
         self.client.create('/kolla/deploy_id/testg/testr/files/afile', 'xyz',
                            makepath=True)
-        start.generate_configs(self.client, conf)
-        m_wf.assert_called_once_with(conf['afile'], 'xyz')
+        start.run_commands(self.client, conf)
+        m_wf.assert_called_once_with(afile['afile'], 'xyz')
 
+    @mock.patch('time.sleep')
     @mock.patch.object(start, 'get_ip_address')
     @mock.patch.object(start, 'get_groups_and_hostvars')
     @mock.patch.object(start, 'write_file')
-    def test_simple_render(self, m_wf, m_gar, m_gip):
-        conf = {'afile': {
+    def test_simple_render(self, m_wf, m_gar, m_gip, m_sleep):
+        afile = {'afile': {
             'source': 'config/mariadb/templates/galera.cnf.j2',
             'dest': '/etc/mysql_dir/my.cnf',
             'owner': 'mysql',
             'perm': "0600"}}
+        conf = {'commands': {'setup': {
+            'command': 'true', 'files': afile}}}
         m_gar.return_value = {}, {}
         self.client.create('/kolla/deploy_id/variables/xyz', 'yeah',
                            makepath=True)
         self.client.create('/kolla/deploy_id/testg/testr/files/afile',
                            '{{ xyz }}', makepath=True)
-        start.generate_configs(self.client, conf)
-        m_wf.assert_called_once_with(conf['afile'], 'yeah')
+        start.run_commands(self.client, conf)
+        m_wf.assert_called_once_with(afile['afile'], 'yeah')
 
+    @mock.patch('time.sleep')
     @mock.patch.object(start, 'render_template')
     @mock.patch.object(start, 'get_ip_address')
     @mock.patch.object(start, 'get_groups_and_hostvars')
     @mock.patch.object(start, 'write_file')
-    def test_missing_variable(self, m_wf, m_gar, m_gip, m_rt):
-        conf = {'afile': {
+    def test_missing_variable(self, m_wf, m_gar, m_gip, m_rt, m_sleep):
+        afile = {'afile': {
             'source': 'config/mariadb/templates/galera.cnf.j2',
             'dest': '/etc/mysql_dir/my.cnf',
             'owner': 'mysql',
             'perm': "0600"}}
+        conf = {'commands': {'setup': {
+            'command': 'true', 'files': afile}}}
         m_gar.return_value = {}, {}
         m_rt.return_value = ''
         self.client.create('/kolla/deploy_id/testg/testr/files/afile',
                            '{{ xyz }}', makepath=True)
-        start.generate_configs(self.client, conf)
-        m_wf.assert_called_once_with(conf['afile'], '')
+        start.run_commands(self.client, conf)
+        m_wf.assert_called_once_with(afile['afile'], '')
 
 
 class MainTest(base.BaseTestCase):
@@ -352,7 +363,7 @@ class MainTest(base.BaseTestCase):
         start.set_globals()
 
     @mock.patch.object(start, 'run_commands')
-    @mock.patch.object(start, 'generate_configs')
+    @mock.patch.object(start.Command, 'generate_configs', autospec=True)
     @mock.patch.object(start, 'register_group_and_hostvars')
     def test_no_register_if_no_daemon(self, m_rgah, m_gc, m_rc):
         afile = {'source': 'bla/a.cnf.j2',
@@ -373,7 +384,7 @@ class MainTest(base.BaseTestCase):
             self.assertEqual([], m_rgah.mock_calls)
 
     @mock.patch.object(start, 'run_commands')
-    @mock.patch.object(start, 'generate_configs')
+    @mock.patch.object(start.Command, 'generate_configs', autospec=True)
     @mock.patch.object(start, 'register_group_and_hostvars')
     @mock.patch.object(start, 'generate_main_config')
     def test_register_if_daemon(self, m_gmc, m_rgah, m_gc, m_rc):
@@ -551,10 +562,11 @@ class RenderNovaConfTest(base.BaseTestCase):
                                getattr(self, nam, val),
                                makepath=True)
 
+    @mock.patch('time.sleep')
     @mock.patch('socket.gethostname')
     @mock.patch.object(start, 'get_ip_address')
     @mock.patch.object(start, 'write_file')
-    def test_nova_conf(self, m_write_file, m_get_ip, m_gethost):
+    def test_nova_conf(self, m_write_file, m_get_ip, m_gethost, m_sleep):
         m_get_ip.return_value = '1.2.3.4'
         m_gethost.return_value = 'test-hostname'
 
@@ -574,6 +586,10 @@ class RenderNovaConfTest(base.BaseTestCase):
                  'dest': '/etc/nova/nova.conf',
                  'owner': 'nova',
                  'perm': '0600'}
+
+        conf = {'commands': {'setup': {
+            'command': 'true', 'files': {'afile': afile}}}}
+
         mod_dir = os.path.dirname(sys.modules[__name__].__file__)
         proj_dir = os.path.abspath(os.path.join(mod_dir, '..', '..', '..'))
         with open(os.path.join(proj_dir,
@@ -587,7 +603,7 @@ class RenderNovaConfTest(base.BaseTestCase):
         with open(cmp_file) as cf:
             expect = cf.read()
 
-        start.generate_configs(self.client, {'afile': afile})
+        start.run_commands(self.client, conf)
         m_write_file.assert_called_once_with(afile, expect)
 
 
@@ -614,3 +630,21 @@ class GlobalsTest(base.BaseTestCase):
         self.assertEqual(self.dep, start.DEPLOYMENT)
         self.assertEqual(self.role, start.ROLE)
         self.assertEqual(self.sn, start.SERVICE_NAME)
+
+
+class CopyAlwaysGlobalTest(base.BaseTestCase):
+    scenarios = [
+        ('always', dict(strategy='COPY_ALWAYS', expect=True)),
+        ('once', dict(strategy='COPY_ONCE', expect=False)),
+        ('rubbish', dict(strategy='unexpected', expect=True)),
+        ('default', dict(strategy=None, expect=True))]
+
+    def test_strategy(self):
+        self.useFixture(fixtures.EnvironmentVariable(
+                        'MARATHON_APP_ID',
+                        newvalue='/new_id/openstack/tg/tr'))
+        self.useFixture(fixtures.EnvironmentVariable(
+                        'KOLLA_CONFIG_STRATEGY',
+                        newvalue=self.strategy))
+        start.set_globals()
+        self.assertEqual(self.expect, start.COPY_ALWAYS)
