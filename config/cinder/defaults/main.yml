@@ -70,17 +70,17 @@ openstack_cinder_auth: "{'auth_url':'{{ openstack_auth_v2.auth_url }}','username
 # Resources
 ####################
 # cinder-api
-cinder_api_mem: "128"
-cinder_api_cpus: "0.3"
+cinder_api_mem: "{{ cinder_api_mem|default('128') }}"
+cinder_api_cpus: "{{ cinder_api_cpus|default('0.3') }}"
 # cinder-backup
-cinder_backup_mem: "128"
-cinder_backup_cpus: "0.3"
+cinder_backup_mem: "{{ cinder_backup_mem|default('128') }}"
+cinder_backup_cpus: "{{ cinder_backup_cpus|default('0.3') }}"
 # cinder-init
-cinder_init_mem: "512"
-cinder_init_cpus: "0.3"
+cinder_init_mem: "{{ cinder_init_mem|default('512') }}"
+cinder_init_cpus: "{{ cinder_init_cpus|default('0.3') }}"
 # cinder-scheduler
-cinder_scheduler_mem: "128"
-cinder_scheduler_cpus: "0.3"
+cinder_scheduler_mem: "{{ cinder_scheduler_mem|default('128') }}"
+cinder_scheduler_cpus: "{{ cinder_scheduler_cpus|default('0.3') }}"
 # cinder-volume
-cinder_volume_mem: "128"
-cinder_volume_cpus: "0.3"
+cinder_volume_mem: "{{ cinder_volume_mem|default('128') }}"
+cinder_volume_cpus: "{{ cinder_volume_cpus|default('0.3') }}"
