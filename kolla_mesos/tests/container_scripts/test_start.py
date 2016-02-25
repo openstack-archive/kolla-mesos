@@ -617,15 +617,33 @@ class GlobalsTest(base.BaseTestCase):
                    dep_id='new_id', dep='/kolla/new_id', role='tr',
                    sn='openstack/tg/tr'))]
 
-    def test_globals(self):
+    def setUp(self):
+        super(GlobalsTest, self).setUp()
         self.useFixture(fixtures.EnvironmentVariable(
                         'MARATHON_APP_ID',
                         newvalue=self.app_id))
         self.useFixture(fixtures.EnvironmentVariable(
                         'KOLLA_SYSTEM_PREFIX',
                         newvalue=self.prefix))
+
+    def test_globals(self):
         start.set_globals()
         self.assertEqual(self.dep_id, start.DEPLOYMENT_ID)
         self.assertEqual(self.dep, start.DEPLOYMENT)
         self.assertEqual(self.role, start.ROLE)
         self.assertEqual(self.sn, start.SERVICE_NAME)
+
+    @mock.patch('socket.gethostname')
+    def test_check_path_pattern_with_hostname(self, m_gethost):
+        m_gethost.return_value = 'test-hostname'
+        self.useFixture(fixtures.EnvironmentVariable(
+                        'KOLLA_USE_HOSTNAME_IN_ZK_PATHS',
+                        ''))
+        start.set_globals()
+        self.assertEqual('%s/status/test-hostname/%s/%s',
+                         start.CHECK_PATH_PATTERN)
+
+    def test_check_path_pattern_without_hostname(self):
+        start.set_globals()
+        self.assertEqual('%s/status/%s/%s',
+                         start.CHECK_PATH_PATTERN)
