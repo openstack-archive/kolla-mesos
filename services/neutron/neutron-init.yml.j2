@@ -10,7 +10,8 @@ commands:
     run_once: True
     retries: 3
     delay: 5
-    dependencies: [mariadb/daemon]
+    dependencies:
+     - path: mariadb/daemon
     command: {{ ansible_task_cmd }}
       -m mysql_db
       -a "login_host='{{ database_address }}'
@@ -22,7 +23,8 @@ commands:
     run_once: True
     retries: 3
     delay: 5
-    dependencies: [neutron_ansible_tasks/create_database]
+    dependencies:
+     - path: neutron_ansible_tasks/create_database
     command: {{ ansible_task_cmd }}
       -m mysql_user
       -a "login_host='{{ database_address }}'
@@ -38,7 +40,9 @@ commands:
     run_once: True
     retries: 3
     delay: 5
-    dependencies: [neutron-server/db_sync, keystone_ansible_tasks/running]
+    dependencies:
+     - path: neutron-server/db_sync
+     - path: keystone_ansible_tasks/running
     command: {{ ansible_task_cmd }}
       -m kolla_keystone_service
       -a "service_name=neutron
@@ -55,7 +59,9 @@ commands:
     run_once: True
     retries: 3
     delay: 5
-    dependencies: [neutron-server/db_sync, keystone_ansible_tasks/running]
+    dependencies:
+     - path: neutron-server/db_sync
+     - path: keystone_ansible_tasks/running
     command: {{ ansible_task_cmd }}
       -m kolla_keystone_user
       -a "project=service

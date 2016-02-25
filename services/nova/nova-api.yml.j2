@@ -8,7 +8,9 @@ container:
       value: "kolla_logs_{{ deployment_id }}:/var/log/kolla"
 service:
   daemon:
-    dependencies: [nova-api/db_sync, nova_ansible_tasks/create_user]
+    dependencies:
+     - path: nova-api/db_sync
+     - path: nova_ansible_tasks/create_user
     command: nova-api --config-file /etc/nova/nova.conf --config-file /etc/nova/nova-override.conf
   mem: {{ nova_api_mem }}
   cpus: {{ nova_api_cpus }}
@@ -18,14 +20,13 @@ commands:
   db_sync:
     env:
       KOLLA_BOOTSTRAP:
-    dependencies: [nova_ansible_tasks/create_database,
-                   nova_ansible_tasks/database_user_create,
-                   glance-api/daemon
-      {% if enable_memcached | bool %}
-                   , memcached/daemon
-      {% endif %}
-                  ]
-
+    dependencies:
+     - path: nova_ansible_tasks/create_database
+     - path: nova_ansible_tasks/database_user_create
+     - path: glance-api/daemon
+     {% if enable_memcached | bool %}
+     - path: memcached/daemon
+     {% endif %}
     command: kolla_extend_start
     run_once: True
     files:

@@ -7,7 +7,9 @@ container:
       value: "kolla_logs_{{ deployment_id }}:/var/log/kolla"
 service:
   daemon:
-    dependencies: [nova-api/db_sync, nova_ansible_tasks/create_user]
+    dependencies:
+     - path: nova-api/db_sync
+     - path: nova_ansible_tasks/create_user
     command: nova-conductor --config-file /etc/nova/nova.conf --config-file /etc/nova/nova-override.conf
     files:
       nova-override.conf:

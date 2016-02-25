@@ -7,9 +7,10 @@ container:
       value: "kolla_logs_{{ deployment_id }}:/var/log/kolla"
 service:
   daemon:
-    dependencies: [glance_ansible_tasks/create_database,
-                   glance_ansible_tasks/database_user_create,
-                   glance-api/db_sync]
+    dependencies:
+     - path: glance_ansible_tasks/create_database
+     - path: glance_ansible_tasks/database_user_create
+     - path: glance-api/db_sync
     command: glance-api
   mem: {{ glance_api_mem }}
   cpus: {{ glance_api_cpus }}
@@ -20,8 +21,9 @@ commands:
     command: kolla_extend_start
   db_sync:
     run_once: True
-    dependencies: [glance_ansible_tasks/create_database,
-                   glance_ansible_tasks/database_user_create]
+    dependencies:
+     - path: glance_ansible_tasks/create_database
+     - path: glance_ansible_tasks/database_user_create
     command: kolla_extend_start
     env:
       KOLLA_BOOTSTRAP:
