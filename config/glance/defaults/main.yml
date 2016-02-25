@@ -52,11 +52,11 @@ openstack_glance_auth: "{'auth_url':'{{ openstack_auth_v2.auth_url }}','username
 # Resources
 ####################
 # glance-api
-glance_api_mem: "128"
-glance_api_cpus: "0.3"
+glance_api_mem: "{{ glance_api_mem|default('128') }}"
+glance_api_cpus: "{{ glance_api_cpus|default('0.3') }}"
 # glance-init
-glance_init_mem: "512"
-glance_init_cpus: "0.3"
+glance_init_mem: "{{ glance_init_mem|default('512') }}"
+glance_init_cpus: "{{ glance_init_cpus|default('0.3') }}"
 # glance-registry
-glance_registry_mem: "128"
-glance_registry_cpus: "0.3"
+glance_registry_mem: "{{ glance_registry_mem|default('128') }}"
+glance_registry_cpus: "{{ glance_registry_cpus|default('0.3') }}"
