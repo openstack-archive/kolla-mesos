@@ -11,9 +11,9 @@ service:
   daemon:
     command: /usr/local/bin/kolla_apache_wrapper.sh
     dependencies:
-      - horizon/bootstrap
+      - path: horizon/bootstrap
     {% if enable_memcached | bool %}
-      - memcached/daemon
+      - path: memcached/daemon
     {% endif %}
     files:
       apache_wrapper.sh:

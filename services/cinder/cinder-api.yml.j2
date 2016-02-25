@@ -7,10 +7,11 @@ container:
       value: "kolla_logs_{{ deployment_id }}:/var/log/kolla"
 service:
   daemon:
-    dependencies: [cinder_ansible_tasks/create_user,
-                   keystone_ansible_tasks/running,
-                   rabbitmq/daemon,
-                   cinder-api/db_sync]
+    dependencies:
+     - path: cinder_ansible_tasks/create_user
+     - path: keystone_ansible_tasks/running
+     - path: rabbitmq/daemon
+     - path: cinder-api/db_sync
     command: /usr/bin/cinder-api
   mem: {{ cinder_api_mem }}
   cpus: {{ cinder_api_cpus }}
@@ -24,8 +25,9 @@ commands:
       KOLLA_BOOTSTRAP:
     command: kolla_extend_start
     run_once: True
-    dependencies: [cinder_ansible_tasks/create_database,
-                   cinder_ansible_tasks/database_user_create]
+    dependencies:
+     - path: cinder_ansible_tasks/create_database
+     - path: cinder_ansible_tasks/database_user_create
     files:
       cinder.conf.j2:
         source: ["config/cinder/templates/cinder.conf.j2",

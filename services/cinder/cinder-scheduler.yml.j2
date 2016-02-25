@@ -7,9 +7,10 @@ container:
       value: "kolla_logs_{{ deployment_id }}:/var/log/kolla"
 service:
   daemon:
-    dependencies: [cinder_ansible_tasks/create_user,
-                   keystone_ansible_tasks/running,
-                   rabbitmq/daemon]
+    dependencies:
+     - path: cinder_ansible_tasks/create_user
+     - path: keystone_ansible_tasks/running
+     - path: rabbitmq/daemon
     command: /usr/bin/cinder-scheduler
     files:
       cinder.conf.j2:
