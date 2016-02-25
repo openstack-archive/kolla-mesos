@@ -30,6 +30,9 @@ service:
         dest: /etc/neutron/plugins/ml2/ml2_conf.ini
         owner: neutron
         perm: "0600"
+    env:
+      NEUTRON_BRIDGE: "br-ex"
+      NEUTRON_INTERFACE: "{{ neutron_external_interface }}"
   mem: {{ neutron_linuxbridge_agent_mem }}
   cpus: {{ neutron_linuxbridge_agent_cpus }}
   constraints: [["hostname", "UNIQUE"], ["openstack_role", "LIKE", "(controller|compute)"]]
