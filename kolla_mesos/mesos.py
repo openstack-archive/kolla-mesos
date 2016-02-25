@@ -53,3 +53,10 @@ class Client(object):
             tasks.extend(framework['tasks'])
 
         return tasks
+
+    def get_slaves(self):
+        """Get list of registered slaves in Mesos"""
+        state = self.get_state()
+        slaves = state['slaves']
+
+        return slaves
