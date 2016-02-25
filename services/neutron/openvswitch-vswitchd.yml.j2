@@ -19,6 +19,7 @@ service:
     command: /usr/sbin/ovs-vswitchd unix:/run/openvswitch/db.sock --mlockall
   mem: {{ openvswitch_vswitchd_mem }}
   cpus: {{ openvswitch_vswitchd_cpus }}
+  instances: {{ all_nodes }}
   constraints: [["hostname", "UNIQUE"], ["openstack_role", "LIKE", "(controller|compute)"]]
 commands:
   bootstrap:
@@ -39,4 +40,3 @@ commands:
         dest: /usr/local/bin/kolla_ensure_openvswitch_configured
         owner: root
         perm: "0755"
-

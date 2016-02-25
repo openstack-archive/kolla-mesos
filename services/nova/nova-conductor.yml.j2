@@ -26,6 +26,7 @@ service:
         perm: "0600"
   mem: {{ nova_conductor_mem }}
   cpus: {{ nova_conductor_cpus }}
+  instances: {{ controller_nodes }}
   constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "controller"]]
 commands:
   extend_start:
