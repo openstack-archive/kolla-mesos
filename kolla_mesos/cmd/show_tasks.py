@@ -112,8 +112,11 @@ def get_tasks(deploy_id):
             if 'default.' in name:
                 continue
             fpath = os.path.join(root, name)
+            # TODO(nihilifer): Get part of these variables from globals.yml.
             mini_vars = {'cinder_volume_driver': 'lvm',
-                         'deployment_id': deploy_id}
+                         'deployment_id': deploy_id,
+                         'controller_nodes': '1',
+                         'compute_nodes': '1'}
             cfg = yaml.load(jinja_utils.jinja_render(fpath, mini_vars))
 
             def get_commands():
