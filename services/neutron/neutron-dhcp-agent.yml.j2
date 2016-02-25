@@ -50,3 +50,4 @@ service:
   mem: {{ neutron_dhcp_agent_mem }}
   cpus: {{ neutron_dhcp_agent_cpus }}
   constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "controller"]]
+  instances: {{ controller_nodes }}
