@@ -14,6 +14,7 @@ service:
     dependencies: [mariadb/bootstrap]
   mem: {{ mariadb_mem }}
   cpus: {{ mariadb_cpus }}
+  instances: {{ controller_nodes }}
   constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "controller"]]
 commands:
   bootstrap:

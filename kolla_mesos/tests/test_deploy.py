@@ -97,7 +97,10 @@ class TestClient(base.BaseTestCase):
         CONF.set_override('force', True)
 
         self.worker.get_jinja_vars = mock.MagicMock(
-            return_value={'image': 'test1', 'test2': ''})
+            return_value={'image': 'test1',
+                          'test2': '',
+                          'controller_nodes': '1',
+                          'compute_nodes': '1'})
         mock_yaml.load = mock.MagicMock(
             return_value=yaml.load(YAML_SERVICES_CONFIG))
         mock_common.return_value = ''

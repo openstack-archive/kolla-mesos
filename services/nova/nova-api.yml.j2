@@ -27,4 +27,5 @@ service:
         perm: "0600"
   mem: {{ nova_api_mem }}
   cpus: {{ nova_api_cpus }}
+  instances: {{ controller_nodes }}
   constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "controller"]]

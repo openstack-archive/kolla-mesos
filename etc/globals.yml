@@ -26,6 +26,9 @@ neutron_external_interface: "eth2"
 ####################
 # OpenStack options
 ####################
+controller_nodes: "1"
+compute_nodes: "1"
+storage_nodes: "1"
 openstack_release: "2.0.0"
 init_log_level: "debug"
 database_max_timeout: "60"
