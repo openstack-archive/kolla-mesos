@@ -10,7 +10,7 @@ container:
 service:
   daemon:
     dependencies: [keystone-api/db_sync]
-    command: "/usr/sbin/{{ keystone_cmd }} -DFOREGROUND"
+    command: /usr/local/bin/kolla_apache_wrapper.sh
     env:
       OS_TOKEN: "password"
     files:
@@ -19,6 +19,11 @@ service:
         dest: /etc/{{ keystone_dir }}/keystone.conf
         owner: keystone
         perm: "0600"
+      apache_wrapper.sh:
+        source: config/common/apache_wrapper.sh.j2
+        dest: /usr/local/bin/kolla_apache_wrapper.sh
+        owner: keystone
+        perm: "0755"
   mem: {{ keystone_api_mem }}
   cpus: {{ keystone_api_cpus }}
   constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "controller"]]
@@ -28,16 +33,11 @@ commands:
   db_sync:
     env:
       KOLLA_BOOTSTRAP:
-    command: kolla_mesos_extend_start
+    command: kolla_extend_start
     run_once: True
     dependencies: [keystone_ansible_tasks/create_database,
                    keystone_ansible_tasks/database_user_create]
     files:
-      extend_start.sh.j2:
-        source: config/keystone/templates/extend_start.sh.j2
-        dest: /usr/local/bin/kolla_mesos_extend_start
-        owner: keystone
-        perm: "0755"
       keystone.conf.j2:
         source: ["/etc/kolla-mesos/config/global.conf",
                  "/etc/kolla-mesos/config/database.conf",
