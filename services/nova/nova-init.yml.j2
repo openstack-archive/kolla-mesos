@@ -8,7 +8,8 @@ task:
 commands:
   create_database:
     run_once: True
-    dependencies: [mariadb/daemon]
+    dependencies:
+     - path: mariadb/daemon
     command: {{ ansible_task_cmd }}
       -m mysql_db
       -a "login_host='{{ database_address }}'
@@ -18,7 +19,8 @@ commands:
           name='{{ nova_database_name }}'"
   create_api_database:
     run_once: True
-    dependencies: [mariadb/daemon]
+    dependencies:
+     - path: mariadb/daemon
     command: {{ ansible_task_cmd }}
       -m mysql_db
       -a "login_host='{{ database_address }}'
@@ -28,7 +30,8 @@ commands:
           name='{{ nova_api_database_name }}'"
   database_user_create:
     run_once: True
-    dependencies: [nova_ansible_tasks/create_database]
+    dependencies:
+     - path: nova_ansible_tasks/create_database
     command: {{ ansible_task_cmd }}
       -m mysql_user
       -a "login_host='{{ database_address }}'
@@ -42,7 +45,8 @@ commands:
           append_privs='yes'"
   database_api_user_create:
     run_once: True
-    dependencies: [nova_ansible_tasks/create_api_database]
+    dependencies:
+     - path: nova_ansible_tasks/create_api_database
     command: {{ ansible_task_cmd }}
       -m mysql_user
       -a "login_host='{{ database_address }}'
@@ -56,7 +60,9 @@ commands:
           append_privs='yes'"
   register_endpoint:
     run_once: True
-    dependencies: [nova-api/db_sync, keystone_ansible_tasks/running]
+    dependencies:
+     - path: nova-api/db_sync
+     - path: keystone_ansible_tasks/running
     command: {{ ansible_task_cmd }}
       -m kolla_keystone_service
       -a "service_name=nova
@@ -71,7 +77,9 @@ commands:
       -e "{'openstack_nova_auth':{{ openstack_nova_auth }}}"
   create_user:
     run_once: True
-    dependencies: [nova-api/db_sync, keystone_ansible_tasks/running]
+    dependencies:
+     - path: nova-api/db_sync
+     - path: keystone_ansible_tasks/running
     command: {{ ansible_task_cmd }}
       -m kolla_keystone_user
       -a "project=service

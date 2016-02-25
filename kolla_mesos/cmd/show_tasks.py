@@ -24,6 +24,7 @@ optional arguments:
 """
 import argparse
 import os
+import socket
 import sys
 import yaml
 
@@ -102,8 +103,16 @@ def get_tasks(deploy_id):
         reg = '/kolla/%s/status/%s/%s' % (deploy_id, role, cmd)
         task = {'register': reg, 'requires': []}
         for dep in cmd_info.get('dependencies', []):
-            task['requires'].append(
-                '/kolla/%s/status/%s' % (deploy_id, dep))
+            path = dep['path']
+            scope = dep.get('scope', 'global')
+            if scope == 'global':
+                task['requires'].append(
+                    '/kolla/%s/status/%s' % (deploy_id, path))
+            elif scope == 'local':
+                task['requires'].append(
+                    '/kolla/%s/status/%s/%s' % (deploy_id,
+                                                socket.gethostname(),
+                                                path))
         return task
 
     tasks = {}

@@ -61,18 +61,28 @@ class CommandTest(base.BaseTestCase):
                             self.client)
         self.assertEqual('b (run_once, retries) "true"', str(cmd))
 
-    def test_defaults_1(self):
+    @mock.patch('socket.gethostname')
+    def test_defaults_1(self, m_gethost):
+        m_gethost.return_value = 'test-hostname'
         data = {'command': 'true'}
         cmd = start.Command('a', data, None)
         self.assertEqual(False, cmd.run_once)
         self.assertEqual(False, cmd.daemon)
         self.assertEqual([], cmd.requires)
-        self.assertEqual('/kolla/t1/status/testr/a',
-                         cmd.check_path)
+        self.assertEqual(['/kolla/t1/status/testr/a',
+                          '/kolla/t1/status/test-hostname/testr/a'],
+                         cmd.check_paths)
 
     def test_requirements_fulfilled_no(self):
         cmd1 = start.Command('a', {'command': 'true',
-                                   'dependencies': ['q/x', 'f/y']},
+                                   'dependencies': [{
+                                       'path': 'q/x'
+                                   }, {
+                                       'path': 'f/y'
+                                   }, {
+                                       'path': 'a/b',
+                                       'scope': 'local'
+                                   }]},
                              self.client)
 
         self.client.create('/kolla/t1/status/q/x',
@@ -80,14 +90,21 @@ class CommandTest(base.BaseTestCase):
 
         self.assertFalse(cmd1.requirements_fulfilled())
 
-    def test_requirements_fulfilled_yes(self):
+    @mock.patch('socket.gethostname')
+    def test_requirements_fulfilled_yes(self, m_gethost):
+        m_gethost.return_value = 'test-hostname'
         cmd1 = start.Command('a', {'command': 'true',
-                                   'dependencies': ['w/x', 'y/l']},
+                                   'dependencies': [{
+                                       'path': 'w/x'
+                                   }, {
+                                       'path': 'y/l',
+                                       'scope': 'local'
+                                   }]},
                              self.client)
 
         self.client.create('/kolla/t1/status/w/x',
                            'done', makepath=True)
-        self.client.create('/kolla/t1/status/y/l',
+        self.client.create('/kolla/t1/status/test-hostname/y/l',
                            'done', makepath=True)
         self.assertTrue(cmd1.requirements_fulfilled())
 
@@ -617,13 +634,16 @@ class GlobalsTest(base.BaseTestCase):
                    dep_id='new_id', dep='/kolla/new_id', role='tr',
                    sn='openstack/tg/tr'))]
 
-    def test_globals(self):
+    def setUp(self):
+        super(GlobalsTest, self).setUp()
         self.useFixture(fixtures.EnvironmentVariable(
                         'MARATHON_APP_ID',
                         newvalue=self.app_id))
         self.useFixture(fixtures.EnvironmentVariable(
                         'KOLLA_SYSTEM_PREFIX',
                         newvalue=self.prefix))
+
+    def test_globals(self):
         start.set_globals()
         self.assertEqual(self.dep_id, start.DEPLOYMENT_ID)
         self.assertEqual(self.dep, start.DEPLOYMENT)

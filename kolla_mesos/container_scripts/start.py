@@ -54,6 +54,15 @@ SERVICE = None
 SERVICE_NAME = None
 
 
+if six.PY3:
+    @contextlib.contextmanager
+    def nested(*contexts):
+        with contextlib.ExitStack() as stack:
+            yield [stack.enter_context(c) for c in contexts]
+else:
+    nested = contextlib.nested
+
+
 # zookeeper nodes
 # SERVICE_NAME example is "openstack/nova/nova-compute"
 #
@@ -71,8 +80,8 @@ SERVICE_NAME = None
 def set_globals():
     """Setup the globals from the environment."""
     global ZK_HOSTS, ROLE, PRIVATE_INTERFACE, PUBLIC_INTERFACE
-    global ANSIBLE_PRIVATE, ANSIBLE_PUBLIC, DEPLOYMENT_ID, DEPLOYMENT
-    global SERVICE, SERVICE_NAME
+    global WITH_HOSTNAME, ANSIBLE_PRIVATE, ANSIBLE_PUBLIC, DEPLOYMENT_ID
+    global DEPLOYMENT, SERVICE, SERVICE_NAME
     ZK_HOSTS = os.environ.get('KOLLA_ZK_HOSTS')
     PRIVATE_INTERFACE = os.environ.get('KOLLA_PRIVATE_INTERFACE', 'undefined')
     PUBLIC_INTERFACE = os.environ.get('KOLLA_PUBLIC_INTERFACE', 'undefined')
@@ -355,10 +364,12 @@ class Command(object):
         self.command = cmd['command']
         self.run_once = cmd.get('run_once', False)
         self.daemon = cmd.get('daemon', False)
-        self.check_path = '/kolla/%s/status/%s/%s' % (DEPLOYMENT_ID,
-                                                      ROLE, self.name)
-        self.requires = ['/kolla/%s/status/%s' % (DEPLOYMENT_ID, req)
-                         for req in cmd.get('dependencies', [])]
+        self.check_paths = [
+            '%s/status/%s/%s' % (DEPLOYMENT, ROLE, self.name),
+            '%s/status/%s/%s/%s' % (DEPLOYMENT, socket.gethostname(), ROLE,
+                                    self.name)
+        ]
+        self.requires = self.get_requirements(cmd)
         self.proc = None
         self.retries = int(cmd.get('retries', 0))
         if self.daemon:
@@ -371,6 +382,19 @@ class Command(object):
             # make sure they are strings
             self.env[ek] = str(ev)
         self.requirements_fulfilled()
+
+    def get_requirements(self, cmd):
+        requires = []
+        for req in cmd.get('dependencies', []):
+            path = req['path']
+            scope = req.get('scope', 'global')
+            if scope == 'global':
+                requires.append('%s/status/%s' % (DEPLOYMENT, path))
+            elif scope == 'local':
+                requires.append('%s/status/%s/%s' % (DEPLOYMENT,
+                                                     socket.gethostname(),
+                                                     path))
+        return requires
 
     def requirements_fulfilled(self):
         """get requirements status
@@ -393,16 +417,17 @@ class Command(object):
         return fulfilled
 
     def set_state(self, state):
-        self.zk.retry(self.zk.ensure_path, self.check_path)
-        current_state, _ = self.zk.get(self.check_path)
-        if current_state != state:
-            LOG.info('path: %s, changing state from %s to %s'
-                     % (self.check_path, current_state, state))
-            self.zk.set(self.check_path, state)
+        for check_path in self.check_paths:
+            self.zk.retry(self.zk.ensure_path, check_path)
+            current_state, _ = self.zk.get(check_path)
+            if current_state != state:
+                LOG.info('path: %s, changing state from %s to %s'
+                         % (check_path, current_state, state))
+                self.zk.set(check_path, state)
 
     def get_state(self, path=None):
         if not path:
-            path = self.check_path
+            path = self.check_paths[0]
         state = None
         if self.zk.exists(path):
             state, _ = self.zk.get(str(path))
@@ -438,17 +463,22 @@ class Command(object):
         if self.run_once:
             state = self.get_state()
             if state == CMD_DONE:
-                LOG.info("Path '%s' exists: skipping command",
-                         self.check_path)
+                for check_path in self.check_paths:
+                    LOG.info("Path '%s' exists: skipping command",
+                             check_path)
             else:
-                LOG.info("Path '%s' does not exist: running command",
-                         self.check_path)
-                zk.retry(zk.ensure_path, self.check_path)
-                lock = zk.Lock(self.check_path)
-                LOG.info("Acquiring lock '%s'", self.check_path)
-                with lock:
+                locks = []
+                for check_path in self.check_paths:
+                    LOG.info("Path '%s' does not exist: running command",
+                             check_path)
+                    zk.retry(zk.ensure_path, check_path)
+                    lock = zk.Lock(check_path)
+                    LOG.info("Acquiring lock '%s'", check_path)
+                    locks.append(lock)
+                with nested(*locks):
                     result = self._run_command()
-                LOG.info("Releasing lock '%s'", self.check_path)
+                for check_path in self.check_paths:
+                    LOG.info("Releasing lock '%s'", check_path)
         else:
             result = self._run_command()
         LOG.info('** < Complete %s result: %s', self.name, result)

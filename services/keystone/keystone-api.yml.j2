@@ -9,7 +9,8 @@ container:
       value: "kolla_logs_{{ deployment_id }}:/var/log/kolla"
 service:
   daemon:
-    dependencies: [keystone-api/db_sync]
+    dependencies:
+     - path: keystone-api/db_sync
     command: /usr/local/bin/kolla_apache_wrapper.sh
     env:
       OS_TOKEN: "password"
@@ -36,8 +37,9 @@ commands:
       KOLLA_BOOTSTRAP:
     command: kolla_extend_start
     run_once: True
-    dependencies: [keystone_ansible_tasks/create_database,
-                   keystone_ansible_tasks/database_user_create]
+    dependencies:
+     - path: keystone_ansible_tasks/create_database
+     - path: keystone_ansible_tasks/database_user_create
     files:
       keystone.conf.j2:
         source: ["/etc/kolla-mesos/config/global.conf",

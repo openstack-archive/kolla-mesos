@@ -15,7 +15,9 @@ container:
       mode: RO
 service:
   daemon:
-    dependencies: [openvswitch-vswitchd/bootstrap, openvswitch-vswitchd/setup_ovs_bridge]
+    dependencies:
+     - path: openvswitch-vswitchd/bootstrap
+     - path: openvswitch-vswitchd/setup_ovs_bridge
     command: /usr/sbin/ovs-vswitchd unix:/run/openvswitch/db.sock --mlockall
   mem: {{ openvswitch_vswitchd_mem }}
   cpus: {{ openvswitch_vswitchd_cpus }}
@@ -25,12 +27,14 @@ commands:
   bootstrap:
     command: kolla_extend_start
   check_ovs_db:
-    dependencies: [openvswitch-db/daemon]
+    dependencies:
+     - path: openvswitch-db/daemon
     retries: 30
     delay: 5
     command: ovs-vsctl --no-wait show
   setup_ovs_bridge:
-    dependencies: [openvswitch-vswitchd/check_ovs_db]
+    dependencies:
+     - path: openvswitch-vswitchd/check_ovs_db
     retries: 10
     delay: 5
     command: /usr/local/bin/kolla_ensure_openvswitch_configured {{ neutron_bridge_name }} {{ neutron_external_interface }}

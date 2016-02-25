@@ -7,7 +7,9 @@ container:
       value: "kolla_logs_{{ deployment_id }}:/var/log/kolla"
 service:
   daemon:
-    dependencies: [glance_ansible_tasks/create_user, keystone_ansible_tasks/running]
+    dependencies:
+     - path: glance_ansible_tasks/create_user
+     - path: keystone_ansible_tasks/running
     command: glance-registry
     files:
       glance.conf.j2:

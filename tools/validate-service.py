@@ -16,6 +16,8 @@ import argparse
 import json
 import logging
 import os.path
+import re
+import socket
 import sys
 import yaml
 
@@ -82,9 +84,14 @@ def validate_command(filename, cmd, cmd_info, deps, role):
     deps[reg]['name'] = cmd
     deps[reg]['run_by'] = filename
     for req in reqs:
-        if req not in deps:
-            deps[req] = {'waiters': {}}
-        deps[req]['waiters'][cmd] = reg
+        scope = req.get('scope', 'global')
+        if scope == 'global':
+            req_path = req['path']
+        elif scope == 'local':
+            req_path = os.path.join(socket.gethostname(), req_path)
+        if req_path not in deps:
+            deps[req_path] = {'waiters': {}}
+        deps[req_path]['waiters'][cmd] = reg
     if 'files' in cmd_info:
         validate_config(filename, cmd_info['files'])
 
@@ -124,6 +131,7 @@ def main():
     print(json.dumps(deps, indent=2))
     # validate the deps
     for task in deps:
+        task = re.sub(r'<hostname>', socket.gethostname(), task)
         if 'registered_by' not in deps[task]:
             res = 1
             logging.error('%s not registered' % task)
