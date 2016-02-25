@@ -6,7 +6,13 @@
     "container": {
         "type": "DOCKER",
         "image": "{{ kolla_toolbox_image }}:{{ kolla_toolbox_tag }}",
-        "network": "HOST"
+        "network": "HOST",
+        "volumes": [
+        {
+          "containerPath": "/var/log/kolla",
+          "hostPath": "/var/log/{{ deployment_id }}",
+          "mode": "RW"
+        }]
     },
     "environmentVariables": [
         {"name": "KOLLA_CONFIG_STRATEGY", "value": "{{ config_strategy }}"},
