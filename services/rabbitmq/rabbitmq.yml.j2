@@ -8,7 +8,8 @@ container:
 service:
   daemon:
     command: rabbitmq-server
-    dependencies: [rabbitmq/bootstrap]
+    dependencies:
+     - path: rabbitmq/bootstrap
     files:
       rabbitmq-env.conf.j2:
         source: config/rabbitmq/templates/rabbitmq-env.conf.j2

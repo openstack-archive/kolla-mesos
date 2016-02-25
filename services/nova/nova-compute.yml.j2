@@ -24,8 +24,12 @@ service:
   taskRateLimit: 600.0
   cpus: {{ nova_compute_cpus }}
   daemon:
-    dependencies: [nova-api/db_sync, nova-libvirt/daemon, nova_ansible_tasks/create_user,
-                   keystone_ansible_tasks/running, nova-compute/bootstrap]
+    dependencies:
+     - path: nova-api/db_sync
+     - path: nova-libvirt/daemon
+     - path: nova_ansible_tasks/create_user
+     - path: keystone_ansible_tasks/running
+     - path: nova-compute/bootstrap
     command: nova-compute --config-file /etc/nova/nova.conf --config-file /etc/nova/nova-override.conf
     files:
       nova-override.conf.j2:

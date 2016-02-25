@@ -15,7 +15,10 @@ container:
       mode: RO
 service:
   daemon:
-    dependencies: [neutron-server/db_sync, neutron_ansible_tasks/create_user, rabbitmq/daemon]
+    dependencies:
+     - path: neutron-server/db_sync
+     - path: neutron_ansible_tasks/create_user
+     - path: rabbitmq/daemon
     command: neutron-linuxbridge-agent --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugins/ml2/ml2_conf.ini
     files:
       neutron.conf.j2:
