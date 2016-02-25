@@ -18,7 +18,9 @@ service:
   mem: {{ openvswitch_db_mem }}
   cpus: {{ openvswitch_db_cpus }}
   instances: {{ controller_nodes|int + compute_nodes|int }}
+  {% if multinode %}
   constraints: [["hostname", "UNIQUE"], ["openstack_role", "LIKE", "(controller|compute)"]]
+  {% endif %}
 commands:
   bootstrap:
     command: kolla_extend_start
