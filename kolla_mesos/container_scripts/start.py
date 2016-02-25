@@ -398,7 +398,11 @@ class Command(object):
                 self.proc.wait()
                 ret = self.proc.returncode
             if ret != 0:
-                self.zk.retry(self.zk.delete, self.check_path)
+                try:
+                    self.zk.retry(self.zk.delete, self.check_path)
+                except kz_exceptions.NoNodeError:
+                    pass
+
             LOG.debug("Command %s ret='%s'", self.name, ret)
             return ret
 
