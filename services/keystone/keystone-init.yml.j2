@@ -13,7 +13,8 @@ commands:
     run_once: True
     retries: 3
     delay: 5
-    dependencies: [mariadb/daemon]
+    dependencies:
+     - path: mariadb/daemon
     command: {{ ansible_task_cmd }}
       -m mysql_db
       -a "login_host='{{ database_address }}'
@@ -25,7 +26,8 @@ commands:
     run_once: True
     retries: 3
     delay: 5
-    dependencies: [keystone_ansible_tasks/create_database]
+    dependencies:
+     - path: keystone_ansible_tasks/create_database
     command: {{ ansible_task_cmd }}
       -m mysql_user
       -a "login_host='{{ database_address }}'
@@ -41,7 +43,8 @@ commands:
     run_once: True
     retries: 3
     delay: 5
-    dependencies: [keystone-api/db_sync]
+    dependencies:
+     - path: keystone-api/db_sync
     command: {{ ansible_task_cmd }}
       -m kolla_keystone_user
       -a "project=admin
@@ -56,7 +59,8 @@ commands:
     run_once: True
     retries: 3
     delay: 5
-    dependencies: [keystone-api/db_sync]
+    dependencies:
+     - path: keystone-api/db_sync
     command: {{ ansible_task_cmd }}
       -m kolla_keystone_service
       -a "service_name=keystone
@@ -74,7 +78,8 @@ commands:
     run_once: True
     retries: 10
     delay: 5
-    dependencies: [keystone-api/db_sync]
+    dependencies:
+     - path: keystone-api/db_sync
     command: {{ ansible_task_cmd }}
       -m kolla_sanity
       -a "service=keystone

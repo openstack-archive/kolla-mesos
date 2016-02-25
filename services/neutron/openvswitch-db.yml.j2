@@ -13,7 +13,11 @@ container:
       mode: RW
 service:
   daemon:
-    dependencies: [openvswitch-db/bootstrap, neutron-server/db_sync, neutron_ansible_tasks/create_user, rabbitmq/daemon]
+    dependencies:
+     - path: openvswitch-db/bootstrap
+     - path: neutron-server/db_sync
+     - path: neutron_ansible_tasks/create_user
+     - path: rabbitmq/daemon
     command: /usr/sbin/ovsdb-server /etc/openvswitch/conf.db -vconsole:emer -vsyslog:err -vfile:info --remote=punix:/run/openvswitch/db.sock --log-file=/var/log/openvswitch/ovsdb-server.log
   mem: {{ openvswitch_db_mem }}
   cpus: {{ openvswitch_db_cpus }}

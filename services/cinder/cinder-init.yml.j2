@@ -11,7 +11,8 @@ task:
 commands:
   create_database:
     run_once: True
-    dependencies: [mariadb/bootstrap]
+    dependencies:
+     - path: mariadb/bootstrap
     command: {{ ansible_task_cmd }}
       -m mysql_db
       -a "login_host='{{ database_address }}'
@@ -21,7 +22,8 @@ commands:
           name='{{ cinder_database_name }}'"
   database_user_create:
     run_once: True
-    dependencies: [cinder_ansible_tasks/create_database]
+    dependencies:
+     - path: cinder_ansible_tasks/create_database
     command: {{ ansible_task_cmd }}
       -m mysql_user
       -a "login_host='{{ database_address }}'
@@ -35,7 +37,9 @@ commands:
           append_privs='yes'"
   register_endpoint_v1:
     run_once: True
-    dependencies: [cinder-api/db_sync, keystone_ansible_tasks/running]
+    dependencies:
+     - path: cinder-api/db_sync
+     - path: keystone_ansible_tasks/running
     command: {{ ansible_task_cmd }}
       -m kolla_keystone_service
       -a "service_name=cinder
@@ -50,7 +54,9 @@ commands:
       -e "{'openstack_cinder_auth':{{ openstack_cinder_auth }}}"
   register_endpoint_v2:
     run_once: True
-    dependencies: [cinder-api/db_sync, keystone_ansible_tasks/running]
+    dependencies:
+     - path: cinder-api/db_sync
+     - path: keystone_ansible_tasks/running
     command: {{ ansible_task_cmd }}
       -m kolla_keystone_service
       -a "service_name=cinderv2
@@ -65,7 +71,9 @@ commands:
       -e "{'openstack_cinder_auth':{{ openstack_cinder_auth }}}"
   create_user:
     run_once: True
-    dependencies: [cinder-api/db_sync, keystone_ansible_tasks/running]
+    dependencies:
+     - path: cinder-api/db_sync
+     - path: keystone_ansible_tasks/running
     command: {{ ansible_task_cmd }}
       -m kolla_keystone_user
       -a "project=service
