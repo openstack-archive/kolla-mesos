@@ -16,6 +16,8 @@ import argparse
 import json
 import logging
 import os.path
+import re
+import socket
 import sys
 import yaml
 
@@ -76,6 +78,10 @@ def validate_command(filename, cmd, cmd_info, deps, role):
 
     reg = '%s/%s' % (role, cmd)
     reqs = cmd_info.get('dependencies', [])
+    env = cmd_info.get('env', {})
+    for var_name in env:
+        if var_name == 'KOLLA_USE_HOSTNAME_IN_ZK_PATHS':
+            reg = '%s/%s' % (socket.gethostname(), reg)
     if reg not in deps:
         deps[reg] = {'waiters': {}}
     deps[reg]['registered_by'] = cmd
@@ -124,6 +130,7 @@ def main():
     print(json.dumps(deps, indent=2))
     # validate the deps
     for task in deps:
+        task = re.sub(r'<hostname>', socket.gethostname(), task)
         if 'registered_by' not in deps[task]:
             res = 1
             logging.error('%s not registered' % task)

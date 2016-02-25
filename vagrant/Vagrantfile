@@ -42,7 +42,7 @@ NUMBER_OF_STORAGE_NODES ||= 1
 NODE_SETTINGS ||= {
   aio: {
     cpus: 4,
-    memory: 4096
+    memory: 8192
   },
   master: {
     cpus: 1,
