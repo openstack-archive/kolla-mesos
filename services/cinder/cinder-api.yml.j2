@@ -14,6 +14,7 @@ service:
     command: /usr/bin/cinder-api
   mem: {{ cinder_api_mem }}
   cpus: {{ cinder_api_cpus }}
+  instances: {{ controller_nodes }}
   constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "controller"]]
 commands:
   db_sync:
