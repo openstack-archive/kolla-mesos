@@ -1,0 +1,9 @@
+Code-Review+2: Proskurin Kirill <kproskurin@mirantis.com>
+Code-Review+2: Steven Dake <stdake@cisco.com>
+Workflow+1: Steven Dake <stdake@cisco.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Fri, 26 Feb 2016 09:46:46 +0000
+Reviewed-on: https://review.openstack.org/284545
+Project: openstack/kolla-mesos
+Branch: refs/heads/master
