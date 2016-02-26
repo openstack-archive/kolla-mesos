@@ -15,6 +15,7 @@
 import contextlib
 import datetime
 import fcntl
+import filecmp
 import json
 import logging
 import math
@@ -190,6 +191,11 @@ def get_groups_and_hostvars(zk):
 
 
 def write_file(conf, data):
+    """Write the data to the file specified in the conf.
+
+    If there is an existing file in the destination, compare the new
+    contents with the existing contents. Return True if there is a difference.
+    """
     owner = conf.get('owner')
     # Check for user and group id in the environment.
     try:
@@ -210,6 +216,12 @@ def write_file(conf, data):
         tf.write(data)
         tf.flush()
         tf_name = tf.name
+
+    diff = True
+    if os.path.exists(dest):
+        diff = not filecmp.cmp(tf_name, dest, shallow=False)
+        if not diff:
+            return False
     try:
         inst_cmd = ' '.join(['sudo', 'install', '-v',
                              '--no-target-directory',
@@ -219,6 +231,7 @@ def write_file(conf, data):
     except subprocess.CalledProcessError as exc:
         LOG.error(exc)
         LOG.exception(inst_cmd)
+    return diff
 
 
 def generate_host_vars(zk):
