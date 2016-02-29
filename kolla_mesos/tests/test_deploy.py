@@ -156,6 +156,7 @@ class TestClient(base.BaseTestCase):
                                                  mock_jutils):
         CONF.set_override('deployment_id', 'test', group='kolla')
         mock_yaml.load = mock.MagicMock(return_value={
+            'multinode': 'yes',
             'autodetect_resources': 'yes'})
         self.worker.setup_working_dir()
         self.worker.gen_deployment_id()
@@ -176,6 +177,7 @@ class TestClient(base.BaseTestCase):
                                                     mock_jutils):
         CONF.set_override('deployment_id', 'test', group='kolla')
         mock_yaml.load = mock.MagicMock(return_value={
+            'multinode': 'yes',
             'autodetect_resources': 'no'})
         self.worker.setup_working_dir()
         self.worker.gen_deployment_id()

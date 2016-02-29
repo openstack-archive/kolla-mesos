@@ -15,7 +15,9 @@ service:
   mem: {{ glance_api_mem }}
   cpus: {{ glance_api_cpus }}
   instances: {{ controller_nodes }}
+  {% if multinode|bool %}
   constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "controller"]]
+  {% endif %}
 commands:
   extend_start:
     command: kolla_extend_start

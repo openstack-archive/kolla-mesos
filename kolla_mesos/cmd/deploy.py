@@ -302,14 +302,23 @@ class KollaWorker(object):
             'deployment_id': self.deployment_id,
             'node_config_directory': ''
         })
-        if yaml_utils.str_to_bool(jvars['autodetect_resources']):
-            controller_nodes, compute_nodes, storage_nodes, all_nodes = \
-                mesos_utils.get_number_of_nodes()
+        autodetect_resources = yaml_utils.str_to_bool(
+            jvars['autodetect_resources'])
+        multinode = yaml_utils.str_to_bool(jvars['multinode'])
+        if multinode:
+            if autodetect_resources:
+                controller_nodes, compute_nodes, storage_nodes, all_nodes = \
+                    mesos_utils.get_number_of_nodes()
+            else:
+                controller_nodes = jvars.get('controller_nodes') or 1
+                compute_nodes = jvars.get('compute_nodes') or 1
+                storage_nodes = jvars.get('storage_nodes') or 1
+                all_nodes = controller_nodes + compute_nodes + storage_nodes
         else:
-            controller_nodes = jvars.get('controller_nodes') or 1
-            compute_nodes = jvars.get('compute_nodes') or 1
-            storage_nodes = jvars.get('storage_nodes') or 1
-            all_nodes = controller_nodes + compute_nodes + storage_nodes
+            controller_nodes = 1
+            compute_nodes = 1
+            storage_nodes = 1
+            all_nodes = 1
         jvars.update({
             'controller_nodes': str(controller_nodes),
             'compute_nodes': str(compute_nodes),

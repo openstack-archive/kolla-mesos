@@ -29,7 +29,9 @@ service:
   mem: {{ rabbitmq_mem }}
   cpus: {{ rabbitmq_cpus }}
   instances: {{ controller_nodes }}
+  {% if multinode|bool %}
   constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "controller"]]
+  {% endif %}
 commands:
   bootstrap:
     command: kolla_extend_start
