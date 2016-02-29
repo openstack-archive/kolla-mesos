@@ -33,6 +33,9 @@ service:
 commands:
   bootstrap:
     command: kolla_extend_start
+    dependencies:
+     - path: heka/bootstrap
+       scope: local
     env:
       KOLLA_BOOTSTRAP:
       RABBITMQ_CLUSTER_COOKIE: "{{ rabbitmq_cluster_cookie }}"
