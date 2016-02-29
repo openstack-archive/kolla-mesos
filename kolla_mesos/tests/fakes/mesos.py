@@ -10,37 +10,62 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import abc
 import functools
 
 import requests_mock
+import six
 
 
-MESOS_STATE = {
+MESOS_STATE_TAGGED_SLAVES = {
     'slaves': [
-        {'attributes': {'openstack_role': 'controller'}},
-        {'attributes': {'openstack_role': 'controller'}},
-        {'attributes': {'openstack_role': 'controller'}},
-        {'attributes': {'openstack_role': 'compute'}},
-        {'attributes': {'openstack_role': 'compute'}},
-        {'attributes': {'openstack_role': 'storage'}},
-        {'attributes': {'openstack_role': 'storage'}}
+        {'attributes': {'openstack_role': 'controller'},
+         'hostname': 'controller01'},
+        {'attributes': {'openstack_role': 'controller'},
+         'hostname': 'controller02'},
+        {'attributes': {'openstack_role': 'controller'},
+         'hostname': 'controller03'},
+        {'attributes': {'openstack_role': 'compute'},
+         'hostname': 'compute01'},
+        {'attributes': {'openstack_role': 'compute'},
+         'hostname': 'compute01'},
+        {'attributes': {'openstack_role': 'storage'},
+         'hostname': 'storage01'},
+        {'attributes': {'openstack_role': 'storage'},
+         'hostname': 'storage02'},
+        {'attributes': {'openstack_role': 'all_in_one'},
+         'hostname': 'allinone'}
     ]
+}
+MESOS_STATE_UNTAGGED_SLAVES = {
+    'slaves': [
+        {'attributes': {},
+         'hostname': 'slave01'},
+        {'attributes': {},
+         'hostname': 'slave02'}
+    ]
+}
+MESOS_STATE_NO_SLAVES = {
+    'slaves': []
 }
 
 
-class FakeMesosStateSlaves(object):
+@six.add_metaclass(abc.ABCMeta)
+class FakeMesosState(object):
     """Contextmanager and decorator for mocking Mesos API Response.
 
     This response provides a list of slaves for testing the logic about
     counting the OpenStack nodes.
     """
+    mesos_state = abc.abstractproperty()
 
     def __init__(self):
         self.mocker = requests_mock.mocker.Mocker()
 
     def __enter__(self):
         self.mocker.start()
-        self.mocker.get('http://127.0.0.1:5050/state.json', json=MESOS_STATE)
+        self.mocker.get('http://127.0.0.1:5050/state.json',
+                        json=self.mesos_state)
 
     def __exit__(self, *args):
         self.mocker.stop()
@@ -51,3 +76,15 @@ class FakeMesosStateSlaves(object):
             with self:
                 return f(*args, **kwargs)
         return wrapper
+
+
+class FakeMesosStateTaggedSlaves(FakeMesosState):
+    mesos_state = MESOS_STATE_TAGGED_SLAVES
+
+
+class FakeMesosStateUntaggedSlaves(FakeMesosState):
+    mesos_state = MESOS_STATE_UNTAGGED_SLAVES
+
+
+class FakeMesosStateNoSlaves(FakeMesosState):
+    mesos_state = MESOS_STATE_NO_SLAVES

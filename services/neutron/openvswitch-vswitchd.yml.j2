@@ -22,7 +22,7 @@ service:
   mem: {{ openvswitch_vswitchd_mem }}
   cpus: {{ openvswitch_vswitchd_cpus }}
   instances: {{ all_nodes }}
-  constraints: [["hostname", "UNIQUE"], ["openstack_role", "LIKE", "(controller|compute)"]]
+  constraints: {{ controller_compute_constraints }}
 commands:
   bootstrap:
     command: kolla_extend_start

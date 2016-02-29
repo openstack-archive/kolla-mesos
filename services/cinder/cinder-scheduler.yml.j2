@@ -27,7 +27,7 @@ service:
   mem: {{ cinder_scheduler_mem }}
   cpus: {{ cinder_scheduler_cpus }}
   instances: {{ controller_nodes }}
-  constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "controller"]]
+  constraints: {{ controller_constraints }}
 commands:
   extend_start:
     command: kolla_extend_start

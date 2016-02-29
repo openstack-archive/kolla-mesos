@@ -24,8 +24,14 @@ network_interface: "eth2"
 neutron_external_interface: "eth2"
 
 ####################
-# OpenStack options
+# Resources options
 ####################
+# If "no", there will be no constraints regarding the OpenStack services.
+# And all the options in this section will be not regarded.
+multinode: "no"
+# If defined, then this single slave will be used for "all-in-one"
+# deployment and all the options in this setion will be not regarded
+#mesos_slave_hostname: "slave01.local"
 # If "yes", kolla-mesos will auto-detect the Mesos slave nodes which have
 # "openstack_role" attribute and count them to caculate the number
 # of OpenStack services to run. If no, you have to set up the options below.
@@ -36,6 +42,17 @@ controller_nodes: "1"
 compute_nodes: "1"
 storage_nodes: "1"
 
+####################
+# Constraints
+####################
+controller_constraints: "[[\"hostname\", \"UNIQUE\"], [\"openstack_role\", \"CLUSTER\", \"controller\"]]"
+compute_constraints: "[[\"hostname\", \"UNIQUE\"], [\"openstack_role\", \"CLUSTER\", \"compute\"]]"
+controller_compute_constraints: "[[\"hostname\", \"UNIQUE\"], [\"openstack_role\", \"LIKE\", \"(controller|compute)\"]]"
+storage_constraints: "[[\"hostname\", \"UNIQUE\"], [\"openstack_role\", \"CLUSTER\", \"storage\"]]"
+
+####################
+# OpenStack options
+####################
 openstack_release: "2.0.0"
 init_log_level: "debug"
 database_max_timeout: "60"
