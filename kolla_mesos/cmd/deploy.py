@@ -267,6 +267,38 @@ class KollaWorker(object):
         LOG.debug('Projects are: %s' % projects)
         return projects
 
+    def _apply_deployment_vars(self, jvars):
+        autodetect_resources = yaml_utils.str_to_bool(
+            jvars['autodetect_resources'])
+        multinode = yaml_utils.str_to_bool(jvars['multinode'])
+        if multinode:
+            if autodetect_resources:
+                controller_nodes, compute_nodes, storage_nodes, all_nodes = \
+                    mesos_utils.get_number_of_nodes()
+            else:
+                try:
+                    controller_nodes = jvars['controller_nodes']
+                    compute_nodes = jvars['compute_nodes']
+                    storage_nodes = jvars['storage_nodes']
+                except KeyError:
+                    raise exception.UndefinedOption(
+                        'When "autodetect_resources" option is disabled, '
+                        '"controller_nodes", "compute_nodes" and'
+                        '"storage_nodes" have to be defined.')
+                all_nodes = controller_nodes + compute_nodes + storage_nodes
+        else:
+            controller_nodes = 1
+            compute_nodes = 1
+            storage_nodes = 1
+            all_nodes = 1
+            jvars['aio_slave'] = mesos_utils.get_slave_for_aio()
+        jvars.update({
+            'controller_nodes': str(controller_nodes),
+            'compute_nodes': str(compute_nodes),
+            'storage_nodes': str(storage_nodes),
+            'all_nodes': str(all_nodes)
+        })
+
     def get_jinja_vars(self):
         # order for per-project variables (each overrides the previous):
         # 1. /etc/kolla/globals.yml and passwords.yml
@@ -302,20 +334,7 @@ class KollaWorker(object):
             'deployment_id': self.deployment_id,
             'node_config_directory': ''
         })
-        if yaml_utils.str_to_bool(jvars['autodetect_resources']):
-            controller_nodes, compute_nodes, storage_nodes, all_nodes = \
-                mesos_utils.get_number_of_nodes()
-        else:
-            controller_nodes = jvars.get('controller_nodes') or 1
-            compute_nodes = jvars.get('compute_nodes') or 1
-            storage_nodes = jvars.get('storage_nodes') or 1
-            all_nodes = controller_nodes + compute_nodes + storage_nodes
-        jvars.update({
-            'controller_nodes': str(controller_nodes),
-            'compute_nodes': str(compute_nodes),
-            'storage_nodes': str(storage_nodes),
-            'all_nodes': str(all_nodes)
-        })
+        self._apply_deployment_vars(jvars)
         return jvars
 
     def gen_deployment_id(self):
@@ -443,7 +462,7 @@ class KollaWorker(object):
                     var_value = json.dumps(self.required_vars[var])
                 var_path = os.path.join(base_node, 'variables', var)
                 zk.ensure_path(var_path)
-                zk.set(var_path, "" if var_value is None else var_value)
+                zk.set(var_path, "" if var_value is None else str(var_value))
                 LOG.debug('Updated "%s" node in zookeeper.' % var_path)
 
     def _start_marathon_app(self, app_resource):

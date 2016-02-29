@@ -13,6 +13,7 @@
 from oslo_config import cfg
 
 from kolla_mesos.common import mesos_utils
+from kolla_mesos import exception
 from kolla_mesos.tests import base
 from kolla_mesos.tests.fakes import mesos as fake_mesos
 
@@ -23,12 +24,30 @@ CONF.import_group('mesos', 'kolla_mesos.config.mesos')
 
 class TestMesosUtils(base.BaseTestCase):
 
-    @fake_mesos.FakeMesosStateSlaves()
-    def test_get_number_of_nodes(self):
+    def setUp(self):
+        super(TestMesosUtils, self).setUp()
         CONF.set_override('host', 'http://127.0.0.1:5050', group='mesos')
+
+    @fake_mesos.FakeMesosStateTaggedSlaves()
+    def test_get_number_of_nodes(self):
         controller_nodes, compute_nodes, storage_nodes, all_nodes = \
             mesos_utils.get_number_of_nodes()
         self.assertEqual(controller_nodes, 3)
         self.assertEqual(compute_nodes, 2)
         self.assertEqual(storage_nodes, 2)
         self.assertEqual(all_nodes, 7)
+
+    @fake_mesos.FakeMesosStateTaggedSlaves()
+    def test_get_slave_for_aio_tagged(self):
+        slave = mesos_utils.get_slave_for_aio()
+        self.assertEqual(slave, 'allinone')
+
+    @fake_mesos.FakeMesosStateUntaggedSlaves()
+    def test_get_slave_for_aio_untagged(self):
+        slave = mesos_utils.get_slave_for_aio()
+        self.assertEqual(slave, 'slave01')
+
+    @fake_mesos.FakeMesosStateNoSlaves()
+    def test_get_slave_for_aio_no_slave(self):
+        self.assertRaises(exception.NoMesosSlaveAvailable,
+                          mesos_utils.get_slave_for_aio)
