@@ -29,4 +29,6 @@ service:
   mem: {{ nova_scheduler_mem }}
   cpus: {{ nova_scheduler_cpus }}
   instances: {{ controller_nodes }}
+  {% if multinode %}
   constraints: [["hostname", "UNIQUE"], ["openstack_role", "LIKE", "controller"]]
+  {% endif %}
