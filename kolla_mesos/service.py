@@ -314,6 +314,10 @@ class MarathonApp(Runner):
                 app_def[opt] = utils.dict_update(app_def.get(opt),
                                                  self._conf['service'][opt])
 
+        # 4. apply extra environment variables
+        extra_env = self._conf.get('extra_env', {})
+        app_def['env'].update(extra_env)
+
     @execute_if_enabled
     def run(self):
         self._client().add_app(self.app_def)
