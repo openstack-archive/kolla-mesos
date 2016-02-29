@@ -34,7 +34,11 @@ service:
         owner: root
         perm: "0644"
   instances: {{ compute_nodes }}
+  {% if multinode|bool %}
   constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "compute"]]
+  {% else %}
+  constraints: [["hostname", "CLUSTER", "{{ aio_slave }}"]]
+  {% endif %}
 commands:
   extend_start:
     command: kolla_extend_start

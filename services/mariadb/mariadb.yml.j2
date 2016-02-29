@@ -16,7 +16,11 @@ service:
   mem: {{ mariadb_mem }}
   cpus: {{ mariadb_cpus }}
   instances: {{ controller_nodes }}
+  {% if multinode|bool %}
   constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "controller"]]
+  {% else %}
+  constraints: [["hostname", "CLUSTER", "{{ aio_slave }}"]]
+  {% endif %}
 commands:
   bootstrap:
     run_once: True

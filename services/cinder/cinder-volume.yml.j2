@@ -27,7 +27,11 @@ service:
   mem: {{ cinder_volume_mem }}
   cpus: {{ cinder_volume_cpus }}
   instances: {{ storage_nodes }}
+  {% if multinode|bool %}
   constraints: [["hostname", "UNIQUE"], ["openstack_role", "LIKE", "storage"]]
+  {% else %}
+  constraints: [["hostname", "CLUSTER", "{{ aio_slave }}"]]
+  {% endif %}
 commands:
   extend_start:
     command: kolla_extend_start

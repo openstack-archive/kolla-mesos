@@ -15,7 +15,11 @@ service:
   mem: {{ nova_api_mem }}
   cpus: {{ nova_api_cpus }}
   instances: {{ controller_nodes }}
+  {% if multinode|bool %}
   constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "controller"]]
+  {% else %}
+  constraints: [["hostname", "CLUSTER", "{{ aio_slave }}"]]
+  {% endif %}
 commands:
   db_sync:
     env:
