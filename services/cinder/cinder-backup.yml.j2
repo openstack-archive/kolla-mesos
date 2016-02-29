@@ -30,7 +30,7 @@ service:
   mem: {{ cinder_backup_mem }}
   cpus: {{ cinder_backup_cpus }}
   instances: {{ storage_nodes }}
-  constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "storage"]]
+  constraints: {{ storage_constraints }}
 commands:
   extend_start:
     command: kolla_extend_start

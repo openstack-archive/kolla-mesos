@@ -25,3 +25,7 @@ class ChronosRollback(Exception):
 
 class MesosTasksNotCompleted(Exception):
     pass
+
+
+class UndefinedOption(Exception):
+    pass

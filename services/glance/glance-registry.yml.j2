@@ -25,7 +25,7 @@ service:
   mem: {{ glance_registry_mem }}
   cpus: {{ glance_registry_cpus }}
   instances: {{ controller_nodes }}
-  constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "controller"]]
+  constraints: {{ controller_constraints }}
 commands:
   extend_start:
     command: kolla_extend_start
