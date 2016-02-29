@@ -14,7 +14,9 @@ service:
   mem: {{ glance_api_mem }}
   cpus: {{ glance_api_cpus }}
   instances: {{ controller_nodes }}
+  {% if multinode %}
   constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "controller"]]
+  {% endif %}
 commands:
   db_sync:
     run_once: True

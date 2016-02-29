@@ -35,4 +35,6 @@ service:
     env:
       KOLLA_USE_HOSTNAME_IN_ZK_PATHS:
   instances: {{ compute_nodes }}
+  {% if multinode %}
   constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "compute"]]
+  {% endif %}

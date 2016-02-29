@@ -26,4 +26,6 @@ service:
   mem: {{ cinder_scheduler_mem }}
   cpus: {{ cinder_scheduler_cpus }}
   instances: {{ controller_nodes }}
+  {% if multinode %}
   constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "controller"]]
+  {% endif %}

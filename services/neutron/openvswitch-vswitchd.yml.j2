@@ -20,4 +20,6 @@ service:
   mem: {{ openvswitch_vswitchd_mem }}
   cpus: {{ openvswitch_vswitchd_cpus }}
   instances: {{ compute_nodes|int + controller_nodes|int }}
+  {% if multinode %}
   constraints: [["hostname", "UNIQUE"], ["openstack_role", "LIKE", "(controller|compute)"]]
+  {% endif %}
