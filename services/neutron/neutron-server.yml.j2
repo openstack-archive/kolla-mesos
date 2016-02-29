@@ -36,7 +36,7 @@ service:
   mem: {{ neutron_server_mem }}
   cpus: {{ neutron_server_cpus }}
   instances: {{ controller_nodes }}
-  constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "controller"]]
+  constraints: {{ controller_constraints }}
 commands:
   db_sync:
     run_once: True

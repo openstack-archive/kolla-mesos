@@ -34,7 +34,7 @@ service:
         owner: root
         perm: "0644"
   instances: {{ compute_nodes }}
-  constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "compute"]]
+  constraints: {{ compute_constraints }}
 commands:
   extend_start:
     command: kolla_extend_start

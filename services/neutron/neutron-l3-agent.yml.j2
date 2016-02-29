@@ -53,7 +53,7 @@ service:
   mem: {{ neutron_l3_agent_mem }}
   cpus: {{ neutron_l3_agent_cpus }}
   instances: {{ controller_nodes }}
-  constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "controller"]]
+  constraints: {{ controller_constraints }}
 commands:
   extend_start:
     command: kolla_extend_start

@@ -13,4 +13,4 @@ service:
   mem: {{ memcached_mem }}
   cpus: {{ memcached_cpus }}
   instances: {{ controller_nodes }}
-  constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "controller"]]
+  constraints: {{ controller_constraints }}
