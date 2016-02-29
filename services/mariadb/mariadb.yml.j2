@@ -20,7 +20,10 @@ service:
 commands:
   bootstrap:
     run_once: True
-    command: kolla_extend_start
+    command: echo foo
+    dependencies:
+     - path: heka/bootstrap
+       scope: local
     env:
       KOLLA_BOOTSTRAP:
       DB_ROOT_PASSWORD: "{{ database_password }}"

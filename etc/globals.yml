@@ -51,6 +51,7 @@ database_max_timeout: "60"
 
 # Additional optional OpenStack services
 enable_cinder: "no"
+enable_heka: "yes"
 enable_horizon: "no"
 enable_memcached: "no"
 enable_haproxy: "no"
