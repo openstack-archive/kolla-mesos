@@ -8,6 +8,8 @@ container:
 service:
   daemon:
     dependencies:
+     - path: heka/bootstrap
+       scope: local
      - path: glance_ansible_tasks/create_database
      - path: glance_ansible_tasks/database_user_create
      - path: glance-api/db_sync
