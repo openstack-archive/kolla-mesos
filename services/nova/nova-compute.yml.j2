@@ -48,7 +48,9 @@ service:
         owner: nova
         perm: "0600"
   instances: {{ compute_nodes }}
+  {% if multinode %}
   constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "compute"]]
+  {% endif %}
 commands:
   disable-netfilter-4:
     command: "echo sudo sysctl net.bridge.bridge-nf-call-iptables=1"
