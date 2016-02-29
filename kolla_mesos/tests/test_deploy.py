@@ -148,7 +148,7 @@ class TestClient(base.BaseTestCase):
         self.assertEqual(self.worker._start_chronos_job.call_count, 1)
         self.assertEqual(self.worker._start_marathon_app.call_count, 2)
 
-    @fake_mesos.FakeMesosStateSlaves()
+    @fake_mesos.FakeMesosStateTaggedSlaves()
     @mock.patch('kolla_mesos.cmd.deploy.jinja_utils')
     @mock.patch('kolla_mesos.cmd.deploy.yaml')
     @mock.patch('kolla_mesos.cmd.deploy.open')
@@ -156,6 +156,7 @@ class TestClient(base.BaseTestCase):
                                                  mock_jutils):
         CONF.set_override('deployment_id', 'test', group='kolla')
         mock_yaml.load = mock.MagicMock(return_value={
+            'multinode': 'yes',
             'autodetect_resources': 'yes'})
         self.worker.setup_working_dir()
         self.worker.gen_deployment_id()
@@ -176,7 +177,11 @@ class TestClient(base.BaseTestCase):
                                                     mock_jutils):
         CONF.set_override('deployment_id', 'test', group='kolla')
         mock_yaml.load = mock.MagicMock(return_value={
-            'autodetect_resources': 'no'})
+            'multinode': 'yes',
+            'autodetect_resources': 'no',
+            'controller_nodes': 3,
+            'compute_nodes': 2,
+            'storage_nodes': 2})
         self.worker.setup_working_dir()
         self.worker.gen_deployment_id()
         result = self.worker.get_jinja_vars()
@@ -184,7 +189,7 @@ class TestClient(base.BaseTestCase):
         self.assertIsInstance(result, dict)
         self.assertEqual(result['deployment_id'], 'test')
         self.assertEqual(result['node_config_directory'], '')
-        self.assertEqual(result['controller_nodes'], '1')
-        self.assertEqual(result['compute_nodes'], '1')
-        self.assertEqual(result['storage_nodes'], '1')
-        self.assertEqual(result['all_nodes'], '3')
+        self.assertEqual(result['controller_nodes'], '3')
+        self.assertEqual(result['compute_nodes'], '2')
+        self.assertEqual(result['storage_nodes'], '2')
+        self.assertEqual(result['all_nodes'], '7')
