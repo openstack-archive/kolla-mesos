@@ -1,0 +1,23 @@
+name: infra/heka/heka
+enabled: {{ enable_heka | bool }}
+container:
+  image: "{{ heka_image }}:{{ heka_tag }}"
+  parameters:
+    - key: volume
+      value: "kolla_logs_{{ deployment_id }}:/var/log/kolla"
+    - key: volume
+      value: "heka_{{ deployment_id }}:/var/cache/hekad"
+    - key: volume
+      value: "heka_socket_{{ deployment_id }}:/var/lib/kolla/heka"
+service:
+  daemon:
+    command:
+    files:
+  mem: {{ heka_mem }}
+  cpus: {{ heka_cpus }}
+  constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "controller"]]
+commands:
+  bootstrap:
+    command: kolla_extend_start
+    env:
+      KOLLA_BOOTSTRAP:
