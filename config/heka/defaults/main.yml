@@ -1,0 +1,15 @@
+---
+project_name: "heka"
+
+####################
+# Docker
+####################
+heka_image: "{{ docker_registry ~ '/' if docker_registry else '' }}{{ docker_namespace }}/{{ kolla_base_distro }}-{{ kolla_install_type }}-heka"
+heka_tag: "{{ openstack_release }}"
+
+
+####################
+# Resources
+####################
+heka_mem: "{{ heka_mem|default('128') }}"
+heka_cpus: "{{ heka_cpus|default('0.1') }}"

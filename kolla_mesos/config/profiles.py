@@ -20,8 +20,8 @@ profiles_opts = [
                 default=['mariadb', 'memcached', 'rabbitmq']),
     # TODO(nihilifer): Add ceilometer, head and swift when implemented.
     cfg.ListOpt('main',
-                default=['cinder', 'glance', 'horizon', 'keystone', 'neutron',
-                         'nova']),
+                default=['cinder', 'glance', 'heka', 'horizon', 'keystone',
+                         'neutron', 'nova']),
     # TODO(nihilifer): Enable this profile when any of its services will be
     # implemented.
     # cfg.ListOpt('aux',

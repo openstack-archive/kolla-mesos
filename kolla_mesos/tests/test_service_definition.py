@@ -74,6 +74,9 @@ class TestValidate(base.BaseTestCase):
                 'registered_by': 'daemon',
                 'run_by': template,
                 'waiters': {}},
+            'test/heka/bootstrap': {
+                'waiters': {
+                    'daemon': 'test/memcached/daemon'}},
             'memcached/daemon': {
                 'name': 'daemon',
                 'registered_by': 'daemon',
