@@ -1,0 +1,56 @@
+name: infra/heka/heka
+enabled: {{ enable_heka | bool }}
+container:
+  image: "{{ heka_image }}:{{ heka_tag }}"
+  parameters:
+    - key: volume
+      value: "kolla_logs_{{ deployment_id }}:/var/log/kolla"
+    - key: volume
+      value: "heka_{{ deployment_id }}:/var/cache/hekad"
+    - key: volume
+      value: "heka_socket_{{ deployment_id }}:/var/lib/kolla/heka"
+service:
+  daemon:
+    command: /usr/bin/hekad -config=/etc/heka/
+    env:
+      SKIP_LOG_SETUP: "true"
+    files:
+      heka-global.toml.j2:
+        source: config/heka/templates/heka-global.toml.j2
+        dest: /etc/heka/heka-global.toml
+        owner: heka
+        perm: "0600"
+      heka-haproxy.toml.j2:
+        source: config/heka/templates/heka-haproxy.toml.j2
+        dest: /etc/heka/heka-haproxy.toml
+        owner: heka
+        perm: "0600"
+      heka-rabbitmq.toml.j2:
+        source: config/heka/templates/heka-rabbitmq.toml.j2
+        dest: /etc/heka/heka-rabbitmq.toml
+        owner: heka
+        perm: "0600"
+      heka-openstack.toml.j2:
+        source: config/heka/templates/heka-openstack.toml.j2
+        dest: /etc/heka/heka-openstack.toml
+        owner: heka
+        perm: "0600"
+      heka-mariadb.toml.j2:
+        source: config/heka/templates/heka-mariadb.toml.j2
+        dest: /etc/heka/heka-mariadb.toml
+        owner: heka
+        perm: "0600"
+      heka-keystone.toml.j2:
+        source: config/heka/templates/heka-keystone.toml.j2
+        dest: /etc/heka/heka-keystone.toml
+        owner: heka
+        perm: "0600"
+  mem: {{ heka_mem }}
+  cpus: {{ heka_cpus }}
+  constraints: {{ controller_compute_constraints }}
+commands:
+  bootstrap:
+    run_once: True
+    command: kolla_extend_start
+    env:
+      KOLLA_BOOTSTRAP:

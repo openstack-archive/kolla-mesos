@@ -19,6 +19,7 @@ import filecmp
 import json
 import logging
 import math
+import multiprocessing
 import os
 import pwd
 import re
@@ -320,7 +321,8 @@ def generate_host_vars(zk):
                  'get_ip_address': tf.get_ip_address,
                  'list_ips_by_service': tf.list_ips_by_service,
                  'deployment_id': DEPLOYMENT_ID,
-                 'service_name': SERVICE_NAME}
+                 'service_name': SERVICE_NAME,
+                 'cpu_count': multiprocessing.cpu_count()}
     return variables
 
 
