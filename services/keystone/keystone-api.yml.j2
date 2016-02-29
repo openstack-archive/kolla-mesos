@@ -28,7 +28,7 @@ service:
   mem: {{ keystone_api_mem }}
   cpus: {{ keystone_api_cpus }}
   instances: {{ controller_nodes }}
-  constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "controller"]]
+  constraints: {{ controller_constraints }}
 commands:
   extend_start:
     command: kolla_extend_start

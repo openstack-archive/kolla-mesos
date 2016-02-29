@@ -29,4 +29,4 @@ service:
   mem: {{ nova_spicehtml3proxy_mem }}
   cpus: {{ nova_spicehtml3proxy_cpus }}
   instances: {{ controller_nodes }}
-  constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "controller"]]
+  constraints: {{ controller_constraints }}

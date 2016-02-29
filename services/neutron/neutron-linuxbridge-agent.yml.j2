@@ -39,7 +39,7 @@ service:
   mem: {{ neutron_linuxbridge_agent_mem }}
   cpus: {{ neutron_linuxbridge_agent_cpus }}
   instances: {{ all_nodes }}
-  constraints: [["hostname", "UNIQUE"], ["openstack_role", "LIKE", "(controller|compute)"]]
+  constraints: {{ controller_compute_constraints }}
 commands:
   extend_start:
     command: kolla_extend_start

@@ -23,9 +23,12 @@ CONF.import_group('mesos', 'kolla_mesos.config.mesos')
 
 class TestMesosUtils(base.BaseTestCase):
 
-    @fake_mesos.FakeMesosStateSlaves()
-    def test_get_number_of_nodes(self):
+    def setUp(self):
+        super(TestMesosUtils, self).setUp()
         CONF.set_override('host', 'http://127.0.0.1:5050', group='mesos')
+
+    @fake_mesos.FakeMesosStateTaggedSlaves()
+    def test_get_number_of_nodes(self):
         controller_nodes, compute_nodes, storage_nodes, all_nodes = \
             mesos_utils.get_number_of_nodes()
         self.assertEqual(controller_nodes, 3)
