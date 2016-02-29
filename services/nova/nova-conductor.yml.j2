@@ -27,7 +27,9 @@ service:
   mem: {{ nova_conductor_mem }}
   cpus: {{ nova_conductor_cpus }}
   instances: {{ controller_nodes }}
+  {% if multinode %}
   constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "controller"]]
+  {% endif %}
 commands:
   db_sync:
     run_once: True

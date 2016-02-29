@@ -22,7 +22,9 @@ service:
   mem: {{ keystone_api_mem }}
   cpus: {{ keystone_api_cpus }}
   instances: {{ controller_nodes }}
+  {% if multinode %}
   constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "controller"]]
+  {% endif %}
 commands:
   db_sync:
     env:

@@ -49,5 +49,7 @@ service:
         perm: "0600"
   mem: {{ neutron_dhcp_agent_mem }}
   cpus: {{ neutron_dhcp_agent_cpus }}
+  {% if multinode %}
   constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "controller"]]
+  {% endif %}
   instances: {{ controller_nodes }}

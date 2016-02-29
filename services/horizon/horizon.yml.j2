@@ -30,7 +30,9 @@ service:
   mem: {{ horizon_mem }}
   cpus: {{ horizon_cpus }}
   instances: {{ controller_nodes }}
+  {% if multinode %}
   constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "controller"]]
+  {% endif %}
 commands:
   bootstrap:
     command: bash kolla_mesos_extend_start

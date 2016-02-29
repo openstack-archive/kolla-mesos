@@ -29,4 +29,6 @@ service:
   mem: {{ cinder_backup_mem }}
   cpus: {{ cinder_backup_cpus }}
   instances: {{ storage_nodes }}
+  {% if multinode %}
   constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "storage"]]
+  {% endif %}
