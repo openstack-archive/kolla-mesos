@@ -10,11 +10,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import functools
+
+from kolla_mesos import exception
 from kolla_mesos import mesos
 
 
-def get_number_of_nodes():
-    mesos_client = mesos.Client()
+class MesosClient(object):
+    """Decorator and contextmanager for connecting with Mesos."""
+
+    def __enter__(self):
+        self.mesos_client = mesos.Client()
+        return self.mesos_client
+
+    def __exit__(self, *args, **kwargs):
+        pass
+
+    def __call__(self, f):
+        @functools.wraps(f)
+        def wrapper(*args, **kwargs):
+            with self as mesos_client:
+                return f(mesos_client, *args, **kwargs)
+        return wrapper
+
+
+@MesosClient()
+def get_number_of_nodes(mesos_client):
     slaves = mesos_client.get_slaves()
     controller_nodes = 0
     compute_nodes = 0
@@ -35,3 +56,25 @@ def get_number_of_nodes():
     all_nodes = controller_nodes + compute_nodes + storage_nodes
 
     return controller_nodes, compute_nodes, storage_nodes, all_nodes
+
+
+@MesosClient()
+def get_slave_for_aio(mesos_client):
+    """Returns the hostname of a slave on which the AiO deployment can be done.
+
+    When the slave with 'openstack_role:all_in_one' attribute exists, it's
+    chosen. If there is no such a slave, then the first available slave is
+    chosen.
+    """
+    slaves = mesos_client.get_slaves()
+
+    for slave in slaves:
+        if 'openstack_role' not in slave['attributes']:
+            continue
+        if slave['attributes']['openstack_role'] == 'all_in_one':
+            return slave['hostname']
+
+    try:
+        return slaves[0]['hostname']
+    except IndexError:
+        raise exception.NoMesosSlaveAvailable()

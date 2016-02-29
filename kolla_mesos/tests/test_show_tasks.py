@@ -34,7 +34,7 @@ class ShowTasksTest(base.BaseTestCase):
         self.addCleanup(self.client.close)
         self.dep_id = 'test'
 
-    @fake_mesos.FakeMesosStateSlaves()
+    @fake_mesos.FakeMesosStateTaggedSlaves()
     def test_get_tasks_sanity(self):
         var = '/kolla/test/status'
         exp = {'register': '%s/cinder-api/db_sync' % var,
@@ -45,7 +45,7 @@ class ShowTasksTest(base.BaseTestCase):
         tasks = show_tasks.get_tasks(self.dep_id)
         self.assertEqual(exp, tasks['cinder-api/db_sync'])
 
-    @fake_mesos.FakeMesosStateSlaves()
+    @fake_mesos.FakeMesosStateTaggedSlaves()
     @mock.patch.object(show_tasks.zk_utils, 'connection')
     def test_get_status_waiting(self, m_zk_c):
         m_zk_c.return_value.__enter__.return_value = self.client
@@ -72,7 +72,7 @@ class ShowTasksTest(base.BaseTestCase):
         status = show_tasks.get_status(test_tasks)
         self.assertEqual({'cinder-api/db_sync': exp}, status)
 
-    @fake_mesos.FakeMesosStateSlaves()
+    @fake_mesos.FakeMesosStateTaggedSlaves()
     @mock.patch.object(show_tasks.zk_utils, 'connection')
     def test_get_status_deps_done(self, m_zk_c):
         m_zk_c.return_value.__enter__.return_value = self.client
@@ -99,7 +99,7 @@ class ShowTasksTest(base.BaseTestCase):
         status = show_tasks.get_status(test_tasks)
         self.assertEqual({'cinder-api/db_sync': exp}, status)
 
-    @fake_mesos.FakeMesosStateSlaves()
+    @fake_mesos.FakeMesosStateTaggedSlaves()
     @mock.patch.object(show_tasks.zk_utils, 'connection')
     def test_get_status_done(self, m_zk_c):
         m_zk_c.return_value.__enter__.return_value = self.client
