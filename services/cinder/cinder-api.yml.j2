@@ -15,7 +15,9 @@ service:
   mem: {{ cinder_api_mem }}
   cpus: {{ cinder_api_cpus }}
   instances: {{ controller_nodes }}
+  {% if multinode %}
   constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "controller"]]
+  {% endif %}
 commands:
   extend_start:
     command: kolla_extend_start
