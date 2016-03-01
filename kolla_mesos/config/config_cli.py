@@ -17,7 +17,10 @@ CONF = cfg.CONF
 config_cli_opts = [
     cfg.StrOpt('path',
                default='/kolla'),
+    cfg.StrOpt('value'),
     cfg.BoolOpt('show',
+                default=False),
+    cfg.BoolOpt('set',
                 default=False)
 ]
 CONF.register_cli_opts(config_cli_opts)

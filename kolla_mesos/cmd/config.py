@@ -35,6 +35,11 @@ def main():
     with zk_utils.connection() as zk:
         if CONF.show:
             zk_utils.cat(zk, CONF.path)
+        elif CONF.set:
+            current, _stat = zk.get(CONF.path)
+            LOG.info('changing %s from %s to %s',
+                     CONF.path, current, CONF.value)
+            zk.set(CONF.path, CONF.value)
         else:
             zk_utils.tree(zk, CONF.path)
 
