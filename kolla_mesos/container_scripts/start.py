@@ -48,15 +48,23 @@ DEPLOYMENT_ID = None
 DEPLOYMENT = None
 SERVICE = None
 SERVICE_NAME = None
+COPY_ALWAYS = None
 
 
 def set_globals():
     global ZK_HOSTS, ROLE, PRIVATE_INTERFACE, PUBLIC_INTERFACE
     global ANSIBLE_PRIVATE, ANSIBLE_PUBLIC, DEPLOYMENT_ID, DEPLOYMENT
-    global SERVICE, SERVICE_NAME
+    global SERVICE, SERVICE_NAME, COPY_ALWAYS
     ZK_HOSTS = os.environ.get('KOLLA_ZK_HOSTS')
     PRIVATE_INTERFACE = os.environ.get('KOLLA_PRIVATE_INTERFACE', 'undefined')
     PUBLIC_INTERFACE = os.environ.get('KOLLA_PUBLIC_INTERFACE', 'undefined')
+    strategy = os.environ.get('KOLLA_CONFIG_STRATEGY',
+                              'COPY_ALWAYS')
+    if strategy not in ('COPY_ALWAYS', 'COPY_ONCE'):
+        LOG.error('Unknown KOLLA_CONFIG_STRATEGY %s,'
+                  ' defaulting to COPY_ALWAYS', strategy)
+        strategy = 'COPY_ALWAYS'
+    COPY_ALWAYS = strategy == 'COPY_ALWAYS'
     system_prefix = os.environ.get('KOLLA_SYSTEM_PREFIX', '/kolla')
     app_id = os.environ['MARATHON_APP_ID']
 
@@ -217,11 +225,9 @@ def write_file(conf, data):
         tf.flush()
         tf_name = tf.name
 
-    diff = True
-    if os.path.exists(dest):
-        diff = not filecmp.cmp(tf_name, dest, shallow=False)
-        if not diff:
-            return False
+    if os.path.exists(dest) and filecmp.cmp(tf_name, dest, shallow=False):
+        LOG.debug('write_file: %s not changed', dest)
+        return False
     try:
         inst_cmd = ' '.join(['sudo', 'install', '-v',
                              '--no-target-directory',
@@ -231,7 +237,7 @@ def write_file(conf, data):
     except subprocess.CalledProcessError as exc:
         LOG.error(exc)
         LOG.exception(inst_cmd)
-    return diff
+    return True
 
 
 def generate_host_vars(zk):
@@ -387,45 +393,55 @@ class Command(object):
     def _run_command(self):
         LOG.debug("Running command: %s", self.command)
         self.retries = self.retries - 1
-        self.proc = subprocess.Popen(self.command, shell=True,
-                                     env=self.env)
-        if self.proc is None:
-            LOG.error("Command '%s' failed (proc=None)", self.name)
+
+        def start_process():
+            self.proc = subprocess.Popen(self.command, shell=True,
+                                         env=self.env)
+            if self.proc is None:
+                LOG.error("Command '%s' failed (proc=None)", self.name)
+                return 1
+
+        def poll(timeout=-1, sleep_secs=10):
+            now = datetime.datetime.now()
+            while((datetime.datetime.now() - now).seconds < timeout or
+                  timeout < 0):
+                ret = self.proc.poll()
+                LOG.debug("Command %s poll ret='%s'", self.name, ret)
+                yield ret
+                time.sleep(sleep_secs)
+
+        if start_process() == 1:
             return 1
 
         if self.timeout > 0:
-            now = datetime.datetime.now()
-            while((datetime.datetime.now() - now).seconds < self.timeout):
-                ret = self.proc.poll()
-                LOG.debug("Command %s poll ret='%s'", self.name, ret)
+            for ret in poll(timeout=self.timeout):
                 if ret == 0:
                     self.zk.retry(self.zk.ensure_path, self.check_path)
                     LOG.debug("Command '%s' marked as done", self.name)
                 if ret is not None:
                     return ret
-                time.sleep(10)
 
             LOG.error("Command failed with timeout (%s seconds)", self.timeout)
             self.kill_process()
 
         if self.daemon:
             time.sleep(20)
-            ret = self.proc.poll()
-            LOG.debug("Daemon poll ret='%s'", ret)
-            if ret is None:
-                self.zk.retry(self.zk.ensure_path, self.check_path)
-                LOG.debug("Daemon '%s' marked as running", self.name)
-                self.proc.wait()
-                ret = self.proc.returncode
-            if ret != 0:
-                try:
-                    self.zk.retry(self.zk.delete, self.check_path)
-                except kz_exceptions.NoNodeError:
-                    LOG.debug('Tried to delete non-existant ZK path: %s',
-                              self.check_path)
-
-            LOG.debug("Command %s ret='%s'", self.name, ret)
-            return ret
+            for ret in poll():
+                if ret is None:
+                    self.zk.retry(self.zk.ensure_path, self.check_path)
+                    if COPY_ALWAYS and self.generate_configs():
+                        self.kill_process()
+                        if start_process() == 1:
+                            ret = 1
+                if ret is not None:
+                    LOG.error("Command %s exited with (ret=%s)",
+                              self.name, ret)
+                    try:
+                        self.zk.retry(self.zk.delete, self.check_path)
+                    except kz_exceptions.NoNodeError:
+                        LOG.debug('Tried to delete non-existant ZK path: %s',
+                                  self.check_path)
+                    return ret
 
     def kill_process(self):
         self.proc.terminate()
