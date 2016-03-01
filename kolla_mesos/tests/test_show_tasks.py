@@ -29,81 +29,90 @@ class ShowTasksTest(base.BaseTestCase):
 
     def test_get_tasks_sanity(self):
         var = '/kolla/test/status'
-        exp = {'register': '%s/cinder-api/db_sync/.done' % var,
+        exp = {'register': '%s/cinder-api/db_sync' % var,
                'requires': [
-                   '%s/cinder_ansible_tasks/create_database/.done' % var,
-                   '%s/cinder_ansible_tasks/database_user_create/.done' % var]}
+                   '%s/cinder_ansible_tasks/create_database' % var,
+                   '%s/cinder_ansible_tasks/database_user_create' % var]}
 
         tasks = show_tasks.get_tasks(self.dep_id)
-        self.assertEqual(exp, tasks['/cinder/cinder-api/db_sync'])
+        self.assertEqual(exp, tasks['cinder-api/db_sync'])
 
     @mock.patch.object(show_tasks.zk_utils, 'connection')
     def test_get_status_waiting(self, m_zk_c):
         m_zk_c.return_value.__enter__.return_value = self.client
         tasks = show_tasks.get_tasks(self.dep_id)
         # just get what we want for the test
-        test_tasks = {'/cinder/cinder-api/db_sync':
-                      tasks['/cinder/cinder-api/db_sync']}
+        test_tasks = {'cinder-api/db_sync':
+                      tasks['cinder-api/db_sync']}
         var = '/kolla/test/status'
         exp = {
-            'register': ('%s/cinder-api/db_sync/.done' % var, 'waiting'),
+            'register': ('%s/cinder-api/db_sync' % var, 'waiting'),
             'requirements': {
-                '%s/cinder_ansible_tasks/create_database/.done' % var: '',
-                '%s/cinder_ansible_tasks/database_user_create/.done' % var: ''}
+                '%s/cinder_ansible_tasks/create_database' % var: 'running',
+                '%s/cinder_ansible_tasks/database_user_create' % var: 'done'}
         }
+        self.client.create(
+            '%s/cinder-api/db_sync' % var,
+            'waiting', makepath=True)
+        self.client.create(
+            '%s/cinder_ansible_tasks/create_database' % var,
+            'running', makepath=True)
+        self.client.create(
+            '%s/cinder_ansible_tasks/database_user_create' % var,
+            'done', makepath=True)
         status = show_tasks.get_status(test_tasks)
-        self.assertEqual({'/cinder/cinder-api/db_sync': exp}, status)
+        self.assertEqual({'cinder-api/db_sync': exp}, status)
 
     @mock.patch.object(show_tasks.zk_utils, 'connection')
     def test_get_status_deps_done(self, m_zk_c):
         m_zk_c.return_value.__enter__.return_value = self.client
         tasks = show_tasks.get_tasks(self.dep_id)
         # just get what we want for the test
-        test_tasks = {'/cinder/cinder-api/db_sync':
-                      tasks['/cinder/cinder-api/db_sync']}
+        test_tasks = {'cinder-api/db_sync':
+                      tasks['cinder-api/db_sync']}
         var = '/kolla/test/status'
         at = '%s/cinder_ansible_tasks' % var
         exp = {
-            'register': ('%s/cinder-api/db_sync/.done' % var, 'NOT DONE'),
+            'register': ('%s/cinder-api/db_sync' % var, ''),
             'requirements': {
-                '%s/create_database/.done' % at: 'done',
-                '%s/database_user_create/.done' % at: 'done'}}
+                '%s/create_database' % at: 'done',
+                '%s/database_user_create' % at: 'done'}}
 
-        # create the .done nodes
+        # create the done states
         self.client.create(
-            '%s/cinder_ansible_tasks/create_database/.done' % var,
-            'foo', makepath=True)
+            '%s/cinder_ansible_tasks/create_database' % var,
+            'done', makepath=True)
         self.client.create(
-            '%s/cinder_ansible_tasks/database_user_create/.done' % var,
-            'foo', makepath=True)
+            '%s/cinder_ansible_tasks/database_user_create' % var,
+            'done', makepath=True)
 
         status = show_tasks.get_status(test_tasks)
-        self.assertEqual({'/cinder/cinder-api/db_sync': exp}, status)
+        self.assertEqual({'cinder-api/db_sync': exp}, status)
 
     @mock.patch.object(show_tasks.zk_utils, 'connection')
     def test_get_status_done(self, m_zk_c):
         m_zk_c.return_value.__enter__.return_value = self.client
         tasks = show_tasks.get_tasks(self.dep_id)
         # just get what we want for the test
-        test_tasks = {'/cinder/cinder-api/db_sync':
-                      tasks['/cinder/cinder-api/db_sync']}
+        test_tasks = {'cinder-api/db_sync':
+                      tasks['cinder-api/db_sync']}
         var = '/kolla/test/status'
         at = '%s/cinder_ansible_tasks' % var
         exp = {
-            'register': ('%s/cinder-api/db_sync/.done' % var, 'done'),
+            'register': ('%s/cinder-api/db_sync' % var, 'done'),
             'requirements': {
-                '%s/create_database/.done' % at: 'done',
-                '%s/database_user_create/.done' % at: 'done'}}
+                '%s/create_database' % at: 'done',
+                '%s/database_user_create' % at: 'done'}}
 
-        # create the .done nodes
+        # create the done state
         self.client.create(
-            '%s/cinder_ansible_tasks/create_database/.done' % var,
-            'foo', makepath=True)
+            '%s/cinder_ansible_tasks/create_database' % var,
+            'done', makepath=True)
         self.client.create(
-            '%s/cinder_ansible_tasks/database_user_create/.done' % var,
-            'foo', makepath=True)
-        self.client.create('%s/cinder-api/db_sync/.done' % var, 'foo',
+            '%s/cinder_ansible_tasks/database_user_create' % var,
+            'done', makepath=True)
+        self.client.create('%s/cinder-api/db_sync' % var, 'done',
                            makepath=True)
 
         status = show_tasks.get_status(test_tasks)
-        self.assertEqual({'/cinder/cinder-api/db_sync': exp}, status)
+        self.assertEqual({'cinder-api/db_sync': exp}, status)
