@@ -10,22 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-class MarathonRollback(Exception):
-    pass
+import os
 
 
-class ChronosException(Exception):
-    pass
-
-
-class ChronosRollback(Exception):
-    pass
-
-
-class MesosTasksNotCompleted(Exception):
-    pass
-
-
-class ValidationError(Exception):
-    pass
+def env(*args, **kwargs):
+    for arg in args:
+        value = os.environ.get(arg)
+        if value:
+            return value
+    return kwargs.get('default', '')
