@@ -11,18 +11,31 @@
 # limitations under the License.
 
 from cliff import command
+from cliff import show
 import logging
 
+from kolla_mesos import service_definition
 
-class Inspect(command.Command):
+
+class Inspect(show.ShowOne):
     """Show available parameters and info about a service definition."""
 
     log = logging.getLogger(__name__)
 
+    def get_parser(self, prog_name):
+        parser = super(Inspect, self).get_parser(prog_name)
+        parser.add_argument('service', help='The service name')
+        return parser
+
     def take_action(self, parsed_args):
-        self.log.info('sending greeting')
-        self.log.debug('debugging')
-        self.app.stdout.write('hi!\n')
+        info = service_definition.inspect(parsed_args.service,
+                                          self.app.options.service_dir)
+        columns = []
+        data = []
+        for col, val in info.iteritems():
+            columns.append(col)
+            data.append(val)
+        return (columns, data)
 
 
 class Validate(command.Command):
@@ -30,7 +43,12 @@ class Validate(command.Command):
 
     log = logging.getLogger(__name__)
 
+    def get_parser(self, prog_name):
+        parser = super(Validate, self).get_parser(prog_name)
+        parser.add_argument('service', help='The service name')
+        return parser
+
     def take_action(self, parsed_args):
-        self.log.info('sending greeting')
-        self.log.debug('debugging')
-        self.app.stdout.write('hi!\n')
+        service_definition.validate(parsed_args.service,
+                                    self.app.options.service_dir,
+                                    variables={})
