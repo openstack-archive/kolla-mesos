@@ -30,6 +30,7 @@ from kolla_mesos import cleanup
 from kolla_mesos.common import file_utils
 from kolla_mesos.common import jinja_utils
 from kolla_mesos.common import zk_utils
+from kolla_mesos import configuration
 from kolla_mesos import exception
 from kolla_mesos import marathon
 from kolla_mesos import service
@@ -182,7 +183,10 @@ class KollaWorker(object):
             if 'image' in var:
                 LOG.debug('%s is "%s"' % (var, jinja_vars[var]))
 
-        kolla_config = self._write_common_config_to_zookeeper(zk, jinja_vars)
+        configuration.write_common_config_to_zookeeper(self.config_dir, zk,
+                                                       jinja_vars)
+        kolla_config = configuration.get_start_config(self.config_dir,
+                                                      jinja_vars)
 
         # Now write services configs
         for proj in self.get_projects():
