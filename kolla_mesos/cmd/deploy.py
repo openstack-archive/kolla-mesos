@@ -27,10 +27,10 @@ import yaml
 
 from kolla_mesos import chronos
 from kolla_mesos import cleanup
-from kolla_mesos import config
 from kolla_mesos.common import file_utils
 from kolla_mesos.common import jinja_utils
 from kolla_mesos.common import zk_utils
+from kolla_mesos import config
 from kolla_mesos import exception
 from kolla_mesos import marathon
 from kolla_mesos import service

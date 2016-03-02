@@ -13,9 +13,9 @@
 import json
 import os.path
 
-import yaml
 from oslo_config import cfg
 from oslo_log import log as logging
+import yaml
 
 from kolla_mesos.common import file_utils
 from kolla_mesos.common import jinja_utils
