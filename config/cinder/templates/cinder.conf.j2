@@ -11,7 +11,7 @@ glance_api_version = 2
 
 os_region_name = {{ openstack_region_name }}
 
-osapi_volume_listen = {{ hostvars[inventory_hostname]['ansible_' + api_interface]['ipv4']['address'] }}
+osapi_volume_listen = {{ get_ip_address(api_interface) }}
 osapi_volume_listen_port = {{ cinder_api_port }}
 
 api_paste_config = /etc/cinder/api-paste.ini
@@ -39,4 +39,4 @@ lock_path = /var/lib/cinder/tmp
 rabbit_userid = {{ rabbitmq_user }}
 rabbit_password = {{ rabbitmq_password }}
 rabbit_ha_queues = true
-rabbit_hosts = {% for host in groups['rabbitmq'] %}{{ hostvars[host]['ansible_' + api_interface]['ipv4']['address'] }}:{{ rabbitmq_port }}{% if not loop.last %},{% endif %}{% endfor %}
+rabbit_hosts = {{ list_ips_by_service('infra/rabbitmq/rabbitmq', rabbitmq_port) }}
