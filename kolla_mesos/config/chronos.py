@@ -13,6 +13,7 @@
 from oslo_config import cfg
 
 from kolla_mesos.common import network_utils
+from kolla_mesos.common import utils
 
 
 CHRONOS_URL = 'http://{}:4400'.format(network_utils.get_ip_address())
@@ -20,8 +21,9 @@ CHRONOS_URL = 'http://{}:4400'.format(network_utils.get_ip_address())
 CONF = cfg.CONF
 chronos_opts = [
     cfg.StrOpt('host',
-               default=CHRONOS_URL,
-               help='Chronos connection URL (http://host:port)'),
+               default=utils.env('KM_CHRONOS_HOST', default=CHRONOS_URL),
+               help='Chronos connection URL (http://host:port), '
+                    '(Env: KM_CHRONOS_HOST)'),
     cfg.IntOpt('timeout',
                default=30,
                help='Timeout for the request to the Chronos API')
