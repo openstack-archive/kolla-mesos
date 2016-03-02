@@ -15,16 +15,22 @@ from cliff import lister
 from cliff import show
 import logging
 
+from kolla_mesos import service
+
 
 class Run(command.Command):
     """Run a service."""
 
     log = logging.getLogger(__name__)
 
+    def get_parser(self, prog_name):
+        parser = super(Run, self).get_parser(prog_name)
+        parser.add_argument('service')
+        return parser
+
     def take_action(self, parsed_args):
-        self.log.info('sending greeting')
-        self.log.debug('debugging')
-        self.app.stdout.write('hi!\n')
+        service.run(parsed_args.service,
+                    self.app.options.service_dir)
 
 
 class Kill(command.Command):

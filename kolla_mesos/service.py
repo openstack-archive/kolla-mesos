@@ -13,20 +13,27 @@
 import collections
 import json
 import os.path
+import yaml
 
 from oslo_config import cfg
 from oslo_log import log as logging
 from six.moves import configparser
 from six.moves import cStringIO
-import yaml
 
+from kolla_mesos import chronos
 from kolla_mesos.common import file_utils
 from kolla_mesos.common import jinja_utils
+from kolla_mesos.common import zk_utils
+from kolla_mesos import config
+from kolla_mesos import marathon
+from kolla_mesos import service_definition
 
 LOG = logging.getLogger()
 CONF = cfg.CONF
 CONF.import_group('kolla', 'kolla_mesos.config.kolla')
 CONF.import_group('zookeeper', 'kolla_mesos.config.zookeeper')
+CONF.import_group('marathon', 'kolla_mesos.config.marathon')
+CONF.import_group('chronos', 'kolla_mesos.config.chronos')
 
 
 class File(object):
@@ -212,3 +219,54 @@ class ChronosTask(Runner):
                 cenv['value'] = value
                 return
         chronos_env.append({"name": key, "value": value})
+
+
+def run(service_name, service_dir, variables=None, temp_dir=None):
+    filename = os.path.join(service_dir, '%s.yml.j2' % service_name)
+    config_dir = os.path.join(service_dir, '..', config)
+    base_node = os.path.join('kolla', CONF.deployment_id)
+    if temp_dir is None:
+        temp_dir = file_utils.create_temp_dir()
+
+    # 1. validate the definition with the given variables
+    service_definition.validate(service_name, service_dir, variables)
+
+    conf = yaml.load(jinja_utils.jinja_render(filename, variables))
+    if 'service' in conf:
+        runner = MarathonApp(conf)
+    else:
+        runner = ChronosTask(conf)
+
+    with zk_utils.connection() as zk:
+        # 2. write variables to zk (globally)
+        config.write_variables_zookeeper(zk, variables)
+
+        # write common config and start script
+        config.write_common_config_to_zookeeper(config_dir, zk, variables)
+
+        # 3. write files/config to zk
+        runner.write_to_zookeeper(zk, base_node)
+
+    # 4. generate the deployment files
+    kolla_config = config.get_start_config(config_dir, variables)
+    runner.generate_deployment_files(kolla_config, variables,
+                                     temp_dir)
+    # 5. post deployment files to marathon/chronos
+
+    marathon_client = marathon.Client()
+    chronos_client = chronos.Client()
+    # find all marathon files and run.
+    # find all cronos files and run.
+    for root, dirs, names in os.walk(temp_dir):
+        for name in names:
+            app_path = os.path.join(root, name)
+            with open(app_path, 'r') as app_file:
+                app_resource = json.load(app_file)
+            if 'marathon' in name:
+                marathon_client.add_app(app_resource)
+                LOG.info('Marathon app "%s" is started' %
+                         app_resource['id'])
+            else:
+                chronos_client.add_job(app_resource)
+                LOG.info('Chronos job "%s" is started' %
+                         app_resource['name'])
