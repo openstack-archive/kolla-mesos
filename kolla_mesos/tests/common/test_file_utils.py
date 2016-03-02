@@ -13,6 +13,8 @@
 import os.path
 import sys
 
+import mock
+
 from kolla_mesos.common import file_utils
 from kolla_mesos.tests import base
 
@@ -24,3 +26,9 @@ class FindBaseDirTest(base.BaseTestCase):
         project_dir = os.path.abspath(os.path.join(mod_dir, '..', '..', '..'))
         tdir = file_utils.find_base_dir()
         self.assertEqual(project_dir, tdir)
+
+    @mock.patch('kolla_mesos.common.file_utils.tempfile')
+    def test_temp_dir(self, mock_tmpfile):
+        file_utils.create_temp_dir()
+        parameters = mock_tmpfile.mkdtemp.call_args[1]
+        self.assertTrue(parameters['prefix'].startswith('kolla'))

@@ -10,10 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import datetime
 import errno
 import logging
 import os
 import sys
+import tempfile
+import time
 
 from oslo_utils import importutils
 
@@ -93,3 +96,14 @@ def find_file(filename):
         if os.path.exists(file_path):
             return file_path
     raise KollaFileNotFoundException()
+
+
+def create_temp_dir(start_time=None):
+    """Creates a working directory for use while building"""
+    if start_time is None:
+        start_time = time.time()
+
+    ts = datetime.datetime.fromtimestamp(
+        start_time
+        ).strftime('%Y-%m-%d_%H-%M-%S_')
+    return tempfile.mkdtemp(prefix='kolla-' + ts)

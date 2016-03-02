@@ -18,7 +18,6 @@ import json
 import os
 import signal
 import sys
-import tempfile
 import time
 
 from oslo_config import cfg
@@ -251,13 +250,7 @@ class KollaWorker(object):
         self.marathon_client = marathon.Client()
         self.chronos_client = chronos.Client()
         self.start_time = time.time()
-
-    def setup_working_dir(self):
-        """Creates a working directory for use while building"""
-        ts = datetime.datetime.fromtimestamp(
-            self.start_time
-        ).strftime('%Y-%m-%d_%H-%M-%S_')
-        self.temp_dir = tempfile.mkdtemp(prefix='kolla-' + ts)
+        self.temp_dir = file_utils.create_temp_dir(start_time=self.start_time)
         LOG.debug('Created output dir: %s' % self.temp_dir)
 
     def get_projects(self):
@@ -487,7 +480,6 @@ def main():
     CONF(sys.argv[1:], project='kolla-mesos')
     logging.setup(CONF, 'kolla-mesos')
     kolla = KollaWorker()
-    kolla.setup_working_dir()
     kolla.gen_deployment_id()
     kolla.write_to_zookeeper()
     kolla.write_openrc()

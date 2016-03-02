@@ -61,12 +61,6 @@ class TestClient(base.BaseTestCase):
     def test_create_worker(self):
         self.assertIsInstance(self.worker, deploy.KollaWorker)
 
-    @mock.patch('kolla_mesos.cmd.deploy.tempfile')
-    def test_setup_working_dir(self, mock_tmpfile):
-        self.worker.setup_working_dir()
-        parameters = mock_tmpfile.mkdtemp.call_args[1]
-        self.assertTrue(parameters['prefix'].startswith('kolla'))
-
     def test_gen_deployment_id(self):
         CONF.set_override('deployment_id', 'test', group='kolla')
         self.worker.gen_deployment_id()
@@ -102,7 +96,6 @@ class TestClient(base.BaseTestCase):
             return_value=yaml.load(YAML_SERVICES_CONFIG))
         mock_common.return_value = ''
 
-        self.worker.setup_working_dir()
         self.worker.gen_deployment_id()
         self.worker.write_to_zookeeper()
 
@@ -135,7 +128,6 @@ class TestClient(base.BaseTestCase):
             return_value=[('/', ('tmp1', 'tmp2'), ('file1', )),
                           ('/', ('mdir', ), ('marathon', 'marathon2'))])
 
-        self.worker.setup_working_dir()
         self.worker.gen_deployment_id()
         self.worker.start()
 
@@ -148,7 +140,6 @@ class TestClient(base.BaseTestCase):
     def test_get_jinja_vars(self, mock_open, mock_yaml, mock_jutils):
         CONF.set_override('deployment_id', 'test', group='kolla')
         mock_yaml.load = mock.MagicMock(return_value={})
-        self.worker.setup_working_dir()
         self.worker.gen_deployment_id()
         result = self.worker.get_jinja_vars()
 
