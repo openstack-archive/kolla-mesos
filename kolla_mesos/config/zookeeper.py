@@ -13,6 +13,7 @@
 from oslo_config import cfg
 
 from kolla_mesos.common import network_utils
+from kolla_mesos.common import utils
 
 
 ZOOKEEPER_URL = '{}:2181'.format(network_utils.get_ip_address())
@@ -20,8 +21,9 @@ ZOOKEEPER_URL = '{}:2181'.format(network_utils.get_ip_address())
 CONF = cfg.CONF
 zookeeper_opts = [
     cfg.StrOpt('host',
-               default=ZOOKEEPER_URL,
-               help='ZooKeeper connection URL (host:port)')
+               default=utils.env('KM_ZOOKEEPER_HOST', default=ZOOKEEPER_URL),
+               help='ZooKeeper connection URL (host:port), '
+                    '(Env: KM_ZOOKEEPER_HOST)')
 ]
 zookeeper_opt_group = cfg.OptGroup(name='zookeeper',
                                    title='Options for ZooKeeper')
