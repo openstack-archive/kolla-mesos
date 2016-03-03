@@ -28,3 +28,20 @@ def show(column_names, data, align='c'):
     for column_name, data_row in six.moves.zip(column_names, data):
         table.add_row((column_name, data_row,))
     print(table.get_string())
+
+
+def dict2columns(data, id_col=None):
+    """Implement the common task of converting a dict-based object
+    to the two-column output that ShowOne expects.
+    But we want "service" at top.
+    """
+    if not data:
+        return ({}, {})
+    else:
+        if id_col is not None and id_col in data:
+            keys = [id_col]
+            [keys.append(key) for key in sorted(data) if key != id_col]
+            items = [(key, data[key]) for key in keys]
+        else:
+            items = sorted(data.items())
+        return zip(*items)
