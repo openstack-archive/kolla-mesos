@@ -355,10 +355,11 @@ class Command(object):
         self.command = cmd['command']
         self.run_once = cmd.get('run_once', False)
         self.daemon = cmd.get('daemon', False)
-        self.check_path = '/kolla/%s/status/%s/%s' % (DEPLOYMENT_ID,
-                                                      ROLE, self.name)
-        self.requires = ['/kolla/%s/status/%s' % (DEPLOYMENT_ID, req)
+        self.check_path = '%s/status/%s/%s' % (DEPLOYMENT,
+                                               ROLE, self.name)
+        self.requires = ['%s/status/%s' % (DEPLOYMENT, req)
                          for req in cmd.get('dependencies', [])]
+        self.init_path = os.path.dirname(self.check_path)
         self.proc = None
         self.retries = int(cmd.get('retries', 0))
         if self.daemon:
