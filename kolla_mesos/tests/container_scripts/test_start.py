@@ -676,3 +676,21 @@ class GlobalsTest(base.BaseTestCase):
         self.assertEqual(self.dep, start.DEPLOYMENT)
         self.assertEqual(self.role, start.ROLE)
         self.assertEqual(self.sn, start.SERVICE_NAME)
+
+
+class CopyAlwaysGlobalTest(base.BaseTestCase):
+    scenarios = [
+        ('always', dict(strategy='COPY_ALWAYS', expect=True)),
+        ('once', dict(strategy='COPY_ONCE', expect=False)),
+        ('rubbish', dict(strategy='unexpected', expect=True)),
+        ('default', dict(strategy=None, expect=True))]
+
+    def test_strategy(self):
+        self.useFixture(fixtures.EnvironmentVariable(
+                        'MARATHON_APP_ID',
+                        newvalue='/new_id/openstack/tg/tr'))
+        self.useFixture(fixtures.EnvironmentVariable(
+                        'KOLLA_CONFIG_STRATEGY',
+                        newvalue=self.strategy))
+        start.set_globals()
+        self.assertEqual(self.expect, start.COPY_ALWAYS)
