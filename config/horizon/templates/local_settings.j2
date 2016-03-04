@@ -120,6 +120,9 @@ LOCAL_PATH = '/tmp'
 # SECRET_KEY for all of them.
 SECRET_KEY='{{ horizon_secret_key }}'
 
+# Memcached session engine
+SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+
 # We recommend you use memcached for development; otherwise after every reload
 # of the django development server, you will have to login again. To use
 # memcached set CACHES to something like
