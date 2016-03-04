@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import collections
 import os
 
 
@@ -19,3 +20,17 @@ def env(*args, **kwargs):
         if value:
             return value
     return kwargs.get('default', '')
+
+
+def dict_update(d, u):
+    """Recursively update 'd' with 'u' and return the result."""
+
+    if not isinstance(u, collections.Mapping):
+        return u
+
+    for k, v in u.items():
+        if isinstance(v, collections.Mapping):
+            d[k] = dict_update(d.get(k, {}), v)
+        else:
+            d[k] = u[k]
+    return d
