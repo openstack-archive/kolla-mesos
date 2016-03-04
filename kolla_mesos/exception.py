@@ -25,3 +25,11 @@ class ChronosRollback(Exception):
 
 class MesosTasksNotCompleted(Exception):
     pass
+
+
+class KollaDirNotFoundException(Exception):
+    pass
+
+
+class KollaFileNotFoundException(Exception):
+    pass

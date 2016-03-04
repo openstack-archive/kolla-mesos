@@ -17,16 +17,10 @@ import sys
 
 from oslo_utils import importutils
 
+from kolla_mesos import exception
+
 
 LOG = logging.getLogger(__name__)
-
-
-class KollaDirNotFoundException(Exception):
-    pass
-
-
-class KollaFileNotFoundException(Exception):
-    pass
 
 
 def mkdir_p(path):
@@ -65,7 +59,7 @@ def find_base_dir():
     base_dir = '/usr/local/share/kolla-mesos'
     if os.path.exists(base_dir):
         return base_dir
-    raise KollaDirNotFoundException(
+    raise exception.KollaDirNotFoundException(
         'I do not know where your Kolla directory is'
     )
 
@@ -92,4 +86,4 @@ def find_file(filename):
         file_path = os.path.join(path, filename)
         if os.path.exists(file_path):
             return file_path
-    raise KollaFileNotFoundException()
+    raise exception.KollaFileNotFoundException()
