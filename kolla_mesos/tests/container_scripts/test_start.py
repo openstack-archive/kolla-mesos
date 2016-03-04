@@ -329,6 +329,37 @@ class GenerateConfigTest(base.BaseTestCase):
         start.generate_configs(self.client, conf)
         m_wf.assert_called_once_with(conf['afile'], '')
 
+    @mock.patch('subprocess.check_call')
+    def test_write_file_no_existing(self, m_call):
+        conf = {'source': 'config/mariadb/templates/galera.cnf.j2',
+                'dest': '/etc/mysql_dir/my.cnf',
+                'owner': 'mysql',
+                'perm': "0600"}
+        self.assertTrue(start.write_file(conf, 'data'))
+        m_call.assert_called_once_with(mock.ANY, shell=True)
+
+    @mock.patch('subprocess.check_call')
+    def test_write_file_existing_diff(self, m_call):
+        existing_f = self.create_tempfiles([('existing', 'data1')])[0]
+        conf = {'source': 'config/mariadb/templates/galera.cnf.j2',
+                'dest': existing_f,
+                'owner': 'mysql',
+                'perm': "0600"}
+
+        self.assertTrue(start.write_file(conf, 'data2'))
+        m_call.assert_called_once_with(mock.ANY, shell=True)
+
+    @mock.patch('subprocess.check_call')
+    def test_write_file_existing_same(self, m_call):
+        existing_f = self.create_tempfiles([('existing', 'data1')])[0]
+
+        conf = {'source': 'config/mariadb/templates/galera.cnf.j2',
+                'dest': existing_f,
+                'owner': 'mysql',
+                'perm': "0600"}
+        self.assertFalse(start.write_file(conf, 'data1'))
+        self.assertEqual([], m_call.mock_calls)
+
 
 class MainTest(base.BaseTestCase):
 
