@@ -323,26 +323,6 @@ def render_template(zk, templ, variables, var_names):
     return jinja_render(templ, variables)
 
 
-def generate_configs(zk, files):
-    """Render and create all config files for this app"""
-
-    variables = generate_host_vars(zk)
-    for name, item in six.iteritems(files):
-        LOG.debug('Name is: %s, Item is: %s', name, item)
-        if name == 'kolla_mesos_start.py':
-            continue
-        raw_content, stat = zk.get(os.path.join(SERVICE, 'files', name))
-        templ = raw_content.encode('utf-8')
-        var_names = jinja_find_required_variables(templ, name)
-        if not var_names:
-            # not a template, doesn't need rendering.
-            write_file(item, templ)
-            continue
-
-        content = render_template(zk, templ, variables, var_names)
-        write_file(item, content)
-
-
 def generate_main_config(zk, conf):
     """Take the app main config and render it if needed"""
 
@@ -443,6 +423,7 @@ class Command(object):
             self.name, extra, self.command)
 
     def run(self):
+        self.generate_configs()
         zk = self.zk
         result = 0
         LOG.info('** > Running %s', self.name)
@@ -464,6 +445,32 @@ class Command(object):
             result = self._run_command()
         LOG.info('** < Complete %s result: %s', self.name, result)
         return result
+
+    def generate_configs(self):
+        """Render and create all config files for this command."""
+        changes = False
+        if 'files' not in self.raw_conf:
+            return changes
+
+        variables = generate_host_vars(self.zk)
+        for name, item in six.iteritems(self.raw_conf['files']):
+            LOG.debug('Name is: %s, Item is: %s', name, item)
+            if name == 'kolla_mesos_start.py':
+                continue
+            raw_content, stat = self.zk.get(os.path.join(SERVICE, 'files',
+                                                         name))
+            templ = raw_content.encode('utf-8')
+            var_names = jinja_find_required_variables(templ, name)
+            if not var_names:
+                # not a template, doesn't need rendering.
+                if write_file(item, templ):
+                    changes = True
+                continue
+
+            content = render_template(self.zk, templ, variables, var_names)
+            if write_file(item, content):
+                changes = True
+        return changes
 
     def _run_command(self):
         LOG.debug("Running command: %s", self.command)
@@ -542,8 +549,6 @@ def run_commands(zk, service_conf):
             cmdq.put(cmd)
             continue
         if cmd.requirements_fulfilled():
-            if 'files' in cmd.raw_conf:
-                generate_configs(zk, cmd.raw_conf['files'])
             if cmd.run() != 0:
                 if cmd.retries > 0:
                     cmd.set_state(CMD_RETRY)
