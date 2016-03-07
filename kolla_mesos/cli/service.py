@@ -13,51 +13,92 @@
 from cliff import command
 from cliff import lister
 from cliff import show
+from oslo_config import cfg
 from oslo_log import log
 
+from kolla_mesos.common import cli_utils
+from kolla_mesos import service
+
+CONF = cfg.CONF
 LOG = log.getLogger(__name__)
 
 
 class Run(command.Command):
     """Run a service."""
 
+    def get_parser(self, prog_name):
+        parser = super(Run, self).get_parser(prog_name)
+        parser.add_argument('service')
+        return parser
+
     def take_action(self, parsed_args):
-        LOG.info('sending greeting')
-        LOG.debug('debugging')
-        self.app.stdout.write('hi!\n')
+        service.run_service(parsed_args.service,
+                            CONF.service_dir)
 
 
 class Kill(command.Command):
     """Kill a service."""
 
+    def get_parser(self, prog_name):
+        parser = super(Kill, self).get_parser(prog_name)
+        parser.add_argument('service')
+        return parser
+
     def take_action(self, parsed_args):
-        LOG.info('sending greeting')
-        LOG.debug('debugging')
-        LOG.stdout.write('hi!\n')
+        service.kill_service(parsed_args.service)
 
 
 class Show(show.ShowOne):
     """Show the live status of the task or service."""
 
+    def get_parser(self, prog_name):
+        parser = super(Show, self).get_parser(prog_name)
+        parser.add_argument('service')
+        return parser
+
     def take_action(self, parsed_args):
-        LOG.info('sending greeting')
-        LOG.debug('debugging')
-        self.app.stdout.write('hi!\n')
+        data = service.get_service(parsed_args.service)
+        return cli_utils.dict2columns(data, id_col='service')
 
 
 class List(lister.Lister):
     """List all deployed services for this deployment_id."""
 
     def take_action(self, parsed_args):
-        LOG.info('sending greeting')
-        LOG.debug('debugging')
-        self.app.stdout.write('hi!\n')
+        apps = service.list_services()
+        values = []
+        cols = ('service', 'type', 'instances', 'tasksUnhealthy',
+                'tasksHealthy', 'tasksRunning', 'tasksStaged', 'version')
+        for app in apps:
+            values.append([app[field] for field in cols])
+        return (cols, values)
+
+
+class Scale(command.Command):
+    """Scale the service."""
+
+    def get_parser(self, prog_name):
+        parser = super(Scale, self).get_parser(prog_name)
+        parser.add_argument('service')
+        parser.add_argument('instances')
+        parser.add_argument('--force', action='store_true',
+                            default=False)
+
+        return parser
+
+    def take_action(self, parsed_args):
+        service.scale(parsed_args.service,
+                      parsed_args.instances,
+                      parsed_args.force)
 
 
 class Log(command.Command):
     """Dump the logs for this task or service."""
 
+    def get_parser(self, prog_name):
+        parser = super(Show, self).get_parser(prog_name)
+        parser.add_argument('service')
+        return parser
+
     def take_action(self, parsed_args):
-        LOG.info('sending greeting')
-        LOG.debug('debugging')
-        LOG.stdout.write('hi!\n')
+        self.app.stdout.write(service.get_service_logs(parsed_args.service))

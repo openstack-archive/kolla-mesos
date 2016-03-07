@@ -24,10 +24,23 @@ CMD_FIELDS = ('run_once', 'dependencies', 'command', 'env',
               'delay', 'retries', 'files')
 
 
-def inspect(service_name, service_dir):
+def find_service_file(service_name, service_dir):
+    # let's be flexible with the input, to make life easy
+    # for users.
     if not os.path.exists(service_dir):
         raise exception.KollaDirNotFoundException(service_dir)
-    filename = os.path.join(service_dir, '%s.yml.j2' % service_name)
+
+    short_name = service_name.split('/')[-1]
+    for root, dirs, names in os.walk(service_dir):
+        for name in names:
+            if short_name in name:
+                return os.path.join(root, name)
+
+    raise exception.KollaFileNotFoundException(service_name)
+
+
+def inspect(service_name, service_dir):
+    filename = find_service_file(service_name, service_dir)
     try:
         required_variables = set.union(
             jinja_utils.jinja_find_required_variables(filename))
@@ -42,10 +55,7 @@ def validate(service_name, service_dir, variables=None, deps=None):
     if deps is None:
         deps = {}
 
-    if not os.path.exists(service_dir):
-        raise exception.KollaDirNotFoundException(service_dir)
-
-    filename = os.path.join(service_dir, '%s.yml.j2' % service_name)
+    filename = find_service_file(service_name, service_dir)
     try:
         cnf = yaml.load(jinja_utils.jinja_render(filename, variables))
     except jinja2.exceptions.TemplateNotFound:
