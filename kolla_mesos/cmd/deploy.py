@@ -33,6 +33,8 @@ from kolla_mesos import chronos
 from kolla_mesos import cleanup
 from kolla_mesos.common import file_utils
 from kolla_mesos.common import jinja_utils
+from kolla_mesos.common import mesos_utils
+from kolla_mesos.common import yaml_utils
 from kolla_mesos.common import zk_utils
 from kolla_mesos import exception
 from kolla_mesos import marathon
@@ -296,10 +298,24 @@ class KollaWorker(object):
             else:
                 LOG.warning('Path missing %s' % proj_yml_name)
 
-        # Add deployment_id
-        jvars.update({'deployment_id': self.deployment_id})
-        # override node_config_directory to empty
-        jvars.update({'node_config_directory': ''})
+        jvars.update({
+            'deployment_id': self.deployment_id,
+            'node_config_directory': ''
+        })
+        if yaml_utils.str_to_bool(jvars['autodetect_resources']):
+            controller_nodes, compute_nodes, storage_nodes, all_nodes = \
+                mesos_utils.get_number_of_nodes()
+        else:
+            controller_nodes = jvars.get('controller_nodes') or 1
+            compute_nodes = jvars.get('compute_nodes') or 1
+            storage_nodes = jvars.get('storage_nodes') or 1
+            all_nodes = controller_nodes + compute_nodes + storage_nodes
+        jvars.update({
+            'controller_nodes': str(controller_nodes),
+            'compute_nodes': str(compute_nodes),
+            'storage_nodes': str(storage_nodes),
+            'all_nodes': str(all_nodes)
+        })
         return jvars
 
     def gen_deployment_id(self):

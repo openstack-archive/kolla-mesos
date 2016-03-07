@@ -26,6 +26,16 @@ neutron_external_interface: "eth2"
 ####################
 # OpenStack options
 ####################
+# If "yes", kolla-mesos will auto-detect the Mesos slave nodes which have
+# "openstack_role" attribute and count them to caculate the number
+# of OpenStack services to run. If no, you have to set up the options below.
+autodetect_resources: "yes"
+# Please set the number of controller and compute nodes if the autodetecting
+# is disabled.
+controller_nodes: "1"
+compute_nodes: "1"
+storage_nodes: "1"
+
 openstack_release: "2.0.0"
 init_log_level: "debug"
 database_max_timeout: "60"

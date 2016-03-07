@@ -25,6 +25,7 @@ service:
         perm: "0600"
   mem: {{ cinder_volume_mem }}
   cpus: {{ cinder_volume_cpus }}
+  instances: {{ storage_nodes }}
   constraints: [["hostname", "UNIQUE"], ["openstack_role", "LIKE", "storage"]]
 commands:
   extend_start:

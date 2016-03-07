@@ -32,6 +32,7 @@ service:
         dest: /etc/libvirt/libvirtd.conf
         owner: root
         perm: "0644"
+  instances: {{ compute_nodes }}
   constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "compute"]]
 commands:
   extend_start:

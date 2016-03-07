@@ -30,6 +30,7 @@ import yaml
 from kolla_mesos.common import cli_utils
 from kolla_mesos.common import file_utils
 from kolla_mesos.common import jinja_utils
+from kolla_mesos.common import mesos_utils
 from kolla_mesos.common import zk_utils
 
 CONFIG_SUFFIX = '_config.yml.j2'
@@ -112,8 +113,14 @@ def get_tasks(deploy_id):
             if 'default.' in name:
                 continue
             fpath = os.path.join(root, name)
+            controller_nodes, compute_nodes, storage_nodes, all_nodes = \
+                mesos_utils.get_number_of_nodes()
             mini_vars = {'cinder_volume_driver': 'lvm',
-                         'deployment_id': deploy_id}
+                         'deployment_id': deploy_id,
+                         'controller_nodes': str(controller_nodes),
+                         'compute_nodes': str(compute_nodes),
+                         'storage_nodes': str(storage_nodes),
+                         'all_nodes': str(all_nodes)}
             cfg = yaml.load(jinja_utils.jinja_render(fpath, mini_vars))
 
             def get_commands():

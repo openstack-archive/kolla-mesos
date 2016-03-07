@@ -12,6 +12,7 @@ service:
     command: nova-api --config-file /etc/nova/nova.conf --config-file /etc/nova/nova-override.conf
   mem: {{ nova_api_mem }}
   cpus: {{ nova_api_cpus }}
+  instances: {{ controller_nodes }}
   constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "controller"]]
 commands:
   db_sync:
