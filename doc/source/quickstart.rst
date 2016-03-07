@@ -45,7 +45,7 @@ On CentOS/RHEL::
 
 On Ubuntu::
 
-    sudo apt-get install libvirt-dev nfs-commmon nfs-kernel-server python-libvirt qemu* ruby-libvirt
+    sudo apt-get install libvirt-dev nfs-common nfs-kernel-server python-libvirt qemu ruby-libvirt
 
 To install vagrant-libvirt plugin::
 
