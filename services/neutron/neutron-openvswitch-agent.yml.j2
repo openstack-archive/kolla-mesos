@@ -19,7 +19,7 @@ service:
      - path: neutron-server/db_sync
      - path: neutron_ansible_tasks/create_user
      - path: rabbitmq/daemon
-     - path: openvswitch-vswitchd/setup_ovs_bridge
+     - path: openvswitch-vswitchd/daemon
     command: neutron-openvswitch-agent --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugins/ml2/ml2_conf.ini
     files:
       neutron.conf.j2:
