@@ -13,15 +13,16 @@
 from oslo_config import cfg
 
 from kolla_mesos.common import network_utils
-
+from kolla_mesos.common import utils
 
 MARATHON_URL = 'http://{}:8080'.format(network_utils.get_ip_address())
 
 CONF = cfg.CONF
 marathon_opts = [
     cfg.StrOpt('host',
-               default=MARATHON_URL,
-               help='Marathon connection URL (http://host:port)'),
+               default=utils.env('KM_MARATHON_HOST', default=MARATHON_URL),
+               help='Marathon connection URL (http://host:port), '
+                    '(Env: KM_MARATHON_HOST)'),
     cfg.IntOpt('timeout',
                default=5,
                help='Timeout for the request to the Marathon API')

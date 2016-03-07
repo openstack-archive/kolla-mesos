@@ -13,14 +13,16 @@
 from oslo_config import cfg
 
 from kolla_mesos.common import network_utils
+from kolla_mesos.common import utils
 
 MESOS_URL = 'http://{}:5050'.format(network_utils.get_ip_address())
 
 CONF = cfg.CONF
 mesos_opts = [
     cfg.StrOpt('host',
-               default=MESOS_URL,
-               help='Mesos connection URL (http://host:port)'),
+               default=utils.env('KM_MESOS_HOST', default=MESOS_URL),
+               help='Mesos connection URL (http://host:port), '
+                    '(Env: KM_MESOS_HOST)'),
     cfg.IntOpt('timeout',
                default=5,
                help='Timeout for the request to the Marathon API')
