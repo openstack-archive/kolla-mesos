@@ -16,16 +16,10 @@ import argparse
 import json
 import logging
 import os.path
-import socket
 import sys
-import yaml
 
-from kolla_mesos.common import jinja_utils
+from kolla_mesos import service_definition
 
-CNF_FIELDS = ('source', 'dest', 'owner', 'perm')
-CMD_FIELDS = ('run_once', 'dependencies', 'command', 'env',
-              'delay', 'retries', 'files')
-BASE_PATH = os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), '..')
 # Some roles are depending on some global variables to be included in
 # configuration. The example are Neutron plugins - definitions of
 # neutron-openvswitch-agent and neutron-linuxbridge exist only when the
@@ -57,70 +51,6 @@ def parse_args():
     return p.parse_args()
 
 
-def validate_config(filename, conf):
-    for file in conf:
-        for key in conf[file]:
-            assert key in CNF_FIELDS, '%s: %s not in %s' % (filename,
-                                                            key, CNF_FIELDS)
-        srcs = conf[file]['source']
-        if isinstance(srcs, str):
-            srcs = [srcs]
-        for src in srcs:
-            file_path = os.path.join(BASE_PATH, src)
-            if not file_path.startswith('/etc'):
-                assert os.path.exists(file_path), '%s missing' % file_path
-
-
-def validate_command(filename, cmd, cmd_info, deps, role):
-    for key in cmd_info:
-        assert key in CMD_FIELDS, '%s not in %s' % (key, CMD_FIELDS)
-
-    regs = ['%s/%s' % (role, cmd),
-            '%s/%s/%s' % (socket.gethostname(), role, cmd)]
-    reqs = cmd_info.get('dependencies', [])
-    for reg in regs:
-        if reg not in deps:
-            deps[reg] = {'waiters': {}}
-        deps[reg]['registered_by'] = cmd
-        deps[reg]['name'] = cmd
-        deps[reg]['run_by'] = filename
-    for req in reqs:
-        scope = req.get('scope', 'global')
-        req_path = req['path']
-        if scope == 'local':
-            req_path = os.path.join(socket.gethostname(), req_path)
-        if req_path not in deps:
-            deps[req_path] = {'waiters': {}}
-        for reg in regs:
-            deps[req_path]['waiters'][cmd] = reg
-    if 'files' in cmd_info:
-        validate_config(filename, cmd_info['files'])
-
-
-def validate(filename, deps):
-    mini_vars = {'cinder_volume_driver': 'lvm',
-                 'enable_memcached': 'yes',
-                 'deployment_id': 'test',
-                 'controller_nodes': '1',
-                 'compute_nodes': '1'}
-    role = filename.replace('.yml.j2', '')
-    role_vars = ROLE_VARS_MAP.get(role, {})
-    mini_vars.update(role_vars)
-
-    cnf = yaml.load(jinja_utils.jinja_render(filename, mini_vars))
-
-    def get_commands():
-        for cmd in cnf.get('commands', {}):
-            yield cmd, cnf['commands'][cmd]
-        if 'service' in cnf:
-            yield 'daemon', cnf['service']['daemon']
-
-    _, group, role = cnf['name'].split('/')
-
-    for cmd, cmd_info in get_commands():
-        validate_command(filename, cmd, cmd_info, deps, role)
-
-
 def main():
     args = parse_args()
     logging.basicConfig()
@@ -128,13 +58,27 @@ def main():
 
     deps = {}
     for filename in args.input:
-        validate(filename, deps)
-    print(json.dumps(deps, indent=2))
+        mini_vars = {'cinder_volume_driver': 'lvm',
+                     'enable_memcached': 'yes',
+                     'deployment_id': 'test',
+                     'controller_nodes': '1',
+                     'compute_nodes': '1'}
+        role = filename.replace('.yml.j2', '')
+        role_vars = ROLE_VARS_MAP.get(role, {})
+        mini_vars.update(role_vars)
+
+        ser_dir = os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])),
+                               '..', 'services')
+        ser_name = '/'.join(filename.split('/')[-2:]).replace('.yml.j2', '')
+        service_definition.validate(ser_name, ser_dir,
+                                    variables=mini_vars, deps=deps)
     # validate the deps
     for task in deps:
         if 'registered_by' not in deps[task]:
             res = 1
             logging.error('%s not registered' % task)
+    if res != 0:
+        print(json.dumps(deps, indent=2))
     sys.exit(res)
 
 if __name__ == '__main__':

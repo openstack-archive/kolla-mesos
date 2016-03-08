@@ -11,6 +11,8 @@
 # under the License.
 
 import contextlib
+import os.path
+import sys
 
 from oslo_config import cfg
 from oslotest import base
@@ -35,3 +37,5 @@ class BaseTestCase(testscenarios.WithScenarios,
     def setUp(self):
         super(BaseTestCase, self).setUp()
         self.addCleanup(cfg.CONF.reset)
+        mod_dir = os.path.dirname(sys.modules[__name__].__file__)
+        self.project_dir = os.path.abspath(os.path.join(mod_dir, '..', '..'))
