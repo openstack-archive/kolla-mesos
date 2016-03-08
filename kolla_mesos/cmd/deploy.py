@@ -168,7 +168,7 @@ def dict_update(d, u):
     if not isinstance(u, collections.Mapping):
         return u
 
-    for k, v in u.iteritems():
+    for k, v in u.items():
         if isinstance(v, collections.Mapping):
             d[k] = dict_update(d.get(k, {}), v)
         else:
