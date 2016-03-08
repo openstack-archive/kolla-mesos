@@ -11,7 +11,6 @@
 # limitations under the License.
 
 import itertools
-import multiprocessing
 import operator
 import re
 
@@ -22,6 +21,7 @@ import six
 
 from kolla_mesos import chronos
 from kolla_mesos.common import docker_utils
+from kolla_mesos.common import mesos_utils
 from kolla_mesos.common import zk_utils
 from kolla_mesos import exception
 from kolla_mesos import marathon
@@ -44,7 +44,6 @@ def wait_for_mesos_cleanup():
         raise exception.MesosTasksNotCompleted()
 
 
-@docker_utils.DockerClient()
 def remove_container(dc, container_name):
     LOG.info("Removing container %s", container_name)
     dc.remove_container(container_name)
@@ -56,14 +55,13 @@ def remove_container(dc, container_name):
 # version of Python. Mainly because Mesos cluster may have a lot of containers
 # and we would do multiple O(n) operations. Doing all these things lazy
 # results in iterating only once on the lists of containers and volumes.
-def get_container_names():
-    with docker_utils.DockerClient() as dc:
-        exited_containers = dc.containers(all=True,
-                                          filters={'status': 'exited'})
-        created_containers = dc.containers(all=True,
-                                           filters={'status': 'created'})
-        dead_containers = dc.containers(all=True,
-                                        filters={'status': 'dead'})
+def get_container_names(dc):
+    exited_containers = dc.containers(all=True,
+                                      filters={'status': 'exited'})
+    created_containers = dc.containers(all=True,
+                                       filters={'status': 'created'})
+    dead_containers = dc.containers(all=True,
+                                    filters={'status': 'dead'})
 
     containers = itertools.chain(exited_containers, created_containers,
                                  dead_containers)
@@ -88,24 +86,16 @@ def get_container_names():
 # TODO(nihilifer): Request/develop the feature of cleaning volumes directly
 # in Mesos and Marathon.
 # TODO(nihilifer): Support multinode cleanup.
-def remove_all_containers():
+def remove_all_containers(dc):
     """Remove all exited containers which were run by Mesos.
 
     It's done in order to succesfully remove named volumes.
     """
-    container_names = get_container_names()
-
-    # Remove containers in the pool of workers
-    pool = multiprocessing.Pool(processes=CONF.workers)
-    tasks = [pool.apply_async(remove_container, (container_name,))
-             for container_name in container_names]
-
-    # Wait for every task to execute
-    for task in tasks:
-        task.get()
+    container_names = get_container_names(dc)
+    for container_name in container_names:
+        remove_container(dc, container_name)
 
 
-@docker_utils.DockerClient()
 def remove_all_volumes(dc):
     """Remove all volumes created for containers run by Mesos."""
     if dc.volumes()['Volumes'] is not None:
@@ -138,7 +128,10 @@ def cleanup():
     LOG.info("Checking whether all tasks in Mesos are exited")
     wait_for_mesos_cleanup()
 
-    LOG.info("Starting cleanup of Docker containers")
-    remove_all_containers()
-    LOG.info("Starting cleanup of Docker volumes")
-    remove_all_volumes()
+    docker_urls = mesos_utils.get_docker_urls()
+    for docker_url in docker_urls:
+        with docker_utils.DockerClient(base_url=docker_url) as dc:
+            LOG.info("Starting cleanup of Docker containers")
+            remove_all_containers(dc)
+            LOG.info("Starting cleanup of Docker volumes")
+            remove_all_volumes(dc)
