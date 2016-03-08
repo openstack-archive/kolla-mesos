@@ -48,31 +48,29 @@ class TestMesosCleanup(base.BaseTestCase):
                           cleanup.wait_for_mesos_cleanup.__wrapped__)
 
 
-@mock.patch('kolla_mesos.common.docker_utils.docker')
 class TestDockerCleanup(base.BaseTestCase):
 
-    def setUp(self):
-        super(TestDockerCleanup, self).setUp()
-        CONF.set_override('workers', 1)
-
-    def test_remove_container(self, docker_mock):
-        cleanup.remove_container('test_container')
-        docker_mock.Client().remove_container.assert_called_once_with(
+    def test_remove_container(self):
+        docker_mock = mock.Mock()
+        cleanup.remove_container(docker_mock, 'test_container')
+        docker_mock.remove_container.assert_called_once_with(
             'test_container')
 
-    def test_get_container_names(self, docker_mock):
-        docker_mock.Client().containers.side_effect = [
+    def test_get_container_names(self):
+        docker_mock = mock.Mock()
+        docker_mock.containers.side_effect = [
             [{'Names': ['/mesos-1']}, {'Names': ['/mesos-2']}],
             [{'Names': ['/mesos-3']}], [{'Names': ['/mesos-4']}]
         ]
-        container_names = list(cleanup.get_container_names())
+        container_names = list(cleanup.get_container_names(docker_mock))
         self.assertListEqual(['/mesos-1', '/mesos-2', '/mesos-3', '/mesos-4'],
                              container_names)
 
-    def test_remove_all_volumes(self, docker_mock):
-        docker_mock.Client().volumes.return_value = {'Volumes': [
+    def test_remove_all_volumes(self):
+        docker_mock = mock.Mock()
+        docker_mock.volumes.return_value = {'Volumes': [
             {'Name': 'test_1'}, {'Name': 'test_2'}
         ]}
-        cleanup.remove_all_volumes()
-        docker_mock.Client().remove_volume.assert_has_calls(
+        cleanup.remove_all_volumes(docker_mock)
+        docker_mock.remove_volume.assert_has_calls(
             [mock.call('test_1'), mock.call('test_2')])

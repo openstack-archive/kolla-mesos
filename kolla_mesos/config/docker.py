@@ -10,25 +10,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import functools
+from oslo_config import cfg
 
-import docker
+from kolla_mesos.common import utils
 
 
-class DockerClient(object):
-    """Decorator and contextmanager for providing the Docker connection."""
-    def __init__(self, *args, **kwargs):
-        self.dc = docker.Client(*args, **kwargs)
-
-    def __enter__(self):
-        return self.dc
-
-    def __exit__(self, *args, **kwargs):
-        self.dc.close()
-
-    def __call__(self, f):
-        @functools.wraps(f)
-        def wrapper(*args, **kwargs):
-            with self as dc:
-                return f(dc, *args, **kwargs)
-        return wrapper
+CONF = cfg.CONF
+docker_opts = [
+    cfg.IntOpt('port',
+               default=utils.env('KM_DOCKER_PORT', default=5555),
+               help='Docker connection port (Env: KM_DOCKER_PORT)')
+]
+docker_opt_group = cfg.OptGroup(name='docker',
+                                title='Options for Docker')
+CONF.register_group(docker_opt_group)
+CONF.register_cli_opts(docker_opts, docker_opt_group)
+CONF.register_opts(docker_opts, docker_opt_group)

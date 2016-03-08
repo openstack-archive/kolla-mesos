@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from kolla_mesos.config import chronos
+from kolla_mesos.config import docker
 from kolla_mesos.config import kolla
 from kolla_mesos.config import logging
 from kolla_mesos.config import marathon
@@ -23,6 +24,7 @@ from kolla_mesos.config import zookeeper
 def list_opts():
     return [
         ('chronos', chronos.chronos_opts),
+        ('docker', docker.docker_opts),
         ('kolla', kolla.kolla_opts),
         ('marathon', marathon.marathon_opts),
         ('network', network.network_opts),

@@ -12,7 +12,13 @@
 
 import functools
 
+from oslo_config import cfg
+
 from kolla_mesos import mesos
+
+
+CONF = cfg.CONF
+CONF.import_group('docker', 'kolla_mesos.config.docker')
 
 
 class MesosClient(object):
@@ -55,3 +61,13 @@ def get_number_of_nodes(mesos_client):
     all_nodes = controller_nodes + compute_nodes + storage_nodes
 
     return controller_nodes, compute_nodes, storage_nodes, all_nodes
+
+
+@MesosClient()
+def get_docker_urls(mesos_client):
+    """Returns the list of Docker URI-s from Mesos slaves."""
+    slaves = mesos_client.get_slaves()
+    docker_urls = [
+        '%s:%d' % (slave['hostname'], CONF.docker.port) for slave in slaves
+    ]
+    return docker_urls
