@@ -12,8 +12,14 @@
 
 import functools
 
+from oslo_config import cfg
+
 from kolla_mesos import exception
 from kolla_mesos import mesos
+
+
+CONF = cfg.CONF
+CONF.import_group('docker', 'kolla_mesos.config.docker')
 
 
 class MesosClient(object):
@@ -78,3 +84,13 @@ def get_slave_for_aio(mesos_client):
         return slaves[0]['hostname']
     except IndexError:
         raise exception.NoMesosSlaveAvailable()
+
+
+@MesosClient()
+def get_docker_urls(mesos_client):
+    """Returns the list of Docker URI-s from Mesos slaves."""
+    slaves = mesos_client.get_slaves()
+    docker_urls = [
+        '%s:%d' % (slave['hostname'], CONF.docker.port) for slave in slaves
+    ]
+    return docker_urls
