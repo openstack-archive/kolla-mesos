@@ -76,6 +76,40 @@ def clean(zk, path='/kolla'):
     zk.delete(path, recursive=True)
 
 
+def _list_all(path, zk):
+    values = {}
+    data, stat = zk.get(path)
+    if stat.dataLength > 0:
+        values[path] = data
+    try:
+        children = zk.get_children(path)
+    except exceptions.NoNodeError:
+        children = []
+    for child in children:
+        cvalues = _list_all(os.path.join(path, child), zk)
+        if cvalues is not None:
+            values.update(cvalues)
+    return values
+
+
+def list_all(path):
+    if path is None:
+        path = '/'
+    with connection() as zk:
+        return _list_all(path, zk)
+
+
+def get_one(path):
+    with connection() as zk:
+        data, stat = zk.get(path)
+        return {path: data}
+
+
+def set_one(path, value):
+    with connection() as zk:
+        zk.set(path, value)
+
+
 @contextlib.contextmanager
 def connection():
     zk = client.KazooClient(hosts=CONF.zookeeper.host)
