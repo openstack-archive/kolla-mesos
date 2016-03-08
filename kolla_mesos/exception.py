@@ -27,5 +27,19 @@ class MesosTasksNotCompleted(Exception):
     pass
 
 
-class UndefinedOption(Exception):
+class KollaException(Exception):
     pass
+
+
+class UndefinedOption(KollaException):
+    pass
+
+
+class KollaDirNotFoundException(KollaException):
+    pass
+
+
+class KollaNotFoundException(KollaException):
+    def __init__(self, message, entity='file'):
+        super(KollaNotFoundException, self).__init__(
+            'The %s "%s" was not found' % (entity, message))

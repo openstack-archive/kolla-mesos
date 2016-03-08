@@ -10,9 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os.path
-import sys
-
 from kolla_mesos.common import file_utils
 from kolla_mesos.tests import base
 
@@ -20,7 +17,5 @@ from kolla_mesos.tests import base
 class FindBaseDirTest(base.BaseTestCase):
 
     def test_when_is_a_test(self):
-        mod_dir = os.path.dirname(sys.modules[__name__].__file__)
-        project_dir = os.path.abspath(os.path.join(mod_dir, '..', '..', '..'))
         tdir = file_utils.find_base_dir()
-        self.assertEqual(project_dir, tdir)
+        self.assertEqual(self.project_dir, tdir)
