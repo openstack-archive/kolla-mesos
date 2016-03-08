@@ -54,10 +54,6 @@ LOG = logging.getLogger()
 logging.register_options(CONF)
 
 
-class KollaDirNotFoundException(Exception):
-    pass
-
-
 class File(object):
     def __init__(self, conf, name, service_name):
         self._conf = conf
