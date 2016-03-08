@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,27 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
-
 from oslo_config import cfg
-from oslo_log import log as logging
-
-from kolla_mesos import cleanup
 
 
 CONF = cfg.CONF
-CONF.import_opt('force', 'kolla_mesos.config.cleanup_cli')
-CONF.import_opt('workers', 'kolla_mesos.config.multiprocessing_cli')
-
-LOG = logging.getLogger()
-logging.register_options(CONF)
-
-
-def main():
-    CONF(sys.argv[1:], project='kolla-mesos')
-    logging.setup(CONF, 'kolla-mesos')
-    cleanup.cleanup()
-
-
-if __name__ == '__main__':
-    main()
+cleanup_cli_opts = [
+    cfg.BoolOpt('force',
+                default=False)
+]
+CONF.register_cli_opts(cleanup_cli_opts)

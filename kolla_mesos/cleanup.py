@@ -121,6 +121,16 @@ def remove_all_volumes(dc):
             LOG.info("No docker volumes found")
 
 
+def force_cleanup():
+    LOG.info("Checking whether all tasks in Mesos are exited")
+    wait_for_mesos_cleanup()
+
+    LOG.info("Starting cleanup of Docker containers")
+    remove_all_containers()
+    LOG.info("Starting cleanup of Docker volumes")
+    remove_all_volumes()
+
+
 def cleanup():
     LOG.info("Starting cleanup...")
     marathon_client = marathon.Client()
@@ -135,10 +145,5 @@ def cleanup():
     LOG.info("Starting cleanup of chronos jobs")
     chronos_client.remove_all_jobs()
 
-    LOG.info("Checking whether all tasks in Mesos are exited")
-    wait_for_mesos_cleanup()
-
-    LOG.info("Starting cleanup of Docker containers")
-    remove_all_containers()
-    LOG.info("Starting cleanup of Docker volumes")
-    remove_all_volumes()
+    if CONF.force:
+        force_cleanup()
