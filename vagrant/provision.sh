@@ -47,7 +47,7 @@ EOF
     pip install docker-py
 
     # Configure registry
-    sed -i -r "s|(ExecStart)=(.+)|\1=/usr/bin/docker daemon --insecure-registry ${REGISTRY} --registry-mirror=http://${REGISTRY}|" /usr/lib/systemd/system/docker.service
+    sed -i -r "s|(ExecStart)=(.+)|\1=/usr/bin/docker daemon --insecure-registry ${REGISTRY} --registry-mirror=http://${REGISTRY} -H unix:///var/run/docker.sock -H 0.0.0.0:5555|" /usr/lib/systemd/system/docker.service
     sed -i 's|^MountFlags=.*|MountFlags=shared|' /usr/lib/systemd/system/docker.service
 
     # Start services
