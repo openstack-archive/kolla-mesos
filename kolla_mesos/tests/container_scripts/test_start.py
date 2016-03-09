@@ -286,7 +286,7 @@ class GenerateConfigTest(base.BaseTestCase):
     @mock.patch.object(start, 'write_file')
     def test_no_rendering(self, m_wf, m_gar, m_gip, m_sleep):
         afile = {'afile': {
-            'source': 'config/mariadb/templates/galera.cnf.j2',
+            'source': 'mariadb/templates/galera.cnf.j2',
             'dest': '/etc/mysql_dir/my.cnf',
             'owner': 'mysql',
             'perm': "0600"}}
@@ -306,7 +306,7 @@ class GenerateConfigTest(base.BaseTestCase):
     @mock.patch.object(start, 'write_file')
     def test_simple_render(self, m_wf, m_gar, m_gip, m_sleep):
         afile = {'afile': {
-            'source': 'config/mariadb/templates/galera.cnf.j2',
+            'source': 'mariadb/templates/galera.cnf.j2',
             'dest': '/etc/mysql_dir/my.cnf',
             'owner': 'mysql',
             'perm': "0600"}}
@@ -327,7 +327,7 @@ class GenerateConfigTest(base.BaseTestCase):
     @mock.patch.object(start, 'write_file')
     def test_missing_variable(self, m_wf, m_gar, m_gip, m_rt, m_sleep):
         afile = {'afile': {
-            'source': 'config/mariadb/templates/galera.cnf.j2',
+            'source': 'mariadb/templates/galera.cnf.j2',
             'dest': '/etc/mysql_dir/my.cnf',
             'owner': 'mysql',
             'perm': "0600"}}
@@ -342,7 +342,7 @@ class GenerateConfigTest(base.BaseTestCase):
 
     @mock.patch('subprocess.check_call')
     def test_write_file_no_existing(self, m_call):
-        conf = {'source': 'config/mariadb/templates/galera.cnf.j2',
+        conf = {'source': 'mariadb/templates/galera.cnf.j2',
                 'dest': '/etc/mysql_dir/my.cnf',
                 'owner': 'mysql',
                 'perm': "0600"}
@@ -352,7 +352,7 @@ class GenerateConfigTest(base.BaseTestCase):
     @mock.patch('subprocess.check_call')
     def test_write_file_existing_diff(self, m_call):
         existing_f = self.create_tempfiles([('existing', 'data1')])[0]
-        conf = {'source': 'config/mariadb/templates/galera.cnf.j2',
+        conf = {'source': 'mariadb/templates/galera.cnf.j2',
                 'dest': existing_f,
                 'owner': 'mysql',
                 'perm': "0600"}
@@ -364,7 +364,7 @@ class GenerateConfigTest(base.BaseTestCase):
     def test_write_file_existing_same(self, m_call):
         existing_f = self.create_tempfiles([('existing', 'data1')])[0]
 
-        conf = {'source': 'config/mariadb/templates/galera.cnf.j2',
+        conf = {'source': 'mariadb/templates/galera.cnf.j2',
                 'dest': existing_f,
                 'owner': 'mysql',
                 'perm': "0600"}
@@ -639,7 +639,7 @@ class RenderNovaConfTest(base.BaseTestCase):
         mod_dir = os.path.dirname(sys.modules[__name__].__file__)
         proj_dir = os.path.abspath(os.path.join(mod_dir, '..', '..', '..'))
         with open(os.path.join(proj_dir,
-                  'config/nova/templates/nova.conf.j2')) as nc:
+                  'nova/templates/nova.conf.j2')) as nc:
             template_contents = nc.read()
             self.client.create(
                 '/kolla/did/openstack/nova/nova-compute/files/afile',

@@ -11,7 +11,7 @@ service:
     command: glance-registry
     files:
       glance.conf.j2:
-        source: ["config/glance/templates/glance-registry.conf.j2",
+        source: ["glance/templates/glance-registry.conf.j2",
                  "/etc/kolla-mesos/config/global.conf",
                  "/etc/kolla-mesos/config/database.conf",
                  "/etc/kolla-mesos/config/messaging.conf",

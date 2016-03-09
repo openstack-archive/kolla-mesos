@@ -20,7 +20,7 @@ service:
         owner: nova
         perm: "0600"
       nova.conf.j2:
-        source: "config/nova/templates/nova.conf.j2"
+        source: "nova/templates/nova.conf.j2"
         dest: /etc/nova/nova.conf
         owner: nova
         perm: "0600"

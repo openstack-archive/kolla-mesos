@@ -11,17 +11,17 @@ service:
     dependencies: [rabbitmq/bootstrap]
     files:
       rabbitmq-env.conf.j2:
-        source: config/rabbitmq/templates/rabbitmq-env.conf.j2
+        source: rabbitmq/templates/rabbitmq-env.conf.j2
         dest: /etc/rabbitmq/rabbitmq-env.conf
         owner: rabbitmq
         perm: "0600"
       rabbitmq.config.j2:
-        source: config/rabbitmq/templates/rabbitmq.config.j2
+        source: rabbitmq/templates/rabbitmq.config.j2
         dest: /etc/rabbitmq/rabbitmq.config
         owner: rabbitmq
         perm: "0600"
       rabbitmq_clusterer.config.j2:
-        source: config/rabbitmq/templates/rabbitmq_clusterer.config.j2
+        source: rabbitmq/templates/rabbitmq_clusterer.config.j2
         dest: /etc/rabbitmq/rabbitmq_clusterer.config
         owner: rabbitmq
         perm: "0600"

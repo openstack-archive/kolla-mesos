@@ -27,8 +27,8 @@ commands:
       KOLLA_BOOTSTRAP:
     files:
       glance.conf.j2:
-        source: ["config/glance/templates/glance-api.conf.j2",
-                 "config/glance/templates/glance-file.conf.j2",
+        source: ["glance/templates/glance-api.conf.j2",
+                 "glance/templates/glance-file.conf.j2",
                  "/etc/kolla-mesos/config/global.conf",
                  "/etc/kolla-mesos/config/database.conf",
                  "/etc/kolla-mesos/config/messaging.conf",

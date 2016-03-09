@@ -28,7 +28,7 @@ service:
     command: libvirtd --listen
     files:
       libvirtd.conf.j2:
-        source: "config/nova/templates/libvirtd.conf.j2"
+        source: "nova/templates/libvirtd.conf.j2"
         dest: /etc/libvirt/libvirtd.conf
         owner: root
         perm: "0644"

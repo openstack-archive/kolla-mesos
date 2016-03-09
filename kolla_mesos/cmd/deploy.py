@@ -69,8 +69,9 @@ class File(object):
         config_p = configparser.ConfigParser()
         for src_file in source_files:
             if not src_file.startswith('/'):
-                src_file = os.path.join(self.base_dir, src_file)
-            if not os.path.exists(src_file):
+                src_file = os.path.join(self.base_dir, 'services', src_file)
+            if (not os.path.exists(src_file) and
+                    not src_file.startswith('/etc/kolla-mesos/config')):
                 LOG.warning('path missing %s' % src_file)
                 continue
             config_p.read(src_file)
@@ -247,7 +248,7 @@ class KollaWorker(object):
 
     def __init__(self):
         self.base_dir = os.path.abspath(file_utils.find_base_dir())
-        self.config_dir = os.path.join(self.base_dir, 'config')
+        self.config_dir = os.path.join(self.base_dir, 'services')
         LOG.debug("Kolla-Mesos base directory: %s" % self.base_dir)
         self.required_vars = {}
         self.marathon_client = marathon.Client()
@@ -270,8 +271,8 @@ class KollaWorker(object):
     def get_jinja_vars(self):
         # order for per-project variables (each overrides the previous):
         # 1. /etc/kolla/globals.yml and passwords.yml
-        # 2. config/all.yml
-        # 3. config/<project>/defaults/main.yml
+        # 2. services/all.yml
+        # 3. services/<project>/defaults/main.yml
         with open(file_utils.find_config_file('passwords.yml'), 'r') as gf:
             global_vars = yaml.load(gf)
         with open(file_utils.find_config_file('globals.yml'), 'r') as gf:
@@ -288,6 +289,8 @@ class KollaWorker(object):
         jvars.update(global_vars)
 
         for proj in self.get_projects():
+            if not os.path.exists(os.path.join(self.config_dir, proj)):
+                continue
             proj_yml_name = os.path.join(self.config_dir, proj,
                                          'defaults', 'main.yml')
             if os.path.exists(proj_yml_name):
@@ -385,28 +388,27 @@ class KollaWorker(object):
         jinja_vars = self.get_jinja_vars()
         LOG.debug('Jinja_vars is: %s' % jinja_vars)
         self.required_vars = jinja_vars
-
-        for var in jinja_vars:
-            if jinja_vars[var] is None:
-                LOG.info('jinja_vars[%s] is None' % var)
-            if 'image' in var:
-                LOG.debug('%s is "%s"' % (var, jinja_vars[var]))
-
         kolla_config = self._write_common_config_to_zookeeper(zk, jinja_vars)
 
         # Now write services configs
         for proj in self.get_projects():
-            conf_path = os.path.join(self.base_dir, 'services', proj)
+            conf_path = os.path.join(self.config_dir, proj)
+            if not os.path.exists(conf_path):
+                LOG.warn('Project %s in the profile, '
+                         'but directory %s does not exist', proj, conf_path)
+                continue
             LOG.info('Current project is %s' % conf_path)
-            for root, dirs, names in os.walk(conf_path):
-                [self.process_service_config(zk, proj,
-                                             os.path.join(root, name),
-                                             jinja_vars, kolla_config)
-                 for name in names]
+            for name in os.listdir(conf_path):
+                service_file = os.path.join(conf_path, name)
+                if os.path.isdir(service_file):
+                    continue
+                self.process_service_config(zk, proj,
+                                            service_file,
+                                            jinja_vars, kolla_config)
 
     def write_openrc(self):
         # write an openrc to the base_dir for convience.
-        openrc_file = os.path.join(self.base_dir, 'config', 'openrc.j2')
+        openrc_file = os.path.join(self.config_dir, 'openrc.j2')
         content = jinja_utils.jinja_render(openrc_file, self.required_vars)
         with open('openrc', 'w') as f:
             f.write(content)

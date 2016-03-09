@@ -36,11 +36,11 @@ kolla-mesos-deploy to better understand the flow of operation.
 3. generate the marathon and chronos files and deploy them.
 
 
-The config/<project>/defaults/main.yml
+The services/<project>/defaults/main.yml
 --------------------------------------
 
 This file keeps the basic variables which will be used when generating the
-other files. Of course it can re-use wariables from *config/all.yml* file
+other files. Of course it can re-use wariables from *services/all.yml* file
 which stores global variables for the whole kolla-mesos project.
 
 We usually store the following information in this kind of files:
@@ -70,7 +70,7 @@ An example:
   keystone_logging_debug: "{{ openstack_logging_debug }}"
 
 
-config/<project>/templates/*
+services/<project>/templates/*
 ----------------------------
 
 kolla-mesos uses these files to generate the configuration of OpenStack
@@ -181,7 +181,7 @@ Notes on the above config.
 1. In the files section, "source" is the source in the kolla-mesos
    source tree and "dest" is the destination in the container. The
    contents of the file will be placed in zookeeper in the node named:
-   "/kolla/config/project_a/service_x/a.cnf.j2".
+   "/kolla/<deployment_id>/project_a/service_x/a.cnf.j2".
 2. kolla_mesos_start.py will render the file before placing in the
    container.
 3. In the commands section, commands will be run as soon as their
@@ -200,7 +200,7 @@ supported in kolla-mesos.
 
 initial copying::
 
-  cp ansible/roles/<project>/templates/* ../kolla-mesos/config/<project>/templates/
-  cp ansible/roles/<project>/tasks/config.yml ../kolla-mesos/config/<project>/<service>_config.yml
+  cp ansible/roles/<project>/templates/* ../kolla-mesos/services/<project>/templates/
+  cp ansible/roles/<project>/tasks/config.yml ../kolla-mesos/services/<project>/<service>.yml.j2
   # then edit the above to the new format.
-  cp ansible/roles/<projects>/defaults/main.yml ../kolla-mesos/config/<project>/defaults/main.yml
+  cp ansible/roles/<projects>/defaults/main.yml ../kolla-mesos/services/<project>/defaults/main.yml

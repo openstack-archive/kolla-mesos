@@ -13,8 +13,8 @@ service:
     command: /usr/bin/cinder-scheduler
     files:
       cinder.conf.j2:
-        source: ["config/cinder/templates/cinder.conf.j2",
-                 "config/cinder/templates/cinder-{{ cinder_volume_driver }}.conf.j2",
+        source: ["cinder/templates/cinder.conf.j2",
+                 "cinder/templates/cinder-{{ cinder_volume_driver }}.conf.j2",
                  "/etc/kolla-mesos/config/global.conf",
                  "/etc/kolla-mesos/config/database.conf",
                  "/etc/kolla-mesos/config/messaging.conf",

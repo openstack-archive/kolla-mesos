@@ -36,7 +36,7 @@ service:
     command: /usr/bin/cinder-api
     files:
       cinder.conf.j2:
-        source: ["config/cinder/templates/cinder.conf.j2",
+        source: ["cinder/templates/cinder.conf.j2",
                  "/etc/kolla-mesos/config/cinder/cinder-api.conf"]
         dest: /etc/cinder/cinder.conf
         owner: cinder

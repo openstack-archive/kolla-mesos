@@ -15,12 +15,12 @@ service:
       OS_TOKEN: "password"
     files:
       wsgi-keystone.conf.j2:
-        source: config/keystone/templates/wsgi-keystone.conf.j2
+        source: keystone/templates/wsgi-keystone.conf.j2
         dest: /etc/{{ keystone_dir }}/keystone.conf
         owner: keystone
         perm: "0600"
       apache_wrapper.sh:
-        source: config/common/apache_wrapper.sh.j2
+        source: common/apache_wrapper.sh.j2
         dest: /usr/local/bin/kolla_apache_wrapper.sh
         owner: keystone
         perm: "0755"
@@ -43,7 +43,7 @@ commands:
         source: ["/etc/kolla-mesos/config/global.conf",
                  "/etc/kolla-mesos/config/database.conf",
                  "/etc/kolla-mesos/config/messaging.conf",
-                 "config/keystone/templates/keystone.conf.j2",
+                 "keystone/templates/keystone.conf.j2",
                  "/etc/kolla-mesos/config/keystone.conf"]
         dest: /etc/keystone/keystone.conf
         owner: keystone

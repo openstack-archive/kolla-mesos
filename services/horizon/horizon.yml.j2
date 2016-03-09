@@ -17,7 +17,7 @@ service:
     {% endif %}
     files:
       apache_wrapper.sh:
-        source: config/common/apache_wrapper.sh.j2
+        source: common/apache_wrapper.sh.j2
         dest: /usr/local/bin/kolla_apache_wrapper.sh
         owner: horizon
         perm: "0755"
@@ -32,12 +32,12 @@ commands:
       KOLLA_BOOTSTRAP:
     files:
       000-default.conf:
-        source: config/horizon/templates/horizon.conf.j2
+        source: horizon/templates/horizon.conf.j2
         dest: /etc/{{ apache_dir }}/{{ apache_conf }}
         owner: horizon
         perm: "0644"
       local_settings:
-        source: config/horizon/templates/local_settings.j2
+        source: horizon/templates/local_settings.j2
         dest: /etc/openstack-dashboard/local_settings
         owner: horizon
         perm: "0644"

@@ -36,7 +36,7 @@ EXAMPLE_CHRONOS_JOB = {
         {"name": "KOLLA_CONFIG", "value": {
             "command": "/usr/local/bin/kolla_mesos_start",
             "config_files": [{
-                "source": ("zk://localhost:2181/kolla/config/mariadb/mariadb/"
+                "source": ("zk://localhost:2181/kolla/common/common/"
                            "kolla_mesos_start.py"),
                 "dest": "/usr/local/bin/kolla_mesos_start",
                 "owner": "root",
