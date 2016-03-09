@@ -178,24 +178,11 @@ class KollaWorker(object):
         return jvars
 
     def gen_deployment_id(self):
-
-        if CONF.kolla.deployment_id_prefix and CONF.kolla.deployment_id:
-            LOG.info('You can\'t use "deployment-id" and '
-                     '"deployment-id-prefix" together. Choose one.')
+        if CONF.kolla.deployment_id is None:
+            LOG.error('You must set "kolla.deployment_id".')
             sys.exit(1)
 
-        uniq_name = CONF.kolla.deployment_id is not None
-        deploy_prefix = CONF.kolla.deployment_id_prefix is not None
-
-        if uniq_name:
-            self.deployment_id = CONF.kolla.deployment_id
-        else:
-            ts = datetime.datetime.fromtimestamp(
-                self.start_time
-            ).strftime('%Y-%m-%d-%H-%M-%S')
-            deployment_id = (CONF.kolla.deployment_id_prefix + '-' + ts
-                             if deploy_prefix else 'kolla')
-            self.deployment_id = deployment_id
+        self.deployment_id = CONF.kolla.deployment_id
         LOG.info('Deployment ID: %s' % self.deployment_id)
 
     def process_service_config(self, zk, proj, conf_path,
