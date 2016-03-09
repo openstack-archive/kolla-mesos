@@ -1,0 +1,11 @@
+{
+    "command": "mesos-dns -config /usr/local/etc/mesos-dns.conf",
+    "config_files": [
+        {
+            "source": "{{ container_config_directory }}/mesos-dns.conf",
+            "dest": "/usr/local/etc/mesos-dns.conf",
+            "owner": "root",
+            "perm": "0600"
+        }
+    ]
+}

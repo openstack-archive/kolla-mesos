@@ -21,3 +21,6 @@ docker_common_options:
     restart_policy: "{{ docker_restart_policy }}"
 
 mesos_docker_remove_delay: "5mins"
+mesos_domain: "mesos"
+mesos_resolvers: '"8.8.8.8","8.8.4.4"'
+marathon_framework: "marathon"
