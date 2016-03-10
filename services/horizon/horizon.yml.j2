@@ -24,7 +24,7 @@ service:
   mem: {{ horizon_mem }}
   cpus: {{ horizon_cpus }}
   instances: {{ controller_nodes }}
-  constraints: [["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "controller"]]
+  constraints: {{ controller_constraints }}
 commands:
   bootstrap:
     command: kolla_extend_start
