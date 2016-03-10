@@ -62,7 +62,13 @@ def main():
                      'enable_memcached': 'yes',
                      'deployment_id': 'test',
                      'controller_nodes': '1',
-                     'compute_nodes': '1'}
+                     'compute_nodes': '1',
+                     'openstack_auth': {
+                         'auth_url': 'http://test:35357',
+                         'username': 'admin',
+                         'password': 'password',
+                         'project_name': 'admin'
+                     }}
         role = filename.replace('.yml.j2', '')
         role_vars = ROLE_VARS_MAP.get(role, {})
         mini_vars.update(role_vars)
