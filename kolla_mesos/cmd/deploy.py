@@ -451,7 +451,7 @@ class KollaWorker(object):
                 [self.process_service_config(zk, proj,
                                              os.path.join(root, name),
                                              jinja_vars, kolla_config)
-                 for name in names]
+                 for name in names if name.endswith('.j2')]
 
     def write_openrc(self):
         # write an openrc to the base_dir for convience.
