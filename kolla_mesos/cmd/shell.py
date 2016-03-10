@@ -28,6 +28,7 @@ CONF.import_group('kolla', 'kolla_mesos.config.kolla')
 CONF.import_group('zookeeper', 'kolla_mesos.config.zookeeper')
 CONF.import_group('marathon', 'kolla_mesos.config.marathon')
 CONF.import_group('chronos', 'kolla_mesos.config.chronos')
+CONF.import_group('mesos', 'kolla_mesos.config.mesos')
 
 cli_opts = [
     cfg.StrOpt('service-dir',

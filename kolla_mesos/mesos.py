@@ -15,6 +15,8 @@ from oslo_log import log as logging
 import requests
 from six.moves.urllib import parse
 
+from kolla_mesos.common import utils
+from kolla_mesos import exception
 
 LOG = logging.getLogger(__name__)
 
@@ -25,17 +27,33 @@ CONF.import_group('mesos', 'kolla_mesos.config.mesos')
 class Client(object):
     """Class for talking to the Mesos server."""
 
-    def _create_url(self, path):
+    def _create_url(self, path, pid=None, query_params=None):
         """Create URL for the specific Mesos API resource.
 
         :param path: the path to the Mesos API resource
         :type path: str
+        :param pid:
+        :type pid: str
+        :param query_params:
+        :type query_params: dict
         """
-        return parse.urljoin(CONF.mesos.host, path)
+        url = parse.urljoin(
+            'http://' + pid[pid.find('@') + 1:] if pid else CONF.mesos.host,
+            path)
+        if query_params:
+            return parse.urljoin(url, utils.get_query_string(query_params))
+        return url
 
     def get_state(self):
         url = self._create_url('state.json')
         LOG.debug("Requesting current Mesos state via '%s'", url)
+        response = requests.get(url, timeout=CONF.mesos.timeout)
+
+        return response.json()
+
+    def get_slave_state(self, slave_pid):
+        url = self._create_url('state.json', slave_pid)
+        LOG.debug("Requesting current Mesos slave state via '%s'", url)
         response = requests.get(url, timeout=CONF.mesos.timeout)
 
         return response.json()
@@ -60,3 +78,13 @@ class Client(object):
         slaves = state['slaves']
 
         return slaves
+
+    def read_file(self, file_path, slave_pid):
+        url = self._create_url(
+            '/files/read', slave_pid, {'path': file_path, 'offset': 0})
+        LOG.debug("Requesting file via '%s'", url)
+        response = requests.get(url, timeout=CONF.mesos.timeout)
+        try:
+            return response.json().get('data', '')
+        except ValueError:
+            raise exception.KollaNotFoundException(file_path)
