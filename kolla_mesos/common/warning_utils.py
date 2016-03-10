@@ -10,10 +10,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import functools
+import sys
 
-def str_to_bool(text):
-    if not text:
-        return False
-    if text.lower() in ['true', 'yes', 'y']:
-        return True
-    return False
+import six
+
+from kolla_mesos.common import type_utils
+
+
+def yes_no_prompt(msg):
+    def wrapper(f):
+        @functools.wraps(f)
+        def wrapped(*args, **kwargs):
+            full_msg = '%s [y/n] ' % msg
+            yes_no = six.moves.input(full_msg)
+            yes_no = type_utils.str_to_bool(yes_no)
+            if not yes_no:
+                sys.exit(1)
+            return f(*args, **kwargs)
+        return wrapped
+    return wrapper

@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import contextlib
 import itertools
 import multiprocessing
 import operator
@@ -17,11 +18,13 @@ import re
 
 from oslo_config import cfg
 from oslo_log import log as logging
+from paramiko import client as paramiko_client
 import retrying
 import six
 
 from kolla_mesos import chronos
 from kolla_mesos.common import docker_utils
+from kolla_mesos.common import mesos_utils
 from kolla_mesos.common import zk_utils
 from kolla_mesos import exception
 from kolla_mesos import marathon
@@ -31,6 +34,15 @@ from kolla_mesos import mesos
 CONF = cfg.CONF
 
 LOG = logging.getLogger(__name__)
+
+
+@contextlib.contextmanager
+def ssh_conn(hostname):
+    ssh_client = paramiko_client.SSHClient()
+    ssh_client.load_system_host_keys()
+    ssh_client.connect(hostname)
+    yield
+    ssh_client.close()
 
 
 @retrying.retry(wait_fixed=5000)
@@ -137,6 +149,14 @@ def cleanup():
 
     LOG.info("Checking whether all tasks in Mesos are exited")
     wait_for_mesos_cleanup()
+
+    hostnames = mesos_utils.get_slave_hostnames()
+    for hostname in hostnames:
+        with ssh_conn(hostname) as ssh_client:
+            ssh_client.exec_command(
+                "sudo docker rm -f -v $(docker ps | awk '/mesos/{print $1;}')")
+            ssh_client.exec_command(
+                "sudo docker volume ")
 
     LOG.info("Starting cleanup of Docker containers")
     remove_all_containers()
