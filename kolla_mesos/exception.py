@@ -39,3 +39,9 @@ class KollaNotFoundException(KollaException):
     def __init__(self, message, entity='file'):
         super(KollaNotFoundException, self).__init__(
             'The %s "%s" was not found' % (entity, message))
+
+
+class KollaNotSupportedException(KollaException):
+    def __init__(self, operation='update', entity='chronos'):
+        super(KollaNotFoundException, self).__init__(
+            'Operation "%s" is not supported by "%s"' % (operation, entity))
