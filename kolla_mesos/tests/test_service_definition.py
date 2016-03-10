@@ -40,7 +40,7 @@ class TestInspect(base.BaseTestCase):
         expect = sorted(['controller_nodes', 'memcached_image',
                          'enable_memcached', 'controller_constraints',
                          'memcached_mem', 'memcached_cpus',
-                         'deployment_id', 'memcached_tag'])
+                         'deployment_id', 'memcached_tag', 'timestamp'])
 
         info = service_definition.inspect('memcached/memcached',
                                           self.service_dir)

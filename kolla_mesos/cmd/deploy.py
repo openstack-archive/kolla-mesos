@@ -109,7 +109,8 @@ class KollaWorker(object):
 
         jvars.update({
             'deployment_id': self.deployment_id,
-            'node_config_directory': ''
+            'node_config_directory': '',
+            'timestamp': str(time.time())
         })
         configuration.apply_deployment_vars(jvars)
         return jvars
