@@ -96,12 +96,26 @@ class Log(command.Command):
     """Dump the logs for this task or service."""
 
     def get_parser(self, prog_name):
-        parser = super(Show, self).get_parser(prog_name)
+        parser = super(Log, self).get_parser(prog_name)
         parser.add_argument('service')
+        file_name = parser.add_mutually_exclusive_group()
+        file_name.add_argument(
+            '--stderr',
+            action='store_const',
+            const='stderr',
+            dest='filename'
+        )
+        file_name.add_argument(
+            '--stdout',
+            action='store_const',
+            const='stdout',
+            dest='filename'
+        )
         return parser
 
     def take_action(self, parsed_args):
-        self.app.stdout.write(service.get_service_logs(parsed_args.service))
+        self.app.stdout.write(service.get_service_logs(
+            parsed_args.service, parsed_args.filename))
 
 
 class Snapshot(command.Command):
