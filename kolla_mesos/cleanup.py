@@ -10,18 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import itertools
-import multiprocessing
-import operator
-import re
+import contextlib
 
 from oslo_config import cfg
 from oslo_log import log as logging
+import paramiko
 import retrying
-import six
 
 from kolla_mesos import chronos
-from kolla_mesos.common import docker_utils
+from kolla_mesos.common import mesos_utils
 from kolla_mesos.common import zk_utils
 from kolla_mesos import exception
 from kolla_mesos import marathon
@@ -29,8 +26,28 @@ from kolla_mesos import mesos
 
 
 CONF = cfg.CONF
+CONF.import_group('ssh', 'kolla_mesos.config.ssh')
 
 LOG = logging.getLogger(__name__)
+
+
+@contextlib.contextmanager
+def ssh_conn(hostname):
+    ssh_client = paramiko.client.SSHClient()
+    ssh_client.load_system_host_keys()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    LOG.info("Establishing SSH connection to %s", hostname)
+    ssh_client.connect(hostname, username=CONF.ssh.username)
+    yield ssh_client
+    ssh_client.close()
+
+
+def execute_command(ssh_client, command):
+    _, stdout, stderr = ssh_client.exec_command(command)
+    # We have to read the stdout and stderr to ensure that we'll not do
+    # anything before command ends its execution.
+    stdout.read()
+    stderr.read()
 
 
 @retrying.retry(wait_fixed=5000)
@@ -42,83 +59,6 @@ def wait_for_mesos_cleanup():
         LOG.info("Mesos is still running some tasks. Waiting for their "
                  "exit.")
         raise exception.MesosTasksNotCompleted()
-
-
-@docker_utils.DockerClient()
-def remove_container(dc, container_name):
-    LOG.info("Removing container %s", container_name)
-    dc.remove_container(container_name)
-
-
-# NOTE(nihilifer): Despite the fact that OpenStack community decided to use
-# builtins like "map", "filter" etc. directly, without aiming to use lazy
-# generators in Python 2.x, here we decided to always use generators in every
-# version of Python. Mainly because Mesos cluster may have a lot of containers
-# and we would do multiple O(n) operations. Doing all these things lazy
-# results in iterating only once on the lists of containers and volumes.
-def get_container_names():
-    with docker_utils.DockerClient() as dc:
-        exited_containers = dc.containers(all=True,
-                                          filters={'status': 'exited'})
-        created_containers = dc.containers(all=True,
-                                           filters={'status': 'created'})
-        dead_containers = dc.containers(all=True,
-                                        filters={'status': 'dead'})
-
-    containers = itertools.chain(exited_containers, created_containers,
-                                 dead_containers)
-    container_name_lists = six.moves.map(operator.itemgetter('Names'),
-                                         containers)
-    container_name_lists = six.moves.filter(lambda name_list:
-                                            len(name_list) > 0,
-                                            container_name_lists)
-    container_names = six.moves.map(operator.itemgetter(0),
-                                    container_name_lists)
-    container_names = six.moves.filter(lambda name: re.search(r'/mesos-',
-                                                              name),
-                                       container_names)
-    return container_names
-
-
-# NOTE(nihilifer): Mesos doesn't support fully the named volumes which we're
-# using. Mesos can run containers with named volume with passing the Docker
-# parameters directly, but it doesn't handle any other actions with them.
-# That's why currently we're cleaning the containers and volumes by calling
-# the Docker API directly.
-# TODO(nihilifer): Request/develop the feature of cleaning volumes directly
-# in Mesos and Marathon.
-# TODO(nihilifer): Support multinode cleanup.
-def remove_all_containers():
-    """Remove all exited containers which were run by Mesos.
-
-    It's done in order to succesfully remove named volumes.
-    """
-    container_names = get_container_names()
-
-    # Remove containers in the pool of workers
-    pool = multiprocessing.Pool(processes=CONF.workers)
-    tasks = [pool.apply_async(remove_container, (container_name,))
-             for container_name in container_names]
-
-    # Wait for every task to execute
-    for task in tasks:
-        task.get()
-
-
-@docker_utils.DockerClient()
-def remove_all_volumes(dc):
-    """Remove all volumes created for containers run by Mesos."""
-    if dc.volumes()['Volumes'] is not None:
-        volume_names = six.moves.map(operator.itemgetter('Name'),
-                                     dc.volumes()['Volumes'])
-        for volume_name in volume_names:
-            # TODO(nihilifer): Provide a more intelligent filtering for Mesos
-            # infra volumes.
-            if 'zookeeper' not in volume_name:
-                LOG.info("Removing volume %s", volume_name)
-                dc.remove_volume(volume_name)
-    else:
-            LOG.info("No docker volumes found")
 
 
 def cleanup():
@@ -138,7 +78,20 @@ def cleanup():
     LOG.info("Checking whether all tasks in Mesos are exited")
     wait_for_mesos_cleanup()
 
-    LOG.info("Starting cleanup of Docker containers")
-    remove_all_containers()
-    LOG.info("Starting cleanup of Docker volumes")
-    remove_all_volumes()
+    hostnames = mesos_utils.get_slave_hostnames()
+    for hostname in hostnames:
+        with ssh_conn(hostname) as ssh_client:
+            LOG.info("Removing all containers on host %s", hostname)
+            execute_command(
+                ssh_client,
+                'sudo docker rm -f -v $(docker ps -a --format "{{ .Names }}" '
+                '| grep mesos-)')
+            execute_command(
+                ssh_client,
+                'while sudo docker ps -a --format "{{ .Names }}" | grep '
+                'mesos-; do sleep 1; done')
+            LOG.info("Removing all named volumes on host %s", hostname)
+            execute_command(
+                ssh_client,
+                "sudo docker volume rm $(sudo docker volume ls -q | grep -v "
+                "zookeeper)")

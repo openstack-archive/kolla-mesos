@@ -10,10 +10,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 
-def str_to_bool(text):
-    if not text:
-        return False
-    if text.lower() in ['true', 'yes', 'y']:
-        return True
-    return False
+from oslo_config import cfg
+
+
+CONF = cfg.CONF
+ssh_opts = [
+    cfg.StrOpt('username',
+               default=os.getlogin(),
+               help='Username to used in cleanup SSH connections')
+]
+ssh_opt_group = cfg.OptGroup(name='ssh',
+                             title='Options for cleanup SSH connections')
+CONF.register_group(ssh_opt_group)
+CONF.register_cli_opts(ssh_opts, ssh_opt_group)
+CONF.register_opts(ssh_opts, ssh_opt_group)

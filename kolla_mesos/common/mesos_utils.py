@@ -11,6 +11,7 @@
 # limitations under the License.
 
 import functools
+import operator
 
 from kolla_mesos import mesos
 
@@ -55,3 +56,10 @@ def get_number_of_nodes(mesos_client):
     all_nodes = controller_nodes + compute_nodes + storage_nodes
 
     return controller_nodes, compute_nodes, storage_nodes, all_nodes
+
+
+@MesosClient()
+def get_slave_hostnames(mesos_client):
+    slaves = mesos_client.get_slaves()
+    hostnames = map(operator.itemgetter('hostname'), slaves)
+    return hostnames
