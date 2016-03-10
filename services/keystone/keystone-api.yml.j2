@@ -50,3 +50,10 @@ commands:
         dest: /etc/keystone/keystone.conf
         owner: keystone
         perm: "0600"
+  bootstrap:
+    run_once: True
+    retries: 10
+    delay: 5
+    dependencies:
+     - path: keystone-api/db_sync
+    command: kolla_keystone_bootstrap {{ openstack_auth.username }} {{ openstack_auth.password }} {{ openstack_auth.project_name }} admin {{ keystone_admin_endpoint }} {{ keystone_internal_endpoint }} {{ keystone_public_endpoint }} {{ openstack_region_name }}

@@ -9,7 +9,7 @@ service:
   daemon:
     dependencies:
      - path: cinder_ansible_tasks/create_user
-     - path: keystone_ansible_tasks/running
+     - path: keystone-api/daemon
      - path: rabbitmq/daemon
     command: /usr/bin/cinder-backup
     files:
