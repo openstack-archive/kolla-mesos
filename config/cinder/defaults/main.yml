@@ -54,16 +54,16 @@ cinder_data_image_full: "{{ cinder_data_image }}:{{ cinder_data_image_tag }}"
 ####################
 # Openstack
 ####################
-cinder_public_address: "{{ kolla_external_address }}"
-cinder_admin_address: "{{ kolla_internal_address }}"
-cinder_internal_address: "{{ kolla_internal_address }}"
+cinder_public_endpoint: "{{ cinder_api_host }}:{{ cinder_api_port }}"
+cinder_admin_endpoint: "{{ cinder_api_host }}:{{ cinder_api_port }}"
+cinder_internal_endpoint: "{{ cinder_api_host }}:{{ cinder_api_port }}"
 
 cinder_logging_verbose: "{{ openstack_logging_verbose }}"
 cinder_logging_debug: "{{ openstack_logging_debug }}"
 
 cinder_keystone_user: "cinder"
 
-openstack_cinder_auth: "{'auth_url':'{{ openstack_auth_v2.auth_url }}','username':'{{ openstack_auth_v2.username }}','password':'{{ openstack_auth_v2.password }}','project_name':'{{ openstack_auth_v2.project_name }}'}"
+openstack_cinder_auth: "{'auth_url':'{{ openstack_auth.auth_url }}','username':'{{ openstack_auth.username }}','password':'{{ openstack_auth.password }}','project_name':'{{ openstack_auth.project_name }}'}"
 
 
 ####################
