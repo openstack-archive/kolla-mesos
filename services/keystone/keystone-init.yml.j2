@@ -4,7 +4,7 @@ container:
   image: "{{ kolla_toolbox_image }}:{{ kolla_toolbox_tag }}"
   parameters:
     - key: volume
-      value: "kolla_logs_{{ deployment_id }}:/var/log/kolla"
+      value: "kolla_logs_{{ deployment_id }}_{{ timestamp }}:/var/log/kolla"
 task:
   mem: {{ keystone_init_mem }}
   cpus: {{ keystone_init_cpus }}

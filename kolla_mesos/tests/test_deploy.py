@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import datetime
+
 import mock
 from oslo_config import cfg
 import requests_mock
@@ -166,6 +168,8 @@ class TestClient(base.BaseTestCase):
         self.assertIsInstance(result, dict)
         self.assertEqual(result['deployment_id'], 'test')
         self.assertEqual(result['node_config_directory'], '')
+        self.assertTrue(datetime.datetime.fromtimestamp(
+            float(result['timestamp'])))
         self.assertEqual(result['controller_nodes'], '3')
         self.assertEqual(result['compute_nodes'], '2')
         self.assertEqual(result['storage_nodes'], '2')
@@ -191,6 +195,8 @@ class TestClient(base.BaseTestCase):
         self.assertIsInstance(result, dict)
         self.assertEqual(result['deployment_id'], 'test')
         self.assertEqual(result['node_config_directory'], '')
+        self.assertTrue(datetime.datetime.fromtimestamp(
+            float(result['timestamp'])))
         self.assertEqual(result['controller_nodes'], '3')
         self.assertEqual(result['compute_nodes'], '2')
         self.assertEqual(result['storage_nodes'], '2')
@@ -210,6 +216,8 @@ class TestClient(base.BaseTestCase):
         self.assertIsInstance(result, dict)
         self.assertEqual(result['deployment_id'], 'test')
         self.assertEqual(result['node_config_directory'], '')
+        self.assertTrue(datetime.datetime.fromtimestamp(
+            float(result['timestamp'])))
         self.assertEqual(result['controller_nodes'], '1')
         self.assertEqual(result['storage_nodes'], '1')
         self.assertEqual(result['all_nodes'], '1')
@@ -234,6 +242,8 @@ class TestClient(base.BaseTestCase):
         self.assertIsInstance(result, dict)
         self.assertEqual(result['deployment_id'], 'test')
         self.assertEqual(result['node_config_directory'], '')
+        self.assertTrue(datetime.datetime.fromtimestamp(
+            float(result['timestamp'])))
         self.assertEqual(result['controller_nodes'], '1')
         self.assertEqual(result['storage_nodes'], '1')
         self.assertEqual(result['all_nodes'], '1')
