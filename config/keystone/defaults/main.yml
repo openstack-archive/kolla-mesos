@@ -20,15 +20,14 @@ keystone_tag: "{{ openstack_release }}"
 ####################
 # Openstack
 ####################
-keystone_public_address: "{{ kolla_external_address }}"
-keystone_admin_address: "{{ kolla_internal_address }}"
-keystone_internal_address: "{{ kolla_internal_address }}"
+keystone_admin_endpoint: "http://{{ keystone_auth_host }}:{{ keystone_admin_port }}/v3"
+keystone_internal_endpoint: "http://{{ keystone_auth_host }}:{{ keystone_public_port }}/v3"
+keystone_public_endpoint: "http://{{ keystone_auth_host }}:{{ keystone_public_port }}/v3"
 
 keystone_logging_verbose: "{{ openstack_logging_verbose }}"
 keystone_logging_debug: "{{ openstack_logging_debug }}"
 
-openstack_keystone_auth: "{'auth_url':'{{ openstack_auth_v2.auth_url }}','username':'{{ openstack_auth_v2.username }}','password':'{{ openstack_auth_v2.password }}','project_name':'{{ openstack_auth_v2.project_name }}'}"
-openstack_keystone_token_auth: "{'endpoint':'{{ openstack_auth_v2.auth_url }}','token':'{{ keystone_admin_token }}'}"
+openstack_keystone_auth: "{'auth_url':'{{ openstack_auth.auth_url }}','username':'{{ openstack_auth.username }}','password':'{{ openstack_auth.password }}','project_name':'{{ openstack_auth.project_name }}'}"
 
 
 ####################
