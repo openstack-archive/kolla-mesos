@@ -1,0 +1,18 @@
+name: openstack/keystone/keystone-register
+enabled: {{ enable_keystone | bool }}
+container:
+  image: "{{ keystone_image }}:{{ keystone_tag }}"
+  parameters:
+    - key: volume
+      value: "kolla_logs_{{ deployment_id }}:/var/log/kolla"
+task:
+  mem: {{ keystone_init_mem }}
+  cpus: {{ keystone_init_cpus }}
+commands:
+  bootstrap:
+    run_once: True
+    retries: 10
+    delay: 5
+    dependencies:
+      - path: keystone_ansible_tasks/running
+    command: kolla_keystone_bootstrap {{ openstack_auth.username }} {{ openstack_auth.password }} {{ openstack_auth.project_name }} admin {{ keystone_admin_url }} {{ keystone_internal_url }} {{ keystone_public_url }} {{ openstack_region_name }}

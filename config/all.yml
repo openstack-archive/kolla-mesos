@@ -134,14 +134,6 @@ openstack_auth:
     password: "{{ keystone_admin_password }}"
     project_name: "admin"
 
-# This shouldn't be needed for long. It is only temporary until we get the
-# ansible modules sorted out
-openstack_auth_v2:
-    auth_url: "http://{{ kolla_internal_address }}:{{ keystone_admin_port }}/v2.0"
-    username: "admin"
-    password: "{{ keystone_admin_password }}"
-    project_name: "admin"
-
 # Core services are required for Kolla to be operation.
 enable_mariadb: "yes"
 enable_keystone: "yes"
