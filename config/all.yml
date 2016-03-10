@@ -145,22 +145,21 @@ glance_api_host: "glance-api-glance-api-openstack-{{ deployment_id }}.{{ maratho
 cinder_api_host: "cinder-api-cinder-openstack-{{ deployment_id }}.{{ marathon_framework }}.{{ mesos_dns_domain }}"
 nova_api_host: "nova-api-nova-openstack-{{ deployment_id }}.{{ marathon_framework }}.{{ mesos_dns_domain }}"
 
+
+####################
+# OpenStack auth
+####################
 # Openstack authentication string. You should only need to override these if you
 # are changing the admin tenant/project or user.
-openstack_auth:
-    auth_url: "http://{{ keystone_auth_host }}:{{ keystone_admin_port }}"
-    username: "admin"
-    password: "{{ keystone_admin_password }}"
-    project_name: "admin"
+openstack_auth_url: "http://{{ keystone_auth_host }}:{{ keystone_admin_port }}"
+openstack_username: "admin"
+openstack_password: "{{ keystone_admin_password }}"
+openstack_project_name: "admin"
 
-# This shouldn't be needed for long. It is only temporary until we get the
-# ansible modules sorted out
-openstack_auth_v2:
-    auth_url: "http://{{ keystone_auth_host }}:{{ keystone_admin_port }}/v2.0"
-    username: "admin"
-    password: "{{ keystone_admin_password }}"
-    project_name: "admin"
 
+####################
+# OpenStack services
+####################
 # Core services are required for Kolla to be operation.
 enable_mariadb: "yes"
 enable_keystone: "yes"
