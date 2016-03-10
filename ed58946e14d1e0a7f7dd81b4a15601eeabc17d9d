@@ -1,0 +1,9 @@
+Code-Review+2: Proskurin Kirill <kproskurin@mirantis.com>
+Code-Review+2: Alicja Kwasniewska <alicja.kwasniewska@intel.com>
+Workflow+1: Alicja Kwasniewska <alicja.kwasniewska@intel.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Thu, 10 Mar 2016 13:59:19 +0000
+Reviewed-on: https://review.openstack.org/285970
+Project: openstack/kolla-mesos
+Branch: refs/heads/master
