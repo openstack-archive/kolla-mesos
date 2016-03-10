@@ -32,7 +32,7 @@ commands:
           host='%'
           priv='{{ glance_database_name }}.*:ALL'
           append_privs='yes'"
-  register_endpoint:
+  register_admin_endpoint:
     run_once: True
     dependencies:
      - path: glance-api/db_sync
@@ -43,9 +43,40 @@ commands:
           service_type=image
           description='Openstack Image'
           endpoint_region={{ openstack_region_name }}
-          admin_url='http://{{ glance_api_host }}:{{ glance_api_port }}'
-          internal_url='http://{{ glance_api_host }}:{{ glance_api_port }}'
-          public_url='http://{{ glance_api_host }}:{{ glance_api_port }}'
+          url='{{ glance_admin_endpoint }}'
+          interface=admin
+          region_name={{ openstack_region_name }}
+          auth={{ '{{ openstack_glance_auth }}' }}"
+      -e "{'openstack_glance_auth':{{ openstack_glance_auth }}}"
+  register_internal_endpoint:
+    run_once: True
+    dependencies:
+      - path: glance-api/db_sync
+      - path: keystone_ansible_tasks/running
+    command: {{ ansible_task_cmd }}
+      -m kolla_keystone_service
+      -a "service_name=glance
+          service_type=image
+          description='Openstack Image'
+          endpoint_region={{ openstack_region_name }}
+          url='{{ glance_internal_endpoint }}'
+          interface=internal
+          region_name={{ openstack_region_name }}
+          auth={{ '{{ openstack_glance_auth }}' }}"
+      -e "{'openstack_glance_auth':{{ openstack_glance_auth }}}"
+  register_public_endpoint:
+    run_once: True
+    dependencies:
+      - path: glance-api/db_sync
+      - path: keystone_ansible_tasks/running
+    command: {{ ansible_task_cmd }}
+      -m kolla_keystone_service
+      -a "service_name=glance
+          service_type=image
+          description='Openstack Image'
+          endpoint_region={{ openstack_region_name }}
+          url='{{ glance_public_endpoint }}'
+          interface=public
           region_name={{ openstack_region_name }}
           auth={{ '{{ openstack_glance_auth }}' }}"
       -e "{'openstack_glance_auth':{{ openstack_glance_auth }}}"

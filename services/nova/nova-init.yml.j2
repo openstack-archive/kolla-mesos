@@ -58,7 +58,7 @@ commands:
           host='%'
           priv='{{ nova_api_database_name }}.*:ALL'
           append_privs='yes'"
-  register_endpoint:
+  register_admin_endpoint:
     run_once: True
     dependencies:
      - path: nova-api/db_sync
@@ -69,9 +69,40 @@ commands:
           service_type=compute
           description='Openstack Compute'
           endpoint_region={{ openstack_region_name }}
-          admin_url='http://{{ nova_api_host }}:{{ nova_api_port }}/v2/%(tenant_id)s'
-          internal_url='http://{{ nova_api_host }}:{{ nova_api_port }}/v2/%(tenant_id)s'
-          public_url='http://{{ nova_api_host }}:{{ nova_api_port }}/v2/%(tenant_id)s'
+          url='{{ nova_admin_endpoint }}'
+          interface=admin
+          region_name={{ openstack_region_name }}
+          auth={{ '{{ openstack_nova_auth }}' }}"
+      -e "{'openstack_nova_auth':{{ openstack_nova_auth }}}"
+  register_internal_endpoint:
+    run_once: True
+    dependencies:
+      - path: nova-api/db_sync
+      - path: keystone_ansible_tasks/running
+    command: {{ ansible_task_cmd }}
+      -m kolla_keystone_service
+      -a "service_name=nova
+          service_type=compute
+          description='Openstack Compute'
+          endpoint_region={{ openstack_region_name }}
+          url='{{ nova_internal_endpoint }}'
+          interface=internal
+          region_name={{ openstack_region_name }}
+          auth={{ '{{ openstack_nova_auth }}' }}"
+      -e "{'openstack_nova_auth':{{ openstack_nova_auth }}}"
+  register_public_endpoint:
+    run_once: True
+    dependencies:
+      - path: nova-api/db_sync
+      - path: keystone_ansible_tasks/running
+    command: {{ ansible_task_cmd }}
+      -m kolla_keystone_service
+      -a "service_name=nova
+          service_type=compute
+          description='Openstack Compute'
+          endpoint_region={{ openstack_region_name }}
+          url='{{ nova_public_endpoint }}'
+          interface=public
           region_name={{ openstack_region_name }}
           auth={{ '{{ openstack_nova_auth }}' }}"
       -e "{'openstack_nova_auth':{{ openstack_nova_auth }}}"
