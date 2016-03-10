@@ -63,7 +63,7 @@ cinder_logging_debug: "{{ openstack_logging_debug }}"
 
 cinder_keystone_user: "cinder"
 
-openstack_cinder_auth: "{'auth_url':'{{ openstack_auth_v2.auth_url }}','username':'{{ openstack_auth_v2.username }}','password':'{{ openstack_auth_v2.password }}','project_name':'{{ openstack_auth_v2.project_name }}'}"
+openstack_cinder_auth: "{'auth_url':'{{ openstack_auth.auth_url }}','username':'{{ openstack_auth.username }}','password':'{{ openstack_auth.password }}','project_name':'{{ openstack_auth.project_name }}'}"
 
 
 ####################

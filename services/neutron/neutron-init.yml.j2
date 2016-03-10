@@ -36,7 +36,7 @@ commands:
           host='%'
           priv='{{ neutron_database_name }}.*:ALL'
           append_privs='yes'"
-  register_endpoint:
+  register_admin_endpoint:
     run_once: True
     retries: 3
     delay: 5
@@ -49,9 +49,40 @@ commands:
           service_type=network
           description='Openstack Networking'
           endpoint_region={{ openstack_region_name }}
-          admin_url='http://{{ kolla_internal_address }}:{{ neutron_server_port }}'
-          internal_url='http://{{ kolla_internal_address }}:{{ neutron_server_port }}'
-          public_url='http://{{ kolla_external_address }}:{{ neutron_server_port }}'
+          url='{{ neutron_admin_endpoint }}'
+          interface=admin
+          region_name={{ openstack_region_name }}
+          auth={{ '{{ openstack_neutron_auth }}' }}"
+      -e "{'openstack_neutron_auth':{{ openstack_neutron_auth }}}"
+  register_internal_endpoint:
+    run_once: True
+    retries: 3
+    delay: 5
+    dependencies: [neutron-server/db_sync, keystone_ansible_tasks/running]
+    command: {{ ansible_task_cmd }}
+      -m kolla_keystone_service
+      -a "service_name=neutron
+          service_type=network
+          description='Openstack Networking'
+          endpoint_region={{ openstack_region_name }}
+          url='{{ neutron_internal_endpoint }}'
+          interface=internal
+          region_name={{ openstack_region_name }}
+          auth={{ '{{ openstack_neutron_auth }}' }}"
+      -e "{'openstack_neutron_auth':{{ openstack_neutron_auth }}}"
+  register_public_endpoint:
+    run_once: True
+    retries: 3
+    delay: 5
+    dependencies: [neutron-server/db_sync, keystone_ansible_tasks/running]
+    command: {{ ansible_task_cmd }}
+      -m kolla_keystone_service
+      -a "service_name=neutron
+          service_type=network
+          description='Openstack Networking'
+          endpoint_region={{ openstack_region_name }}
+          url='{{ neutron_public_endpoint }}'
+          interface=public
           region_name={{ openstack_region_name }}
           auth={{ '{{ openstack_neutron_auth }}' }}"
       -e "{'openstack_neutron_auth':{{ openstack_neutron_auth }}}"
