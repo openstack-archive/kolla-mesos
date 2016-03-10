@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from kolla_mesos.common import yaml_utils
+from kolla_mesos.common import type_utils
 from kolla_mesos.tests import base
 
 
@@ -32,4 +32,4 @@ class StrToBoolTest(base.BaseTestCase):
     ]
 
     def test_str_to_bool(self):
-        self.assertEqual(self.expect, yaml_utils.str_to_bool(self.text))
+        self.assertEqual(self.expect, type_utils.str_to_bool(self.text))
