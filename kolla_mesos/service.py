@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import itertools
 import json
 import os.path
 
@@ -28,6 +29,7 @@ from kolla_mesos.common import zk_utils
 from kolla_mesos import configuration as config
 from kolla_mesos import exception
 from kolla_mesos import marathon
+from kolla_mesos import mesos
 from kolla_mesos import service_definition
 
 LOG = logging.getLogger()
@@ -567,5 +569,50 @@ def list_services():
     return ChronosTask.list_all() + MarathonApp.list_all()
 
 
-def get_service_logs(service_name):
-    pass
+def get_service_logs(service_name, file_name):
+    slave_id = None
+    mesos_client = mesos.Client()
+    master_state = mesos_client.get_state()
+
+    if '/' in service_name:
+        task_name = '%s/%s' % (
+            CONF.kolla.deployment_id, service_name)
+        task_name = task_name.replace('/', '_')
+    else:
+        task_name = '%s-%s' % (CONF.kolla.deployment_id, service_name)
+
+    for framework in itertools.chain(
+            master_state['frameworks'],
+            master_state['completed_frameworks']):
+        if not slave_id:
+            for task in itertools.chain(
+                    framework['tasks'], framework['completed_tasks']):
+                if task_name in task['id']:
+                    slave_id = task['slave_id']
+                    break
+
+    if not slave_id:
+        raise exception.KollaNotFoundException(
+            service_name, 'Mesos slave for the service')
+
+    slave_pid = None
+    for slave in master_state['slaves']:
+        if slave_id == slave['id']:
+            slave_pid = slave['pid']
+            break
+
+    slave_state = mesos_client.get_slave_state(slave_pid)
+    executor_dir = None
+    for framework in itertools.chain(
+            slave_state['completed_frameworks'], slave_state['frameworks']):
+        for executor in itertools.chain(
+                framework['completed_executors'], framework['executors']):
+            if task_name in executor['id']:
+                executor_dir = executor['directory']
+
+    if not executor_dir:
+        raise exception.KollaNotFoundException(
+            service_name, 'executor for the service')
+
+    file_path = os.path.join(executor_dir, file_name)
+    return mesos_client.read_file(file_path, slave_pid)

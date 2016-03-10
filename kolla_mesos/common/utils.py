@@ -12,6 +12,7 @@
 
 import collections
 import os
+from six.moves.urllib import parse
 
 
 def env(*args, **kwargs):
@@ -34,3 +35,12 @@ def dict_update(d, u):
         else:
             d[k] = u[k]
     return d
+
+
+def get_query_string(search_opts):
+    if search_opts:
+        qparams = sorted(search_opts.items(), key=lambda x: x[0])
+        query_string = "?%s" % parse.urlencode(qparams, doseq=True)
+    else:
+        query_string = ""
+    return query_string
