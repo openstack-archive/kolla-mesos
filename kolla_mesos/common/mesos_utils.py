@@ -68,3 +68,10 @@ def get_marathon(mesos_client):
         else:
             marathon_framework = None
     return marathon_framework
+
+
+@MesosClient()
+def get_slave_hostnames(mesos_client):
+    slaves = mesos_client.get_slaves()
+    hostnames = map(operator.itemgetter('hostname'), slaves)
+    return hostnames
