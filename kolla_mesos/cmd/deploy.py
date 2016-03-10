@@ -34,7 +34,7 @@ from kolla_mesos import cleanup
 from kolla_mesos.common import file_utils
 from kolla_mesos.common import jinja_utils
 from kolla_mesos.common import mesos_utils
-from kolla_mesos.common import yaml_utils
+from kolla_mesos.common import type_utils
 from kolla_mesos.common import zk_utils
 from kolla_mesos import exception
 from kolla_mesos import marathon
@@ -278,9 +278,9 @@ class KollaWorker(object):
         constraints for the given host are defined. If not, the constraints
         disappear.
         """
-        multinode = yaml_utils.str_to_bool(jvars['multinode'])
+        multinode = type_utils.str_to_bool(jvars['multinode'])
         if multinode:
-            autodetect_resources = yaml_utils.str_to_bool(
+            autodetect_resources = type_utils.str_to_bool(
                 jvars['autodetect_resources'])
             if autodetect_resources:
                 controller_nodes, compute_nodes, storage_nodes, all_nodes = \
