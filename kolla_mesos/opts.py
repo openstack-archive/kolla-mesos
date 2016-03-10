@@ -17,6 +17,7 @@ from kolla_mesos.config import marathon
 from kolla_mesos.config import mesos
 from kolla_mesos.config import network
 from kolla_mesos.config import profiles
+from kolla_mesos.config import ssh
 from kolla_mesos.config import zookeeper
 
 
@@ -27,6 +28,7 @@ def list_opts():
         ('marathon', marathon.marathon_opts),
         ('network', network.network_opts),
         ('profiles', profiles.profiles_opts),
+        ('ssh', ssh.ssh_opts),
         ('zookeeper', zookeeper.zookeeper_opts),
         ('mesos', mesos.mesos_opts),
         ('', logging.logging_opts)

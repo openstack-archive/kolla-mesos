@@ -18,6 +18,7 @@ from oslo_config import cfg
 from oslo_log import log as logging
 
 from kolla_mesos import cleanup
+from kolla_mesos.common import warning_utils
 
 
 CONF = cfg.CONF
@@ -27,6 +28,11 @@ LOG = logging.getLogger()
 logging.register_options(CONF)
 
 
+@warning_utils.yes_no_prompt("This is a tool made mostly for the development "
+                             "purposes. It removes all the kolla containers "
+                             "in the whole cluster using SSH connection. It's "
+                             "not recommended to use it on production. Do you "
+                             "want to continue?")
 def main():
     CONF(sys.argv[1:], project='kolla-mesos')
     logging.setup(CONF, 'kolla-mesos')
