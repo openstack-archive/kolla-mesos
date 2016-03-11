@@ -415,12 +415,14 @@ class Command(object):
                 fulfilled = False
         return fulfilled
 
-    def set_state(self, state):
-        for check_path in self.check_paths:
+    def set_state(self, state, path=None):
+        check_paths = [path] if path else self.check_paths
+        for check_path in check_paths:
             self.zk.retry(self.zk.ensure_path, check_path)
             current_state, _ = self.zk.get(check_path)
+            current_state = current_state if current_state else 'not initiated'
             if current_state != state:
-                LOG.info('path: %s, changing state from %s to %s'
+                LOG.info('Path: %s, changing state from %s to %s'
                          % (check_path, current_state, state))
                 self.zk.set(check_path, state)
 
@@ -461,23 +463,24 @@ class Command(object):
         result = 0
         LOG.info('** > Running %s', self.name)
         if self.run_once:
-            state = self.get_state()
-            if state == CMD_DONE:
-                for check_path in self.check_paths:
+            # We only interested in "global" path right now, since this
+            # commands need to be run only once(per deploy)
+            check_path = self.check_paths[0]
+            zk.retry(zk.ensure_path, check_path)
+            LOG.info("Acquiring lock '%s'", check_path)
+            lock = zk.Lock(check_path)
+            with lock:
+                state = self.get_state(check_path)
+                if state == CMD_DONE:
                     LOG.info("Path '%s' exists: skipping command",
                              check_path)
-            else:
-                locks = []
-                for check_path in self.check_paths:
+                    LOG.info("Releasing lock '%s'", check_path)
+                    # Adding .done state to local path for consistency
+                    self.set_state(CMD_DONE, self.check_paths[1])
+                else:
                     LOG.info("Path '%s' does not exist: running command",
                              check_path)
-                    zk.retry(zk.ensure_path, check_path)
-                    lock = zk.Lock(check_path)
-                    LOG.info("Acquiring lock '%s'", check_path)
-                    locks.append(lock)
-                with nested(*locks):
                     result = self._run_command()
-                for check_path in self.check_paths:
                     LOG.info("Releasing lock '%s'", check_path)
         else:
             result = self._run_command()
