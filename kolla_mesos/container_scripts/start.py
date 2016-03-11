@@ -110,7 +110,7 @@ def set_globals():
     ROLE = app_split[-1]
 
 
-logging.basicConfig()
+logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s')
 LOG = logging.getLogger(__file__)
 
 
@@ -240,7 +240,6 @@ class TemplateFunctions(object):
             for host_data in party.Party(self._zk, p_path):
                 data = json.loads(host_data)
                 host = data[ANSIBLE_PRIVATE]['ipv4']['address']
-                LOG.info('get_groups_and_hostvars %s', host)
                 group_unsorted.append(host)
                 hostvars[host] = data
             groups[role] = sorted(group_unsorted)
