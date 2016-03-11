@@ -33,6 +33,16 @@ def jinja_render(fullpath, global_config, extra=None):
     return myenv.get_template(os.path.basename(fullpath)).render(variables)
 
 
+def jinja_render_str(content, global_config, name='dafault_name', extra=None):
+    variables = global_config
+    if extra:
+        variables.update(extra)
+
+    myenv = jinja2.Environment(loader=jinja2.DictLoader({name: content}))
+    myenv.filters['bool'] = yaml_utils.str_to_bool
+    return myenv.get_template(name).render(variables)
+
+
 def jinja_find_required_variables(fullpath):
     myenv = jinja2.Environment(loader=jinja2.FileSystemLoader(
         os.path.dirname(fullpath)))

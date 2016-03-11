@@ -26,7 +26,7 @@ CONF.import_group('kolla', 'kolla_mesos.config.kolla')
 CONF.import_group('kolla', 'kolla_mesos.config.zookeeper')
 
 
-def write_variables_zookeeper(zk, variables, base_node=None):
+def write_variables_zookeeper(zk, variables, base_node=None, overwrite=True):
     if base_node is None:
         base_node = os.path.join('kolla', CONF.kolla.deployment_id)
     filter_out = ['groups', 'hostvars', 'kolla_config',
@@ -40,6 +40,10 @@ def write_variables_zookeeper(zk, variables, base_node=None):
         if isinstance(variables[var], dict):
             var_value = json.dumps(variables[var])
         var_path = os.path.join(base_node, 'variables', var)
+        if not overwrite and zk.exists(var_path):
+            LOG.debug('NOT Updating "%s" node in zookeeper(overwite=False).',
+                      var_path)
+            return
         zk.ensure_path(var_path)
         zk.set(var_path, "" if var_value is None else var_value)
         LOG.debug('Updated "%s" node in zookeeper.' % var_path)
@@ -57,7 +61,7 @@ def get_start_config(config_dir, jinja_vars):
     return kolla_config
 
 
-def write_common_config_to_zookeeper(config_dir, zk, jinja_vars):
+def write_common_config_to_zookeeper(config_dir, zk, jinja_vars, overwrite=True):
     # 1. At first write global tools to ZK. FIXME: Make it a common profile
     conf_path = os.path.join(config_dir, 'common',
                              'common_config.yml.j2')
@@ -65,6 +69,11 @@ def write_common_config_to_zookeeper(config_dir, zk, jinja_vars):
     common_node = os.path.join('kolla', 'common')
     for script in common_cfg:
         script_node = os.path.join(common_node, script)
+        if not overwrite and zk.exists(script_node):
+            LOG.debug('NOT Updating "%s" node in zookeeper(overwite=False).',
+                      script_node)
+            continue
+
         zk.ensure_path(script_node)
         source_path = common_cfg[script]['source']
         src_file = source_path
