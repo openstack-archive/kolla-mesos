@@ -287,7 +287,7 @@ class DockerWorker(object):
 
         new_binds = list()
         if binds:
-            for k, v in binds.iteritems():
+            for k, v in binds.items():
                 new_binds.append("{}:{}:{}".format(k, v['bind'], v['mode']))
 
         if set(new_binds).symmetric_difference(set(current_binds)):
@@ -300,7 +300,7 @@ class DockerWorker(object):
                 k, v = kv.split('=', 1)
                 current_env.update({k: v})
 
-            for k, v in self.params.get('environment').iteritems():
+            for k, v in self.params.get('environment').items():
                 if k not in current_env:
                     return True
                 if current_env[k] != v:

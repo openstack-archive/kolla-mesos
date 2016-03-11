@@ -620,7 +620,7 @@ class RenderNovaConfTest(base.BaseTestCase):
                      'rabbitmq_password': 'jumpforjoy',
                      'rabbitmq_port': '9090',
                      'nova_api_database_user': 'sucker'}
-        for nam, val in variables.iteritems():
+        for nam, val in variables.items():
             self.client.create('/kolla/did/variables/%s' % nam,
                                getattr(self, nam, val),
                                makepath=True)
