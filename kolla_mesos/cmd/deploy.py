@@ -112,7 +112,7 @@ class Runner(object):
         self.type_name = None
         self._enabled = self._conf.get('enabled', True)
         if not self._enabled:
-            LOG.warn('Service %s disabled', self._conf['name'])
+            LOG.warning('Service %s disabled', self._conf['name'])
 
     def _list_commands(self):
         if 'service' in self._conf:
