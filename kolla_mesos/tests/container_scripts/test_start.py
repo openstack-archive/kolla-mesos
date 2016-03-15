@@ -178,11 +178,12 @@ class CommandTest(base.BaseTestCase):
         cmd1 = start.Command('a', {'command': 'true',
                                    'run_once': True},
                              self.client)
-        cmd1.set_state(start.CMD_DONE)
+        cmd1.set_state(start.CMD_DONE, cmd1.check_paths[0])
         mock_popen.return_value = mock.MagicMock()
         mock_popen.return_value.poll.return_value = 0
         cmd1.run()
         self.assertEqual(0, len(mock_popen.return_value.poll.mock_calls))
+        self.assertEqual(start.CMD_DONE, cmd1.get_state(cmd1.check_paths[1]))
 
     @mock.patch('subprocess.Popen')
     def test_return_non_zero(self, mock_popen):
