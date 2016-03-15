@@ -12,6 +12,7 @@
 
 import json
 import os.path
+import time
 
 from kazoo import exceptions
 from oslo_config import cfg
@@ -476,6 +477,8 @@ def _load_variables_from_file(service_dir, project_name):
     jvars.update({'deployment_id': CONF.kolla.deployment_id})
     # override node_config_directory to empty
     jvars.update({'node_config_directory': ''})
+    # Add timestamp
+    jvars.update({'timestamp': str(time.time())})
     config.apply_deployment_vars(jvars)
     return jvars
 
