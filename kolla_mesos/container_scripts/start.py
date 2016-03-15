@@ -382,6 +382,9 @@ class Command(object):
             self.env[ek] = str(ev)
         self.requirements_fulfilled()
 
+    def get_hostname(self):
+        return socket.gethostname()
+
     def get_requirements(self, cmd):
         requires = []
         for req in cmd.get('dependencies', []):
@@ -466,8 +469,9 @@ class Command(object):
             locks = []
             for check_path in self.check_paths:
                 lock_path = check_path + '/lock'
+                lock_name = self.get_hostname()
                 zk.retry(zk.ensure_path, lock_path)
-                lock = zk.Lock(lock_path)
+                lock = zk.Lock(lock_path, lock_name)
                 LOG.info("Acquiring lock '%s'", lock_path)
                 locks.append(lock)
             with nested(*locks):
