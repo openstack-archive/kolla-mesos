@@ -34,6 +34,7 @@ from kolla_mesos.common import mesos_utils
 from kolla_mesos.common import yaml_utils
 from kolla_mesos.common import zk_utils
 from kolla_mesos import configuration
+from kolla_mesos import deployment
 from kolla_mesos import exception
 from kolla_mesos import marathon
 from kolla_mesos import service
@@ -253,14 +254,6 @@ class KollaWorker(object):
                                              jinja_vars, kolla_config)
                  for name in names if name.endswith('.j2')]
 
-    def write_openrc(self):
-        # write an openrc to the base_dir for convience.
-        openrc_file = os.path.join(self.base_dir, 'config', 'openrc.j2')
-        content = jinja_utils.jinja_render(openrc_file, self.required_vars)
-        with open('openrc', 'w') as f:
-            f.write(content)
-        LOG.info('Written OpenStack env to "openrc"')
-
     def cleanup_temp_files(self):
         """Remove temp files"""
         shutil.rmtree(self.temp_dir)
@@ -355,7 +348,7 @@ def main():
     kolla.setup_working_dir()
     kolla.gen_deployment_id()
     kolla.write_to_zookeeper()
-    kolla.write_openrc()
+    deployment.write_openrc('openrc')
     kolla.start()
     kolla.print_summary()
     # kolla.cleanup_temp_files()

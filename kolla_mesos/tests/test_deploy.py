@@ -107,16 +107,6 @@ class TestClient(base.BaseTestCase):
                 function_name = methods[3].split('(')[0]
                 self.assertIn(function_name, expected_calls)
 
-    @mock.patch('kolla_mesos.cmd.deploy.open')
-    def test_write_openrc(self, mock_open):
-        mock_open.return_value = mock.MagicMock(spec=file)
-        file_handle = mock_open.return_value.__enter__.return_value
-
-        self.worker.write_openrc()
-
-        mock_open.assert_called_once_with('openrc', 'w')
-        self.assertEqual(file_handle.write.call_count, 1)
-
     @mock.patch('kolla_mesos.cmd.deploy.json')
     @mock.patch('kolla_mesos.cmd.deploy.open')
     @mock.patch('kolla_mesos.cmd.deploy.os')
