@@ -469,16 +469,17 @@ class Command(object):
             else:
                 locks = []
                 for check_path in self.check_paths:
+                    lock_path = check_path + '/lock'
                     LOG.info("Path '%s' does not exist: running command",
                              check_path)
-                    zk.retry(zk.ensure_path, check_path)
-                    lock = zk.Lock(check_path)
-                    LOG.info("Acquiring lock '%s'", check_path)
+                    zk.retry(zk.ensure_path, lock_path)
+                    lock = zk.Lock(lock_path)
+                    LOG.info("Acquiring lock '%s'", lock_path)
                     locks.append(lock)
                 with nested(*locks):
                     result = self._run_command()
                 for check_path in self.check_paths:
-                    LOG.info("Releasing lock '%s'", check_path)
+                    LOG.info("Releasing lock '%s'", lock_path)
         else:
             result = self._run_command()
         LOG.info('** < Complete %s result: %s', self.name, result)
