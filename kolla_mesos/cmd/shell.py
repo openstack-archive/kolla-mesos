@@ -25,6 +25,7 @@ from kolla_mesos.common import utils
 VERSION = '1.0'
 CONF = cfg.CONF
 CONF.import_group('kolla', 'kolla_mesos.config.kolla')
+CONF.import_group('mesos', 'kolla_mesos.config.mesos')
 CONF.import_group('zookeeper', 'kolla_mesos.config.zookeeper')
 CONF.import_group('marathon', 'kolla_mesos.config.marathon')
 CONF.import_group('chronos', 'kolla_mesos.config.chronos')
