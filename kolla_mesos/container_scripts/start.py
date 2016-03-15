@@ -130,6 +130,10 @@ def set_loglevel():
 set_loglevel()
 
 
+def get_hostname():
+    return socket.gethostname()
+
+
 def jinja_filter_bool(text):
     if not text:
         return False
@@ -194,9 +198,6 @@ class TemplateFunctions(object):
             struct.pack('256s', ifname[:15])
         )[20:24]))
 
-    def get_hostname(self):
-        return socket.gethostname()
-
     def list_ips_by_service(self, name, port=None, separator=',', prefix=None):
         """Converts a service to list of IP addresses
 
@@ -257,7 +258,7 @@ def register_group_and_hostvars(zk):
                                       tf.get_ip_address(PUBLIC_INTERFACE)}},
             ANSIBLE_PRIVATE: {'ipv4': {'address':
                                        tf.get_ip_address(PRIVATE_INTERFACE)}},
-            'ansible_hostname': tf.get_hostname(),
+            'ansible_hostname': get_hostname(),
             'api_interface': PUBLIC_INTERFACE}
 
     LOG.info('%s joining the %s party', addr, SERVICE_NAME)
@@ -315,7 +316,7 @@ def generate_host_vars(zk):
     variables = {'hostvars': hostvars, 'groups': groups,
                  'inventory_hostname': host,
                  'ansible_hostname': host,
-                 'get_hostname': tf.get_hostname,
+                 'get_hostname': get_hostname,
                  'get_ip_address': tf.get_ip_address,
                  'list_ips_by_service': tf.list_ips_by_service,
                  'deployment_id': DEPLOYMENT_ID,
@@ -466,8 +467,9 @@ class Command(object):
             locks = []
             for check_path in self.check_paths:
                 lock_path = check_path + '/lock'
+                lock_name = get_hostname()
                 zk.retry(zk.ensure_path, lock_path)
-                lock = zk.Lock(lock_path)
+                lock = zk.Lock(lock_path, lock_name)
                 LOG.info("Acquiring lock '%s'", lock_path)
                 locks.append(lock)
             with nested(*locks):
