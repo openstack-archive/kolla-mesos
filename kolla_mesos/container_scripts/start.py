@@ -415,12 +415,14 @@ class Command(object):
                 fulfilled = False
         return fulfilled
 
-    def set_state(self, state):
-        for check_path in self.check_paths:
+    def set_state(self, state, path=None):
+        check_paths = [path] if path else self.check_paths
+        for check_path in check_paths:
             self.zk.retry(self.zk.ensure_path, check_path)
             current_state, _ = self.zk.get(check_path)
+            current_state = current_state if current_state else 'not initiated'
             if current_state != state:
-                LOG.info('path: %s, changing state from %s to %s'
+                LOG.info('Path: %s, changing state from %s to %s'
                          % (check_path, current_state, state))
                 self.zk.set(check_path, state)
 
