@@ -1,0 +1,5 @@
+#!/bin/bash
+
+echo "This command is deprecated, redirecting to kolla-mesos deployment run"
+kolla-mesos deployment run
+kolla-mesos deployment show
