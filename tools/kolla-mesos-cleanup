@@ -1,0 +1,4 @@
+#!/bin/bash
+
+echo "This command is deprecated, redirecting to kolla-mesos deployment cleanup"
+kolla-mesos deployment cleanup
