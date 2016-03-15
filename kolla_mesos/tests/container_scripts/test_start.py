@@ -108,6 +108,49 @@ class CommandTest(base.BaseTestCase):
                            'done', makepath=True)
         self.assertTrue(cmd1.requirements_fulfilled())
 
+    @mock.patch('socket.gethostname')
+    def test_set_state(self, m_gethost):
+        m_gethost.return_value = 'test-hostname'
+        cmd1 = start.Command('a', {'command': 'true',
+                                   'dependencies': [{
+                                       'path': 'w/x'
+                                   }, {
+                                       'path': 'y/l',
+                                       'scope': 'local'
+                                   }]},
+                             self.client)
+
+        self.client.create('/kolla/t1/status/global/w/x',
+                           makepath=True)
+        self.client.create('/kolla/t1/status/test-hostname/y/l',
+                           makepath=True)
+        cmd1.set_state(start.CMD_DONE)
+
+        self.assertEqual(start.CMD_DONE, cmd1.get_state())
+
+    @mock.patch('socket.gethostname')
+    def test_set_state_with_path(self, m_gethost):
+        m_gethost.return_value = 'test-hostname'
+        cmd1 = start.Command('a', {'command': 'true',
+                                   'dependencies': [{
+                                       'path': 'w/x'
+                                   }, {
+                                       'path': 'y/l',
+                                       'scope': 'local'
+                                   }]},
+                             self.client)
+
+        self.client.create('/kolla/t1/status/global/w/x',
+                           makepath=True)
+        self.client.create('/kolla/t1/status/test-hostname/y/l',
+                           makepath=True)
+        cmd1.set_state(start.CMD_DONE, '/kolla/t1/status/global/w/x')
+
+        self.assertEqual(start.CMD_DONE,
+                         cmd1.get_state('/kolla/t1/status/global/w/x'))
+        self.assertEqual(None,
+                         cmd1.get_state('/kolla/t1/status/test-hostname/y/l'))
+
     @mock.patch('subprocess.Popen')
     def test_run_always(self, mock_popen):
         cmd1 = start.Command('a', {'command': 'true'},
