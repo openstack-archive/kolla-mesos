@@ -463,25 +463,29 @@ class Command(object):
         result = 0
         LOG.info('** > Running %s', self.name)
         if self.run_once:
-            state = self.get_state()
-            if state == CMD_DONE:
-                for check_path in self.check_paths:
-                    LOG.info("Path '%s' exists: skipping command",
-                             check_path)
-            else:
-                locks = []
-                for check_path in self.check_paths:
-                    lock_path = check_path + '/lock'
+            locks = []
+            for check_path in self.check_paths:
+                lock_path = check_path + '/lock'
+                zk.retry(zk.ensure_path, lock_path)
+                lock = zk.Lock(lock_path)
+                LOG.info("Acquiring lock '%s'", lock_path)
+                locks.append(lock)
+            with nested(*locks):
+                # We only interested in "global" path right now, since this
+                # commands need to be run only once(per deploy)
+                check_path = self.check_paths[0]
+                state = self.get_state(check_path)
+                if state == CMD_DONE:
+                    LOG.info("Path '%s' exists: skipping command", check_path)
+                    # Adding .done state to local path for consistency
+                    self.set_state(CMD_DONE, self.check_paths[1])
+                else:
                     LOG.info("Path '%s' does not exist: running command",
                              check_path)
-                    zk.retry(zk.ensure_path, lock_path)
-                    lock = zk.Lock(lock_path)
-                    LOG.info("Acquiring lock '%s'", lock_path)
-                    locks.append(lock)
-                with nested(*locks):
                     result = self._run_command()
-                for check_path in self.check_paths:
-                    LOG.info("Releasing lock '%s'", lock_path)
+            for check_path in self.check_paths:
+                lock_path = check_path + '/lock'
+                LOG.info("Releasing lock '%s'", lock_path)
         else:
             result = self._run_command()
         LOG.info('** < Complete %s result: %s', self.name, result)
