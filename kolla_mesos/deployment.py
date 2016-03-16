@@ -67,3 +67,14 @@ def get_deployment():
         # TODO(asalkeld) if horizon is running and ready, get the url.
         conf_opts['horizon'] = ''
     return conf_opts
+
+
+def list_deployments():
+    ids = []
+    with zk_utils.connection() as zk:
+        children = zk.get_children('/kolla')
+        for child in children:
+            if child not in ['groups', 'variables', 'common',
+                             'config', 'commands']:
+                ids.append(child)
+    return ids

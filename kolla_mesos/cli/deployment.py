@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from cliff import command
+from cliff import lister
 from cliff import show
 from oslo_config import cfg
 from oslo_log import log
@@ -54,3 +55,13 @@ class Show(show.ShowOne):
     def take_action(self, parsed_args):
         conf_opts = deployment.get_deployment()
         return cli_utils.dict2columns(conf_opts, id_col='deployment_id')
+
+
+class List(lister.Lister):
+    """List all existing deployments."""
+
+    def take_action(self, parsed_args):
+        cols = ['Deployment ID']
+        ids = deployment.list_deployments()
+        values = [[id] for id in ids]
+        return cols, values
