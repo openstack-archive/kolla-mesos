@@ -305,7 +305,7 @@ class GenerateConfigTest(base.BaseTestCase):
         afile = {'afile': {
             'source': 'config/mariadb/templates/galera.cnf.j2',
             'dest': '/etc/mysql_dir/my.cnf',
-            'owner': 'mysql',
+            'owner': 'nobody',
             'perm': "0600"}}
 
         conf = {'commands': {'setup': {
@@ -325,7 +325,7 @@ class GenerateConfigTest(base.BaseTestCase):
         afile = {'afile': {
             'source': 'config/mariadb/templates/galera.cnf.j2',
             'dest': '/etc/mysql_dir/my.cnf',
-            'owner': 'mysql',
+            'owner': 'nobody',
             'perm': "0600"}}
         conf = {'commands': {'setup': {
             'command': 'true', 'files': afile}}}
@@ -346,7 +346,7 @@ class GenerateConfigTest(base.BaseTestCase):
         afile = {'afile': {
             'source': 'config/mariadb/templates/galera.cnf.j2',
             'dest': '/etc/mysql_dir/my.cnf',
-            'owner': 'mysql',
+            'owner': 'nobody',
             'perm': "0600"}}
         conf = {'commands': {'setup': {
             'command': 'true', 'files': afile}}}
@@ -361,7 +361,7 @@ class GenerateConfigTest(base.BaseTestCase):
     def test_write_file_no_existing(self, m_call):
         conf = {'source': 'config/mariadb/templates/galera.cnf.j2',
                 'dest': '/etc/mysql_dir/my.cnf',
-                'owner': 'mysql',
+                'owner': 'nobody',
                 'perm': "0600"}
         self.assertTrue(start.write_file(conf, 'data'))
         m_call.assert_called_once_with(mock.ANY, shell=True)
@@ -371,7 +371,7 @@ class GenerateConfigTest(base.BaseTestCase):
         existing_f = self.create_tempfiles([('existing', 'data1')])[0]
         conf = {'source': 'config/mariadb/templates/galera.cnf.j2',
                 'dest': existing_f,
-                'owner': 'mysql',
+                'owner': 'nobody',
                 'perm': "0600"}
 
         self.assertTrue(start.write_file(conf, 'data2'))
@@ -383,7 +383,7 @@ class GenerateConfigTest(base.BaseTestCase):
 
         conf = {'source': 'config/mariadb/templates/galera.cnf.j2',
                 'dest': existing_f,
-                'owner': 'mysql',
+                'owner': 'nobody',
                 'perm': "0600"}
         self.assertFalse(start.write_file(conf, 'data1'))
         self.assertEqual([], m_call.mock_calls)
