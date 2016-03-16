@@ -49,6 +49,8 @@ def find_base_dir():
     base_script_path = os.path.basename(script_path)
     if base_script_path == 'kolla-mesos':
         return script_path
+    if base_script_path == 'kolla_mesos':
+        return os.path.join(script_path, '..')
     if base_script_path == 'cmd':
         return os.path.join(script_path, '..', '..')
     if base_script_path == 'subunit':
