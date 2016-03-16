@@ -1,0 +1,11 @@
+Code-Review+2: Michal Rostecki <mrostecki@mirantis.com>
+Code-Review+2: Angus Salkeld <asalkeld@mirantis.com>
+Code-Review+1: Alicja Kwasniewska <alicja.kwasniewska@intel.com>
+Code-Review+1: yejiawei <ye.jiawei@99cloud.net>
+Workflow+1: Michal Rostecki <mrostecki@mirantis.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Wed, 16 Mar 2016 09:03:19 +0000
+Reviewed-on: https://review.openstack.org/291692
+Project: openstack/kolla-mesos
+Branch: refs/heads/master
