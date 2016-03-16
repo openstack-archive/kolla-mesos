@@ -11,28 +11,30 @@
 # limitations under the License.
 
 import mock
+import os
+
 from oslo_config import cfg
 from zake import fake_client
 
-from kolla_mesos.cmd import show_tasks
+from kolla_mesos import commands
+from kolla_mesos.common import file_utils
 from kolla_mesos.tests import base
 from kolla_mesos.tests.fakes import mesos as fake_mesos
 
-
 CONF = cfg.CONF
 CONF.import_group('mesos', 'kolla_mesos.config.mesos')
+CONF.import_group('kolla', 'kolla_mesos.config.kolla')
 
 
-class ShowTasksTest(base.BaseTestCase):
-
+class CommandsTest(base.BaseTestCase):
     def setUp(self):
-        super(ShowTasksTest, self).setUp()
+        super(CommandsTest, self).setUp()
         CONF.set_override('host', 'http://127.0.0.1:5050', group='mesos')
+        CONF.set_override('deployment_id', 'test', group='kolla')
         self.client = fake_client.FakeClient()
         self.client.start()
         self.addCleanup(self.client.stop)
         self.addCleanup(self.client.close)
-        self.dep_id = 'test'
 
     @fake_mesos.FakeMesosStateTaggedSlaves()
     def test_get_tasks_sanity(self):
@@ -42,14 +44,32 @@ class ShowTasksTest(base.BaseTestCase):
                    '%s/cinder_ansible_tasks/create_database' % var,
                    '%s/cinder_ansible_tasks/database_user_create' % var]}
 
-        tasks = show_tasks.get_tasks(self.dep_id)
+        config_path = os.path.join(
+            file_utils.find_base_dir(), 'services/cinder')
+        tasks = commands.get_tasks(config_path)
         self.assertEqual(exp, tasks['cinder-api/db_sync'])
 
     @fake_mesos.FakeMesosStateTaggedSlaves()
-    @mock.patch.object(show_tasks.zk_utils, 'connection')
+    def test_get_service_tasks_sanity(self):
+        var = '/kolla/test/status'
+        exp = {'register': '%s/cinder-api/db_sync' % var,
+               'requires': [
+                   '%s/cinder_ansible_tasks/create_database' % var,
+                   '%s/cinder_ansible_tasks/database_user_create' % var]}
+
+        config_dir = os.path.join(
+            file_utils.find_base_dir(), 'services')
+        tasks = commands.get_service_tasks(
+            'openstack/cinder/cinder-api', config_dir)
+        self.assertEqual(exp, tasks['cinder-api/db_sync'])
+
+    @fake_mesos.FakeMesosStateTaggedSlaves()
+    @mock.patch.object(commands.zk_utils, 'connection')
     def test_get_status_waiting(self, m_zk_c):
         m_zk_c.return_value.__enter__.return_value = self.client
-        tasks = show_tasks.get_tasks(self.dep_id)
+        config_path = os.path.join(
+            file_utils.find_base_dir(), 'services/cinder')
+        tasks = commands.get_tasks(config_path)
         # just get what we want for the test
         test_tasks = {'cinder-api/db_sync':
                       tasks['cinder-api/db_sync']}
@@ -69,14 +89,16 @@ class ShowTasksTest(base.BaseTestCase):
         self.client.create(
             '%s/cinder_ansible_tasks/database_user_create' % var,
             'done', makepath=True)
-        status = show_tasks.get_status(test_tasks)
+        status = commands.get_status(test_tasks)
         self.assertEqual({'cinder-api/db_sync': exp}, status)
 
     @fake_mesos.FakeMesosStateTaggedSlaves()
-    @mock.patch.object(show_tasks.zk_utils, 'connection')
+    @mock.patch.object(commands.zk_utils, 'connection')
     def test_get_status_deps_done(self, m_zk_c):
         m_zk_c.return_value.__enter__.return_value = self.client
-        tasks = show_tasks.get_tasks(self.dep_id)
+        config_path = os.path.join(
+            file_utils.find_base_dir(), 'services/cinder')
+        tasks = commands.get_tasks(config_path)
         # just get what we want for the test
         test_tasks = {'cinder-api/db_sync':
                       tasks['cinder-api/db_sync']}
@@ -96,14 +118,16 @@ class ShowTasksTest(base.BaseTestCase):
             '%s/cinder_ansible_tasks/database_user_create' % var,
             'done', makepath=True)
 
-        status = show_tasks.get_status(test_tasks)
+        status = commands.get_status(test_tasks)
         self.assertEqual({'cinder-api/db_sync': exp}, status)
 
     @fake_mesos.FakeMesosStateTaggedSlaves()
-    @mock.patch.object(show_tasks.zk_utils, 'connection')
+    @mock.patch.object(commands.zk_utils, 'connection')
     def test_get_status_done(self, m_zk_c):
         m_zk_c.return_value.__enter__.return_value = self.client
-        tasks = show_tasks.get_tasks(self.dep_id)
+        config_path = os.path.join(
+            file_utils.find_base_dir(), 'services/cinder')
+        tasks = commands.get_tasks(config_path)
         # just get what we want for the test
         test_tasks = {'cinder-api/db_sync':
                       tasks['cinder-api/db_sync']}
@@ -125,5 +149,5 @@ class ShowTasksTest(base.BaseTestCase):
         self.client.create('%s/cinder-api/db_sync' % var, 'done',
                            makepath=True)
 
-        status = show_tasks.get_status(test_tasks)
+        status = commands.get_status(test_tasks)
         self.assertEqual({'cinder-api/db_sync': exp}, status)
