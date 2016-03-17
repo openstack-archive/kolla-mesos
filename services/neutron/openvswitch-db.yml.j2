@@ -4,9 +4,9 @@ container:
   image: "{{ openvswitch_db_image }}:{{ openvswitch_db_tag }}"
   parameters:
     - key: volume
-      value: "openvswitch_db:/var/lib/openvswitch/"
+      value: "openvswitch_db_{{ deployment_id }}_{{ timestamp }}:/var/lib/openvswitch/"
     - key: volume
-      value: "kolla_logs_{{ deployment_id }}:/var/log/kolla"
+      value: "kolla_logs_{{ deployment_id }}_{{ timestamp }}:/var/log/kolla"
   volumes:
     - containerPath: "/run"
       hostPath: "/run"

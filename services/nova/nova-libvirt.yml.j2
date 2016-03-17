@@ -5,7 +5,7 @@ container:
   privileged: true
   parameters:
     - key: volume
-      value: "kolla_logs_{{ deployment_id }}:/var/log/kolla"
+      value: "kolla_logs_{{ deployment_id }}_{{ timestamp }}:/var/log/kolla"
   volumes:
     - containerPath: "/lib/modules"
       hostPath: "/lib/modules"

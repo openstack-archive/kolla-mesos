@@ -6,7 +6,7 @@ container:
   image: "{{ horizon_image }}:{{ horizon_tag }}"
   parameters:
     - key: volume
-      value: "kolla_logs_{{ deployment_id }}:/var/log/kolla"
+      value: "kolla_logs_{{ deployment_id }}_{{ timestamp }}:/var/log/kolla"
 service:
   daemon:
     command: /usr/local/bin/kolla_apache_wrapper.sh
