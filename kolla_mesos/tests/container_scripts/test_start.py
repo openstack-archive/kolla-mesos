@@ -108,6 +108,49 @@ class CommandTest(base.BaseTestCase):
                            'done', makepath=True)
         self.assertTrue(cmd1.requirements_fulfilled())
 
+    @mock.patch('socket.gethostname')
+    def test_set_state(self, m_gethost):
+        m_gethost.return_value = 'test-hostname'
+        cmd1 = start.Command('a', {'command': 'true',
+                                   'dependencies': [{
+                                       'path': 'testr/x'
+                                   }, {
+                                       'path': 'testr/l',
+                                       'scope': 'local'
+                                   }]},
+                             self.client)
+        cmdx = start.Command('x', {'command': 'true'}, self.client)
+        cmdl = start.Command('l', {'command': 'true'}, self.client)
+        self.assertFalse(cmd1.requirements_fulfilled())
+        cmdx.set_state(start.CMD_DONE)
+        cmdl.set_state(start.CMD_DONE)
+        self.assertTrue(cmd1.requirements_fulfilled())
+
+    @mock.patch('socket.gethostname')
+    def test_set_state_sync(self, m_gethost):
+        """Ensure that set_state will make both states as requested."""
+
+        m_gethost.return_value = 'test-hostname'
+        cmd1 = start.Command('a', {'command': 'true'},
+                             self.client)
+
+        self.client.create('/kolla/t1/status/test-hostname/testr/a',
+                           'done', makepath=True)
+        self.assertEqual(None,
+                         cmd1.get_state(
+                             path='/kolla/t1/status/global/testr/a'))
+        self.assertEqual(start.CMD_DONE,
+                         cmd1.get_state(
+                             path='/kolla/t1/status/test-hostname/testr/a'))
+
+        cmd1.set_state(start.CMD_DONE)
+        self.assertEqual(start.CMD_DONE,
+                         cmd1.get_state(
+                             path='/kolla/t1/status/global/testr/a'))
+        self.assertEqual(start.CMD_DONE,
+                         cmd1.get_state(
+                             path='/kolla/t1/status/test-hostname/testr/a'))
+
     @mock.patch('subprocess.Popen')
     def test_run_always(self, mock_popen):
         cmd1 = start.Command('a', {'command': 'true'},
@@ -140,6 +183,34 @@ class CommandTest(base.BaseTestCase):
         mock_popen.return_value.poll.return_value = 0
         cmd1.run()
         self.assertEqual(0, len(mock_popen.return_value.poll.mock_calls))
+        self.assertEqual(start.CMD_DONE, cmd1.get_state(cmd1.check_paths[1]))
+
+    @mock.patch('subprocess.Popen')
+    def test_lock_before_state_check(self, mock_popen):
+        """Make sure we Lock before calling get_state."""
+        call_order = []
+        cmd1 = start.Command('a', {'command': 'true',
+                                   'run_once': True},
+                             self.client)
+
+        mock_popen.return_value = mock.MagicMock()
+        mock_popen.return_value.poll.return_value = 0
+
+        def get_state_side_effect(run_self):
+            call_order.append('get_state')
+            return start.CMD_DONE
+
+        def lock_side_effect():
+            call_order.append('lock_enter')
+
+        m_lock = mock.MagicMock()
+        with mock.patch.object(self.client, 'Lock', m_lock):
+            with mock.patch.object(cmd1, 'get_state',
+                                   autospec=True) as m_get_state:
+                m_get_state.side_effect = get_state_side_effect
+                m_lock.return_value.__enter__.side_effect = lock_side_effect
+                cmd1.run()
+        self.assertEqual(['lock_enter', 'lock_enter', 'get_state'], call_order)
 
     @mock.patch('subprocess.Popen')
     def test_return_non_zero(self, mock_popen):
