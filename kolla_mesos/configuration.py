@@ -13,12 +13,14 @@
 import json
 import os.path
 
+from kazoo import exceptions as kz_exceptions
 from oslo_config import cfg
 from oslo_log import log as logging
 import yaml
 
 from kolla_mesos.common import file_utils
 from kolla_mesos.common import jinja_utils
+from kolla_mesos import exception
 
 LOG = logging.getLogger()
 CONF = cfg.CONF
@@ -73,3 +75,15 @@ def write_common_config_to_zookeeper(config_dir, zk, jinja_vars):
         with open(src_file) as fp:
             content = fp.read()
         zk.set(script_node, content)
+
+
+def get_variables_from_zookeeper(zk, needed_variables):
+    path = os.path.join('/kolla', CONF.kolla.deployment_id, 'variables')
+    variables = {}
+    for var in needed_variables:
+        try:
+            variables[str(var)], _stat = zk.get(os.path.join(path, var))
+        except kz_exceptions.NoNodeError:
+            raise exception.KollaNotFoundException(var, entity='variable')
+
+    return variables
