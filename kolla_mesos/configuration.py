@@ -20,6 +20,8 @@ import yaml
 
 from kolla_mesos.common import file_utils
 from kolla_mesos.common import jinja_utils
+from kolla_mesos.common import mesos_utils
+from kolla_mesos.common import yaml_utils
 from kolla_mesos import exception
 
 LOG = logging.getLogger()
@@ -87,3 +89,64 @@ def get_variables_from_zookeeper(zk, needed_variables):
             raise exception.KollaNotFoundException(var, entity='variable')
 
     return variables
+
+
+def apply_deployment_vars(jvars):
+    """Applies the orchestration logic defined in globals.yml.
+
+    If multinode mode is enabled, then it uses the default constraints.
+    And depending on the 'autodetect_resources' option, it figures out
+    how many instances of the services should be scheduled.
+    If multinode mode is disabled, then it checks whether
+    'mesos_aio_hostname' option is defined. If it is, then the
+    constraints for the given host are defined. If not, the constraints
+    disappear.
+    """
+    multinode = yaml_utils.str_to_bool(jvars['multinode'])
+    if multinode:
+        autodetect_resources = yaml_utils.str_to_bool(
+            jvars['autodetect_resources'])
+        if autodetect_resources:
+            controller_nodes, compute_nodes, storage_nodes, all_nodes = \
+                mesos_utils.get_number_of_nodes()
+        else:
+            try:
+                controller_nodes = jvars['controller_nodes']
+                compute_nodes = jvars['compute_nodes']
+                storage_nodes = jvars['storage_nodes']
+            except KeyError:
+                raise exception.UndefinedOption(
+                    'When "autodetect_resources" option is disabled, '
+                    '"controller_nodes", "compute_nodes" and'
+                    '"storage_nodes" have to be defined.')
+            all_nodes = controller_nodes + compute_nodes + storage_nodes
+    else:
+        controller_nodes = 1
+        compute_nodes = 1
+        storage_nodes = 1
+        all_nodes = 1
+        controller_constraints = ""
+        compute_constraints = ""
+        controller_compute_constraints = ""
+        storage_constraints = ""
+        mesos_aio_hostname = jvars.get('mesos_aio_hostname')
+        if mesos_aio_hostname is not None:
+            constraints = '[["hostname", "CLUSTER", "%s"]]' % \
+                mesos_aio_hostname
+            controller_constraints = constraints
+            compute_constraints = constraints
+            controller_compute_constraints = constraints
+            storage_constraints = constraints
+        jvars.update({
+            'controller_constraints': controller_constraints,
+            'compute_constraints': compute_constraints,
+            'controller_compute_constraints':
+            controller_compute_constraints,
+            'storage_constraints': storage_constraints
+        })
+    jvars.update({
+        'controller_nodes': str(controller_nodes),
+        'compute_nodes': str(compute_nodes),
+        'storage_nodes': str(storage_nodes),
+        'all_nodes': str(all_nodes)
+    })
