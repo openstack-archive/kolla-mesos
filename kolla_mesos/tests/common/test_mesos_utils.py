@@ -31,7 +31,7 @@ class TestMesosUtils(base.BaseTestCase):
     def test_get_number_of_nodes(self):
         controller_nodes, compute_nodes, storage_nodes, all_nodes = \
             mesos_utils.get_number_of_nodes()
-        self.assertEqual(controller_nodes, 3)
-        self.assertEqual(compute_nodes, 2)
-        self.assertEqual(storage_nodes, 2)
-        self.assertEqual(all_nodes, 7)
+        self.assertEqual(3, controller_nodes)
+        self.assertEqual(2, compute_nodes)
+        self.assertEqual(2, storage_nodes)
+        self.assertEqual(7, all_nodes)
