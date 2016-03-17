@@ -53,8 +53,6 @@ class TestClient(base.BaseTestCase):
         CONF.set_override('timeout', 5, group='chronos')
         CONF.set_override('host', 'http://127.0.0.1:8080', group='marathon')
         CONF.set_override('host', 'http://127.0.0.1:5050', group='mesos')
-        CONF.set_override('deployment_id', None, group='kolla')
-        CONF.set_override('deployment_id_prefix', None, group='kolla')
         req_mock.get('http://127.0.0.1:8080/v2/info', json={
             'version': '0.11.0'
         })
@@ -75,20 +73,9 @@ class TestClient(base.BaseTestCase):
         self.worker.gen_deployment_id()
         self.assertEqual(self.worker.deployment_id, 'test')
 
-    def test_gen_deployment_id_prefix(self):
-        CONF.set_override('deployment_id_prefix', 'test', group='kolla')
-        self.worker.gen_deployment_id()
-        self.assertIn('test', self.worker.deployment_id)
-        self.assertNotEqual(self.worker.deployment_id, 'test')
-
-    def test_gen_deployment_id_without_parameters(self):
-        self.worker.gen_deployment_id()
-        self.assertTrue(self.worker.deployment_id, 'openstack')
-
     @mock.patch('kolla_mesos.cmd.deploy.sys')
-    def test_gen_deployment_id_with_extra_parameters(self, mock_sys):
-        CONF.set_override('deployment_id', 'test', group='kolla')
-        CONF.set_override('deployment_id_prefix', 'test2', group='kolla')
+    def test_gen_deployment_id_without_parameters(self, mock_sys):
+        CONF.set_override('deployment_id', None, group='kolla')
         self.worker.gen_deployment_id()
         mock_sys.exit.assert_called_once_with(1)
 
