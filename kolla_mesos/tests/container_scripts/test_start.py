@@ -16,6 +16,7 @@ from kazoo.recipe import party
 import logging
 import mock
 import os.path
+import signal
 import sys
 from zake import fake_client
 
@@ -68,6 +69,7 @@ class CommandTest(base.BaseTestCase):
         cmd = start.Command('a', data, None)
         self.assertEqual(False, cmd.run_once)
         self.assertEqual(False, cmd.daemon)
+        self.assertEqual(signal.SIGTERM, cmd.reload_signal)
         self.assertEqual([], cmd.requires)
         self.assertEqual(['/kolla/t1/status/global/testr/a',
                           '/kolla/t1/status/test-hostname/testr/a'],
@@ -257,6 +259,40 @@ class CommandTest(base.BaseTestCase):
         with mock.patch('time.sleep') as m_sleep:
             cmd.sleep(4, retry=True)
             m_sleep.assert_called_once_with(4)
+
+    def test_reload_sighup(self):
+        cmd = start.Command('a', {'command': 'true',
+                                  'reload_signal': 'SIGHUP'},
+                            self.client)
+        with mock.patch.object(cmd, 'proc') as m_proc:
+            self.assertIsNone(cmd.reload_process())
+            m_proc.send_signal.assert_called_once_with(signal.SIGHUP)
+            self.assertEqual([], m_proc.kill.mock_calls)
+            self.assertEqual([], m_proc.wait.mock_calls)
+
+    def test_reload_sigterm_ok(self):
+        cmd = start.Command('a', {'command': 'true'},
+                            self.client)
+        with mock.patch.object(cmd, 'poll') as m_poll:
+            m_poll.return_value = [0]
+            with mock.patch.object(cmd, 'proc') as m_proc:
+                self.assertIsNone(cmd.reload_process())
+                m_proc.send_signal.assert_called_once_with(signal.SIGTERM)
+                self.assertEqual([], m_proc.kill.mock_calls)
+                self.assertEqual([], m_proc.wait.mock_calls)
+
+    def test_reload_sigterm_tmo(self):
+        cmd = start.Command('a', {'command': 'true'},
+                            self.client)
+        with mock.patch.object(cmd, 'start_process') as m_start:
+            m_start.return_value = None
+            with mock.patch.object(cmd, 'poll') as m_poll:
+                m_poll.return_value = []
+                with mock.patch.object(cmd, 'proc') as m_proc:
+                    self.assertIsNone(cmd.reload_process())
+                    m_proc.send_signal.assert_called_once_with(signal.SIGTERM)
+                    m_proc.kill.assert_called_once_with()
+                    m_proc.wait.assert_called_once_with()
 
 
 class RunCommandsTest(base.BaseTestCase):
@@ -742,6 +778,23 @@ class RenderNovaConfTest(base.BaseTestCase):
 
 
 class GlobalsTest(base.BaseTestCase):
+
+    def setUp(self):
+        super(GlobalsTest, self).setUp()
+        self.useFixture(fixtures.EnvironmentVariable(
+                        'MARATHON_APP_ID',
+                        newvalue='/dep_id/tg/tr'))
+
+    def test_signal_map(self):
+        start.set_globals()
+        # this is going to be OS dependant, so just check for expected names.
+        exp_names = ('SIGHUP', 'SIGINT', 'SIGKILL', 'SIGQUIT', 'SIGSTOP',
+                     'SIGTERM', 'SIGTRAP', 'SIGUSR1', 'SIGUSR2')
+        for exp in exp_names:
+            self.assertIn(exp, start.SIGNAL_NAME_TO_INT_DICT)
+
+
+class GlobalAppIdTest(base.BaseTestCase):
     scenarios = [
         ('1', dict(prefix='/root', app_id='/dep_id/tg/tr', dep_id='dep_id',
                    dep='/root/dep_id', role='tr', sn='tg/tr')),
@@ -753,7 +806,7 @@ class GlobalsTest(base.BaseTestCase):
                    sn='openstack/tg/tr'))]
 
     def setUp(self):
-        super(GlobalsTest, self).setUp()
+        super(GlobalAppIdTest, self).setUp()
         self.useFixture(fixtures.EnvironmentVariable(
                         'MARATHON_APP_ID',
                         newvalue=self.app_id))

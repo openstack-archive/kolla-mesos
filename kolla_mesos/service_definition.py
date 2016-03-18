@@ -23,7 +23,7 @@ from kolla_mesos import exception
 
 CNF_FIELDS = ('source', 'dest', 'owner', 'perm')
 CMD_FIELDS = ('run_once', 'dependencies', 'command', 'env',
-              'delay', 'retries', 'files')
+              'delay', 'retries', 'files', 'reload_signal')
 DEP_FIELDS = ('path', 'scope')
 SCOPE_OPTS = ('global', 'local')
 LOG = log.getLogger()

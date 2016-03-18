@@ -11,6 +11,7 @@ container:
 service:
   daemon:
     command: /usr/bin/mysqld_safe --wsrep-new-cluster
+    reload_signal: SIGHUP
     dependencies:
      - path: mariadb/bootstrap
   mem: {{ mariadb_mem }}

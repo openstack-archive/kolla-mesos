@@ -22,6 +22,7 @@ import math
 import os
 import pwd
 import re
+import signal
 import socket
 import struct
 import subprocess
@@ -54,6 +55,7 @@ DEPLOYMENT = None
 SERVICE = None
 SERVICE_NAME = None
 COPY_ALWAYS = None
+SIGNAL_NAME_TO_INT_DICT = None
 
 
 if six.PY3:
@@ -83,7 +85,7 @@ def set_globals():
     """Setup the globals from the environment."""
     global ZK_HOSTS, ROLE, PRIVATE_INTERFACE, PUBLIC_INTERFACE
     global ANSIBLE_PRIVATE, ANSIBLE_PUBLIC, DEPLOYMENT_ID, DEPLOYMENT
-    global SERVICE, SERVICE_NAME, COPY_ALWAYS
+    global SERVICE, SERVICE_NAME, COPY_ALWAYS, SIGNAL_NAME_TO_INT_DICT
     ZK_HOSTS = os.environ.get('KOLLA_ZK_HOSTS')
     PRIVATE_INTERFACE = os.environ.get('KOLLA_PRIVATE_INTERFACE', 'undefined')
     PUBLIC_INTERFACE = os.environ.get('KOLLA_PUBLIC_INTERFACE', 'undefined')
@@ -108,6 +110,9 @@ def set_globals():
     SERVICE_NAME = '/'.join(app_split[2:])
     # TODO(asalkeld) remove the concept of role
     ROLE = app_split[-1]
+
+    SIGNAL_NAME_TO_INT_DICT = dict((n, getattr(signal, n)) for n in dir(signal)
+                                   if n.startswith('SIG') and '_' not in n)
 
 
 logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s')
@@ -363,6 +368,8 @@ class Command(object):
         self.command = cmd['command']
         self.run_once = cmd.get('run_once', False)
         self.daemon = cmd.get('daemon', False)
+        self.reload_signal = SIGNAL_NAME_TO_INT_DICT.get(
+            cmd.get('reload_signal', 'SIGTERM'), signal.SIGTERM)
         self.check_paths = [
             '%s/status/global/%s/%s' % (DEPLOYMENT, ROLE, self.name),
             '%s/status/%s/%s/%s' % (DEPLOYMENT, socket.gethostname(), ROLE,
@@ -522,31 +529,14 @@ class Command(object):
         LOG.debug("Running command: %s", self.command)
         self.retries = self.retries - 1
 
-        def start_process():
-            self.proc = subprocess.Popen(self.command, shell=True,
-                                         env=self.env)
-            if self.proc is None:
-                LOG.error("Command '%s' failed (proc=None)", self.name)
-                self.set_state(CMD_ERR)
-                return 1
-
-        def poll(timeout=-1, sleep_secs=10):
-            now = datetime.datetime.now()
-            while((datetime.datetime.now() - now).seconds < timeout or
-                  timeout < 0):
-                ret = self.proc.poll()
-                LOG.debug("Command %s poll ret='%s'", self.name, ret)
-                yield ret
-                time.sleep(sleep_secs)
-
         if not self.daemon:
             # daemons will be set to running a little later
             self.set_state(CMD_RUN)
-        if start_process() == 1:
+        if self.start_process() == 1:
             return 1
 
         if self.timeout > 0:
-            for ret in poll(timeout=self.timeout):
+            for ret in self.poll(timeout=self.timeout):
                 if ret == 0:
                     self.set_state(CMD_DONE)
                     LOG.debug("Command '%s' marked as done", self.name)
@@ -563,18 +553,50 @@ class Command(object):
 
         if self.daemon:
             time.sleep(20)
-            for ret in poll():
+            for ret in self.poll():
                 if ret is None:
                     self.set_state(CMD_RUN)
                     if COPY_ALWAYS and self.generate_configs():
-                        self.kill_process()
-                        if start_process() == 1:
-                            ret = 1
+                        ret = self.reload_process()
                 if ret is not None:
                     LOG.error("Command %s exited with (ret=%s)",
                               self.name, ret)
                     self.set_state(CMD_ERR)
                     return ret
+
+    def poll(self, timeout=-1, sleep_secs=10):
+        now = datetime.datetime.now()
+        while((datetime.datetime.now() - now).seconds < timeout or
+              timeout < 0):
+            ret = self.proc.poll()
+            LOG.debug("Command %s poll ret='%s'", self.name, ret)
+            yield ret
+            time.sleep(sleep_secs)
+
+    def start_process(self):
+        self.proc = subprocess.Popen(self.command, shell=True,
+                                     env=self.env)
+        if self.proc is None:
+            LOG.error("Command '%s' failed (proc=None)", self.name)
+            self.set_state(CMD_ERR)
+            return 1
+
+    def reload_process(self):
+        self.proc.send_signal(self.reload_signal)
+        if self.reload_signal != signal.SIGHUP:
+            # assume the reload signal causes the process termination.
+            process_stopped = False
+            for ret in self.poll(timeout=120):
+                if ret is not None:
+                    LOG.info("Command '%s' stopped, retval: %s"
+                             % (self.name, ret))
+                    process_stopped = True
+                    break
+
+            if not process_stopped:
+                self.proc.kill()
+                self.proc.wait()
+            return self.start_process()
 
     def kill_process(self):
         self.proc.terminate()
