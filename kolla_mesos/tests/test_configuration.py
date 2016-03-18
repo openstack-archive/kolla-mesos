@@ -37,10 +37,10 @@ class TestConfiguration(base.BaseTestCase):
             'autodetect_resources': 'yes'}
         configuration.apply_deployment_vars(result)
 
-        self.assertEqual(result['controller_nodes'], '3')
-        self.assertEqual(result['compute_nodes'], '2')
-        self.assertEqual(result['storage_nodes'], '2')
-        self.assertEqual(result['all_nodes'], '7')
+        self.assertEqual('3', result['controller_nodes'])
+        self.assertEqual('2', result['compute_nodes'])
+        self.assertEqual('2', result['storage_nodes'])
+        self.assertEqual('7', result['all_nodes'])
 
     def test_get_jinja_vars_multinode_no_autodetect_resources(self):
         CONF.set_override('deployment_id', 'test', group='kolla')
@@ -52,23 +52,23 @@ class TestConfiguration(base.BaseTestCase):
             'storage_nodes': 2}
         configuration.apply_deployment_vars(result)
 
-        self.assertEqual(result['controller_nodes'], '3')
-        self.assertEqual(result['compute_nodes'], '2')
-        self.assertEqual(result['storage_nodes'], '2')
-        self.assertEqual(result['all_nodes'], '7')
+        self.assertEqual('3', result['controller_nodes'])
+        self.assertEqual('2', result['compute_nodes'])
+        self.assertEqual('2', result['storage_nodes'])
+        self.assertEqual('7', result['all_nodes'])
 
     def test_get_jinja_vars_aio(self):
         CONF.set_override('deployment_id', 'test', group='kolla')
         result = {'multinode': 'no'}
         configuration.apply_deployment_vars(result)
 
-        self.assertEqual(result['controller_nodes'], '1')
-        self.assertEqual(result['storage_nodes'], '1')
-        self.assertEqual(result['all_nodes'], '1')
-        self.assertEqual(result['controller_constraints'], '')
-        self.assertEqual(result['compute_constraints'], '')
-        self.assertEqual(result['controller_compute_constraints'], '')
-        self.assertEqual(result['storage_constraints'], '')
+        self.assertEqual('1', result['controller_nodes'])
+        self.assertEqual('1', result['storage_nodes'])
+        self.assertEqual('1', result['all_nodes'])
+        self.assertEqual('', result['controller_constraints'])
+        self.assertEqual('', result['compute_constraints'])
+        self.assertEqual('', result['controller_compute_constraints'])
+        self.assertEqual('', result['storage_constraints'])
 
     def test_get_jinja_vars_hostname_aio(self):
         CONF.set_override('deployment_id', 'test', group='kolla')
@@ -77,14 +77,14 @@ class TestConfiguration(base.BaseTestCase):
             'mesos_aio_hostname': 'test-slave'}
         configuration.apply_deployment_vars(result)
 
-        self.assertEqual(result['controller_nodes'], '1')
-        self.assertEqual(result['storage_nodes'], '1')
-        self.assertEqual(result['all_nodes'], '1')
-        self.assertEqual(result['controller_constraints'],
-                         '[["hostname", "CLUSTER", "test-slave"]]')
-        self.assertEqual(result['compute_constraints'],
-                         '[["hostname", "CLUSTER", "test-slave"]]')
-        self.assertEqual(result['controller_compute_constraints'],
-                         '[["hostname", "CLUSTER", "test-slave"]]')
-        self.assertEqual(result['storage_constraints'],
-                         '[["hostname", "CLUSTER", "test-slave"]]')
+        self.assertEqual('1', result['controller_nodes'])
+        self.assertEqual('1', result['storage_nodes'])
+        self.assertEqual('1', result['all_nodes'])
+        self.assertEqual('[["hostname", "CLUSTER", "test-slave"]]',
+                         result['controller_constraints'])
+        self.assertEqual('[["hostname", "CLUSTER", "test-slave"]]',
+                         result['compute_constraints'])
+        self.assertEqual('[["hostname", "CLUSTER", "test-slave"]]',
+                         result['controller_compute_constraints'])
+        self.assertEqual('[["hostname", "CLUSTER", "test-slave"]]',
+                         result['storage_constraints'],)

@@ -69,7 +69,7 @@ class TestClient(base.BaseTestCase):
     def test_gen_deployment_id(self):
         CONF.set_override('deployment_id', 'test', group='kolla')
         self.worker.gen_deployment_id()
-        self.assertEqual(self.worker.deployment_id, 'test')
+        self.assertEqual('test', self.worker.deployment_id)
 
     @mock.patch('kolla_mesos.cmd.deploy.sys')
     def test_gen_deployment_id_without_parameters(self, mock_sys):
@@ -120,5 +120,5 @@ class TestClient(base.BaseTestCase):
         self.worker.gen_deployment_id()
         self.worker.start()
 
-        self.assertEqual(self.worker._start_chronos_job.call_count, 1)
-        self.assertEqual(self.worker._start_marathon_app.call_count, 2)
+        self.assertEqual(1, self.worker._start_chronos_job.call_count)
+        self.assertEqual(2, self.worker._start_marathon_app.call_count)

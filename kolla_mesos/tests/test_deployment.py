@@ -45,7 +45,7 @@ class TestWriteOpenRC(base.BaseTestCase):
             deployment.write_openrc('openrc')
 
             mock_open.assert_called_once_with('openrc', 'w')
-            self.assertEqual(file_handle.write.call_count, 1)
+            self.assertEqual(1, file_handle.write.call_count)
 
     def test_write_openrc_fail(self):
         # missing variable "keystone_admin_port"
