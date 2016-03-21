@@ -44,4 +44,4 @@ def dict2columns(data, id_col=None):
             items = [(key, data[key]) for key in keys]
         else:
             items = sorted(data.items())
-        return zip(*items)
+        return list(zip(*items))

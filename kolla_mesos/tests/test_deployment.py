@@ -29,8 +29,7 @@ class TestWriteOpenRC(base.BaseTestCase):
         self.addCleanup(self.client.stop)
         self.addCleanup(self.client.close)
 
-    @mock.patch('kolla_mesos.deployment.open')
-    def test_write_openrc_ok(self, mock_open):
+    def test_write_openrc_ok(self):
         variables = {'keystone_admin_password': 'foofee',
                      'kolla_internal_address': 'here.not',
                      'keystone_admin_port': '4511',
@@ -38,15 +37,18 @@ class TestWriteOpenRC(base.BaseTestCase):
                      'keystone_auth_host': 'not.here'}
 
         configuration.write_variables_zookeeper(self.client, variables)
-        mock_open.return_value = mock.MagicMock(spec=file)
-        file_handle = mock_open.return_value.__enter__.return_value
 
-        with mock.patch.object(deployment.zk_utils, 'connection') as m_zk_c:
-            m_zk_c.return_value.__enter__.return_value = self.client
-            deployment.write_openrc('openrc')
+        m_open = mock.mock_open()
+        with mock.patch('kolla_mesos.deployment.open', m_open):
+            file_handle = m_open.return_value.__enter__.return_value
 
-            mock_open.assert_called_once_with('openrc', 'w')
-            self.assertEqual(1, file_handle.write.call_count)
+            with mock.patch.object(deployment.zk_utils,
+                                   'connection') as m_zk_c:
+                m_zk_c.return_value.__enter__.return_value = self.client
+                deployment.write_openrc('openrc')
+
+                m_open.assert_called_once_with('openrc', 'w')
+                self.assertEqual(1, file_handle.write.call_count)
 
     def test_write_openrc_fail(self):
         # missing variable "keystone_admin_port"

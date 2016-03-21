@@ -72,7 +72,7 @@ class TestAPI(base.BaseTestCase):
     def test_kill(self, m_kill):
         self.client.create('/kolla/did/openstack/nova/nova-api',
                            json.dumps({'name': 'openstack/nova/nova-api',
-                                       'service': {}}),
+                                       'service': {}}).encode('utf-8'),
                            makepath=True)
 
         with mock.patch.object(service.zk_utils,
@@ -86,7 +86,7 @@ class TestAPI(base.BaseTestCase):
     def test_get_marathon(self, m_get_state, c_get_state):
         self.client.create('/kolla/did/openstack/nova/nova-api',
                            json.dumps({'name': 'openstack/nova/nova-api',
-                                       'service': {}}),
+                                       'service': {}}).encode('utf-8'),
                            makepath=True)
         with mock.patch.object(service.zk_utils,
                                'connection') as m_zk_c:
@@ -100,7 +100,7 @@ class TestAPI(base.BaseTestCase):
     def test_get_chronos(self, m_get_state, c_get_state):
         self.client.create('/kolla/did/openstack/nova/nova_init',
                            json.dumps({'name': 'openstack/nova/nova_init',
-                                       'task': {}}),
+                                       'task': {}}).encode('utf-8'),
                            makepath=True)
         with mock.patch.object(service.zk_utils,
                                'connection') as m_zk_c:
@@ -113,7 +113,7 @@ class TestAPI(base.BaseTestCase):
     def test_scale_marathon(self, m_scale):
         self.client.create('/kolla/did/openstack/nova/nova-api',
                            json.dumps({'name': 'openstack/nova/nova-api',
-                                       'service': {}}),
+                                       'service': {}}).encode('utf-8'),
                            makepath=True)
         with mock.patch.object(service.zk_utils,
                                'connection') as m_zk_c:
@@ -127,7 +127,7 @@ class TestAPI(base.BaseTestCase):
     def test_update_marathon(self, m_update, m_apply, m_gmf):
         self.client.create('/kolla/did/openstack/nova/nova-api',
                            json.dumps({'name': 'openstack/nova/nova-api',
-                                       'service': {}}),
+                                       'service': {}}).encode('utf-8'),
                            makepath=True)
         with mock.patch.object(service.zk_utils,
                                'connection') as m_zk_c:

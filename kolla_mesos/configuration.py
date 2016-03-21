@@ -49,7 +49,9 @@ def write_variables_zookeeper(zk, variables, base_node=None, overwrite=True):
                       var_path)
             return
         zk.ensure_path(var_path)
-        zk.set(var_path, "" if var_value is None else var_value)
+        if var_value is None:
+            var_value = ''
+        zk.set(var_path, var_value.encode('utf-8'))
         LOG.debug('Updated "%s" node in zookeeper.' % var_path)
 
 
@@ -86,7 +88,7 @@ def write_common_config_to_zookeeper(config_dir, zk, jinja_vars,
             src_file = file_utils.find_file(source_path)
         with open(src_file) as fp:
             content = fp.read()
-        zk.set(script_node, content)
+        zk.set(script_node, content.encode('utf-8'))
 
 
 def get_variables_from_zookeeper(zk, needed_variables):

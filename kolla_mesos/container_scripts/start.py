@@ -288,7 +288,7 @@ def write_file(conf, data):
     perm = int(conf.get('perm', 0))
     with tempfile.NamedTemporaryFile(prefix='kolla-mesos',
                                      delete=False) as tf:
-        tf.write(data)
+        tf.write(data.encode('utf-8'))
         tf.flush()
         tf_name = tf.name
 
@@ -334,10 +334,10 @@ def render_template(zk, templ, variables, var_names):
                     value = ''
                     LOG.warning('missing required variable value %s', var)
             except kz_exceptions.NoNodeError:
-                value = ''
+                value = ''.encode('utf-8')
                 LOG.error('missing required variable %s', var)
 
-            variables[var] = value.encode('utf-8')
+            variables[var] = value.decode('utf-8')
     return jinja_render(templ, variables)
 
 
@@ -420,20 +420,20 @@ class Command(object):
         for check_path in self.check_paths:
             self.zk.retry(self.zk.ensure_path, check_path)
             current_state, _ = self.zk.get(check_path)
-            if current_state != state:
+            if current_state.decode('utf-8') != state:
                 LOG.info('path: %s, changing state from %s to %s'
                          % (check_path, current_state, state))
-                self.zk.set(check_path, state)
+                self.zk.set(check_path, state.encode('utf-8'))
 
     def get_state(self, path=None):
         if not path:
             path = self.check_paths[0]
         state = None
         if self.zk.exists(path):
-            state, _ = self.zk.get(str(path))
+            state, _ = self.zk.get(path)
         if not state:
-            state = None
-        return state
+            return None
+        return state.decode('utf-8')
 
     def sleep(self, queue_size, retry=False):
         seconds = math.ceil(20 / (1.0 + queue_size))
@@ -505,7 +505,7 @@ class Command(object):
                 continue
             raw_content, stat = self.zk.get(os.path.join(SERVICE, 'files',
                                                          name))
-            templ = raw_content.encode('utf-8')
+            templ = raw_content.decode('utf-8')
             var_names = jinja_find_required_variables(templ, name)
             if not var_names:
                 # not a template, doesn't need rendering.
@@ -623,7 +623,7 @@ def main():
     LOG.info('starting')
     with zk_connection(ZK_HOSTS) as zk:
         service_conf_raw, stat = zk.get(SERVICE)
-        service_conf = json.loads(service_conf_raw)
+        service_conf = json.loads(service_conf_raw.decode('utf-8'))
 
         # don't join a Party if this container is not running a daemon
         # process.
