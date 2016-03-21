@@ -16,6 +16,7 @@ import sys
 
 from cliff import app
 from cliff import commandmanager
+from cliff import interactive
 from oslo_config import cfg
 from oslo_log import log
 
@@ -44,6 +45,17 @@ CONF.register_cli_opts(cli_opts)
 CMD_LIST = ('--version', '-v', '--verbose', '-q', '--quiet', '--debug')
 
 
+class KollaMesosInteractiveApp(interactive.InteractiveApp):
+    def do_list(self, arg):
+        self.default(arg)
+
+    def do_show(self, arg):
+        self.default(arg)
+
+    def do_run(self, arg):
+        self.default(arg)
+
+
 # TODO(apavlov): implement custom --help
 class KollaMesosShell(app.App):
     def __init__(self):
@@ -52,6 +64,7 @@ class KollaMesosShell(app.App):
             version=VERSION,
             command_manager=commandmanager.CommandManager('kolla_mesos.cli'),
             deferred_help=True,
+            interactive_app_factory=KollaMesosInteractiveApp
         )
 
     def initialize_app(self, argv):
