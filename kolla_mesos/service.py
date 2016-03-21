@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import functools
 import itertools
 import json
 import os.path
@@ -39,6 +40,16 @@ CONF.import_group('kolla', 'kolla_mesos.config.kolla')
 CONF.import_group('zookeeper', 'kolla_mesos.config.zookeeper')
 CONF.import_group('marathon', 'kolla_mesos.config.marathon')
 CONF.import_group('chronos', 'kolla_mesos.config.chronos')
+
+
+def execute_if_enabled(f):
+    """Decorator for executing methods only if runner is enabled."""
+    @functools.wraps(f)
+    def wrapper(self, *args, **kwargs):
+        if not self._enabled:
+            return
+        return f(self, *args, **kwargs)
+    return wrapper
 
 
 class File(object):
@@ -139,9 +150,8 @@ class Runner(object):
         for key in self._conf.get('commands', []):
             yield key, self._conf['commands'][key]
 
+    @execute_if_enabled
     def write_to_zookeeper(self, zk, base_node):
-        if not self._enabled:
-            return
         for cmd_name, cmd_conf in self._list_commands():
             cmd = Command(cmd_conf, cmd_name, self._conf['name'])
             cmd.write_to_zookeeper(zk, base_node)
@@ -156,10 +166,9 @@ class Runner(object):
     def _apply_service_def(self, app_def):
         """Apply the specifics from the service definition."""
 
+    @execute_if_enabled
     def generate_deployment_files(self, kolla_config, jinja_vars,
                                   temp_dir=None):
-        if not self._enabled:
-            return
         _, proj, service = self._conf['name'].split('/')
         values = {
             'service_name': self._conf['name'],
@@ -305,6 +314,7 @@ class MarathonApp(Runner):
                 app_def[opt] = utils.dict_update(app_def.get(opt),
                                                  self._conf['service'][opt])
 
+    @execute_if_enabled
     def run(self):
         self._client().add_app(self.app_def)
         LOG.info('Marathon app "%s" is started' %
@@ -391,6 +401,7 @@ class ChronosTask(Runner):
                 return
         chronos_env.append({"name": key, "value": value})
 
+    @execute_if_enabled
     def run(self):
         self._client().add_job(self.app_def)
         LOG.info('Chronos job "%s" is started' %
