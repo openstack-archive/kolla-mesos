@@ -28,9 +28,9 @@ class TestConfig(base.BaseTestCase):
 
     def test_list_all(self):
         self.client.create('/kolla/t1/status/q/x',
-                           'val-1', makepath=True)
+                           'val-1'.encode('utf-8'), makepath=True)
         self.client.create('/kolla/t1/variables/x',
-                           'val-2', makepath=True)
+                           'val-2'.encode('utf-8'), makepath=True)
 
         with mock.patch.object(zk_utils,
                                'connection') as m_zk_c:
@@ -41,7 +41,7 @@ class TestConfig(base.BaseTestCase):
 
     def test_get_one(self):
         self.client.create('/kolla/t1/variables/x',
-                           'val', makepath=True)
+                           'val'.encode('utf-8'), makepath=True)
 
         with mock.patch.object(zk_utils,
                                'connection') as m_zk_c:
@@ -51,11 +51,11 @@ class TestConfig(base.BaseTestCase):
 
     def test_set_one(self):
         self.client.create('/kolla/t1/variables/x',
-                           'old', makepath=True)
+                           'old'.encode('utf-8'), makepath=True)
 
         with mock.patch.object(zk_utils,
                                'connection') as m_zk_c:
             m_zk_c.return_value.__enter__.return_value = self.client
             zk_utils.set_one('/kolla/t1/variables/x', 'new')
             val, _st = self.client.get('/kolla/t1/variables/x')
-            self.assertEqual('new', val)
+            self.assertEqual('new', val.decode('utf-8'))

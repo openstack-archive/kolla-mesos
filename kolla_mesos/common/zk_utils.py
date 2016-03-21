@@ -33,7 +33,7 @@ def _list_all(path, zk):
     values = {}
     data, stat = zk.get(path)
     if stat.dataLength > 0:
-        values[path] = data
+        values[path] = data.decode('utf-8')
     try:
         children = zk.get_children(path)
     except exceptions.NoNodeError:
@@ -55,12 +55,12 @@ def list_all(path):
 def get_one(path):
     with connection() as zk:
         data, stat = zk.get(path)
-        return {path: data}
+        return {path: data.decode('utf-8')}
 
 
 def set_one(path, value):
     with connection() as zk:
-        zk.set(path, value)
+        zk.set(path, value.encode('utf-8'))
 
 
 @contextlib.contextmanager

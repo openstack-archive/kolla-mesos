@@ -73,7 +73,7 @@ class File(object):
                 src_file = file_utils.find_file(src_file)
             with open(src_file) as fp:
                 content = fp.read()
-        zk.set(dest_node, content)
+        zk.set(dest_node, content.encode('utf-8'))
 
 
 class Command(object):
@@ -125,7 +125,8 @@ class Runner(object):
             raise exception.KollaNotFoundException(
                 service_name, entity='running service definition')
         return Runner(yaml.load(
-                      jinja_utils.jinja_render_str(conf_raw, variables)))
+                      jinja_utils.jinja_render_str(conf_raw.decode('utf-8'),
+                                                   variables)))
 
     @classmethod
     def load_from_file(cls, service_file, variables):
@@ -148,7 +149,7 @@ class Runner(object):
         dest_node = os.path.join(base_node, self._conf['name'])
         zk.ensure_path(dest_node)
         try:
-            zk.set(dest_node, json.dumps(self._conf))
+            zk.set(dest_node, json.dumps(self._conf).encode('utf-8'))
         except Exception as te:
             LOG.error('%s=%s -> %s' % (dest_node, self._conf, te))
 
@@ -444,7 +445,8 @@ def _load_variables_from_zk(zk):
     except exceptions.NoNodeError:
         var_names = []
     for var in var_names:
-        variables[str(var)], _stat = zk.get(os.path.join(path, var))
+        value, _stat = zk.get(os.path.join(path, var))
+        variables[var] = value.decode('utf-8')
     # Add deployment_id
     variables.update({'deployment_id': CONF.kolla.deployment_id})
     # override node_config_directory to empty

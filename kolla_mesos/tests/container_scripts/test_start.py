@@ -16,6 +16,7 @@ from kazoo.recipe import party
 import logging
 import mock
 import os.path
+import six
 import sys
 from zake import fake_client
 
@@ -86,7 +87,7 @@ class CommandTest(base.BaseTestCase):
                              self.client)
 
         self.client.create('/kolla/t1/status/q/x',
-                           'done', makepath=True)
+                           'done'.encode('utf-8'), makepath=True)
 
         self.assertFalse(cmd1.requirements_fulfilled())
 
@@ -103,9 +104,9 @@ class CommandTest(base.BaseTestCase):
                              self.client)
 
         self.client.create('/kolla/t1/status/global/w/x',
-                           'done', makepath=True)
+                           'done'.encode('utf-8'), makepath=True)
         self.client.create('/kolla/t1/status/test-hostname/y/l',
-                           'done', makepath=True)
+                           'done'.encode('utf-8'), makepath=True)
         self.assertTrue(cmd1.requirements_fulfilled())
 
     @mock.patch('socket.gethostname')
@@ -135,7 +136,7 @@ class CommandTest(base.BaseTestCase):
                              self.client)
 
         self.client.create('/kolla/t1/status/test-hostname/testr/a',
-                           'done', makepath=True)
+                           'done'.encode('utf-8'), makepath=True)
         self.assertEqual(None,
                          cmd1.get_state(
                              path='/kolla/t1/status/global/testr/a'))
@@ -200,8 +201,12 @@ class CommandTest(base.BaseTestCase):
             call_order.append('get_state')
             return start.CMD_DONE
 
-        def lock_side_effect():
-            call_order.append('lock_enter')
+        if six.PY3:
+            def lock_side_effect(lck_self):
+                call_order.append('lock_enter')
+        else:
+            def lock_side_effect():
+                call_order.append('lock_enter')
 
         m_lock = mock.MagicMock()
         with mock.patch.object(self.client, 'Lock', m_lock):
@@ -383,7 +388,8 @@ class GenerateConfigTest(base.BaseTestCase):
             'command': 'true', 'files': afile}}}
 
         m_gar.return_value = {}, {}
-        self.client.create('/kolla/deploy_id/testg/testr/files/afile', 'xyz',
+        self.client.create('/kolla/deploy_id/testg/testr/files/afile',
+                           'xyz'.encode('utf-8'),
                            makepath=True)
         start.run_commands(self.client, conf)
         m_wf.assert_called_once_with(afile['afile'], 'xyz')
@@ -401,10 +407,11 @@ class GenerateConfigTest(base.BaseTestCase):
         conf = {'commands': {'setup': {
             'command': 'true', 'files': afile}}}
         m_gar.return_value = {}, {}
-        self.client.create('/kolla/deploy_id/variables/xyz', 'yeah',
+        self.client.create('/kolla/deploy_id/variables/xyz',
+                           'yeah'.encode('utf-8'),
                            makepath=True)
         self.client.create('/kolla/deploy_id/testg/testr/files/afile',
-                           '{{ xyz }}', makepath=True)
+                           '{{ xyz }}'.encode('utf-8'), makepath=True)
         start.run_commands(self.client, conf)
         m_wf.assert_called_once_with(afile['afile'], 'yeah')
 
@@ -424,7 +431,7 @@ class GenerateConfigTest(base.BaseTestCase):
         m_gar.return_value = {}, {}
         m_rt.return_value = ''
         self.client.create('/kolla/deploy_id/testg/testr/files/afile',
-                           '{{ xyz }}', makepath=True)
+                           '{{ xyz }}'.encode('utf-8'), makepath=True)
         start.run_commands(self.client, conf)
         m_wf.assert_called_once_with(afile['afile'], '')
 
@@ -490,7 +497,7 @@ class MainTest(base.BaseTestCase):
         acmd = {'command': 'true', 'files': {'afile': afile}}
         tconf = {'commands': {'thing': acmd}}
         self.client.create('/kolla/deploy_id/testg/testr',
-                           json.dumps(tconf), makepath=True)
+                           json.dumps(tconf).encode('utf-8'), makepath=True)
 
         m_zk_c = mock.MagicMock()
         with mock.patch.object(start, 'zk_connection', m_zk_c):
@@ -512,7 +519,7 @@ class MainTest(base.BaseTestCase):
         acmd = {'command': 'true', 'files': {'afile': afile}}
         tconf = {'service': {'daemon': acmd}}
         self.client.create('/kolla/deploy_id/testg/testr',
-                           json.dumps(tconf), makepath=True)
+                           json.dumps(tconf).encode('utf-8'), makepath=True)
 
         m_gmc.return_value = tconf
         m_zk_c = mock.MagicMock()
@@ -704,7 +711,7 @@ class RenderNovaConfTest(base.BaseTestCase):
                      'nova_api_host': 'nova-api-nova-openstack-did.mfrm.mdom'}
         for nam, val in variables.items():
             self.client.create('/kolla/did/variables/%s' % nam,
-                               getattr(self, nam, val),
+                               getattr(self, nam, val).encode('utf-8'),
                                makepath=True)
 
     @mock.patch('time.sleep')
@@ -742,7 +749,7 @@ class RenderNovaConfTest(base.BaseTestCase):
             template_contents = nc.read()
             self.client.create(
                 '/kolla/did/openstack/nova/nova-compute/files/afile',
-                template_contents, makepath=True)
+                template_contents.encode('utf-8'), makepath=True)
 
         cmp_file = os.path.join(mod_dir, 'nova-%s.conf' % self.out)
         with open(cmp_file) as cf:

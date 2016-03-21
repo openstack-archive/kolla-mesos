@@ -29,11 +29,12 @@ class FakeConfigFile(object):
     def __enter__(self):
         if six.PY3:
             func = 'builtins.open'
+            return_val = io.StringIO(self.text_config)
         else:
             func = '__builtin__.open'
+            return_val = io.BytesIO(self.text_config)
 
-        self.patcher = mock.patch(func,
-                                  return_value=io.BytesIO(self.text_config))
+        self.patcher = mock.patch(func, return_value=return_val)
         self.patcher.start()
 
     def __exit__(self, *args, **kwargs):

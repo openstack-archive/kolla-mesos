@@ -82,13 +82,13 @@ class CommandsTest(base.BaseTestCase):
         }
         self.client.create(
             '%s/cinder-api/db_sync' % var,
-            'waiting', makepath=True)
+            'waiting'.encode('utf-8'), makepath=True)
         self.client.create(
             '%s/cinder_ansible_tasks/create_database' % var,
-            'running', makepath=True)
+            'running'.encode('utf-8'), makepath=True)
         self.client.create(
             '%s/cinder_ansible_tasks/database_user_create' % var,
-            'done', makepath=True)
+            'done'.encode('utf-8'), makepath=True)
         status = commands.get_status(test_tasks)
         self.assertEqual({'cinder-api/db_sync': exp}, status)
 
@@ -113,10 +113,10 @@ class CommandsTest(base.BaseTestCase):
         # create the done states
         self.client.create(
             '%s/cinder_ansible_tasks/create_database' % var,
-            'done', makepath=True)
+            'done'.encode('utf-8'), makepath=True)
         self.client.create(
             '%s/cinder_ansible_tasks/database_user_create' % var,
-            'done', makepath=True)
+            'done'.encode('utf-8'), makepath=True)
 
         status = commands.get_status(test_tasks)
         self.assertEqual({'cinder-api/db_sync': exp}, status)
@@ -142,11 +142,12 @@ class CommandsTest(base.BaseTestCase):
         # create the done state
         self.client.create(
             '%s/cinder_ansible_tasks/create_database' % var,
-            'done', makepath=True)
+            'done'.encode('utf-8'), makepath=True)
         self.client.create(
             '%s/cinder_ansible_tasks/database_user_create' % var,
-            'done', makepath=True)
-        self.client.create('%s/cinder-api/db_sync' % var, 'done',
+            'done'.encode('utf-8'), makepath=True)
+        self.client.create('%s/cinder-api/db_sync' % var,
+                           'done'.encode('utf-8'),
                            makepath=True)
 
         status = commands.get_status(test_tasks)

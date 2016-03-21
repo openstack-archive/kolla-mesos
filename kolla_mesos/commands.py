@@ -118,15 +118,15 @@ def get_status(tasks):
         task1: {
             'register': (register_path, reg_status)
             'requirements': {
-                reqt1_path: reqt_status
-                reqt2_path: reqt_status
+                reqt1_path: req_status
+                reqt2_path: req_status
                 ...
             }
         }
 
     Where:
         reg_status = 'done', 'running', 'waiting'
-        reqt_status = '', 'done'
+        req_status = '', 'done'
     """
     status = {}
     with zk_utils.connection() as zk:
@@ -135,20 +135,20 @@ def get_status(tasks):
             status[task] = {}
             status[task]['requirements'] = {}
             for path in info['requires']:
-                reqt_status = ''
+                req_status = ''.encode('utf-8')
                 if zk.exists(path):
-                    reqt_status, _ = zk.get(path)
-                status[task]['requirements'][path] = reqt_status
+                    req_status, _ = zk.get(path)
+                status[task]['requirements'][path] = req_status.decode('utf-8')
 
         # get status of registrations
         for task, info in tasks.items():
             status[task]['register'] = {}
             reg_path = info['register']
-            reg_status = ''
+            reg_status = ''.encode('utf-8')
             if zk.exists(reg_path):
                 reg_status, _ = zk.get(reg_path)
 
-            status[task]['register'] = (reg_path, reg_status)
+            status[task]['register'] = (reg_path, reg_status.decode('utf-8'))
     return status
 
 
