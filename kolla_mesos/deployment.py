@@ -46,8 +46,10 @@ def write_openrc(out_filename):
 
 def run_deployment():
     for proj in set(getattr(CONF.profiles, CONF.kolla.profile)):
-        for fn in os.listdir(os.path.join(CONF.service_dir, proj)):
-            if fn.endswith('.j2') and os.path.isfile(fn):
+        proj_dir = os.path.join(CONF.service_dir, proj)
+        for fn in os.listdir(proj_dir):
+            full_path = os.path.join(proj_dir, fn)
+            if fn.endswith('.j2') and os.path.isfile(full_path):
                 service.run_service(fn, CONF.service_dir)
 
 
