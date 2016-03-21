@@ -12,6 +12,7 @@
 
 
 import os.path
+import shlex
 import sys
 
 from cliff import app
@@ -55,6 +56,16 @@ class KollaMesosInteractiveApp(interactive.InteractiveApp):
     def do_run(self, arg):
         self.default(arg)
 
+    def do_help(self, arg):
+        line_parts = shlex.split(arg)
+        try:
+            self.command_manager.find_command(line_parts)
+            return self.default(self.parsed('help ' + arg))
+        except ValueError:
+            # There is a builtin cmd2 command
+            pass
+        return interactive.InteractiveApp.do_help(self, arg)
+
 
 # TODO(apavlov): implement custom --help
 class KollaMesosShell(app.App):
@@ -94,9 +105,11 @@ def _separate_args(argv):
 def main(argv=sys.argv[1:]):
     config_args, command_args = _separate_args(argv)
 
-    need_help = ('help' in config_args or '-h' in config_args or
+    need_help = (['help'] == command_args or '-h' in config_args or
                  '--help' in config_args)
     if need_help:
+        CONF([], project='kolla-mesos')
+        CONF.print_help()
         return KollaMesosShell().run(['help'])
 
     for com in CMD_LIST:
