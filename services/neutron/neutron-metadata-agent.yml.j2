@@ -31,9 +31,9 @@ service:
       ml2_conf.ini.j2:
         source: ["config/neutron/templates/ml2_conf.ini.j2",
                  {% if neutron_plugin_agent == 'linuxbridge' %}
-                 "config/neutron/templates/ml2_conf.linuxbridge.conf.j2"
+                 "config/neutron/templates/ml2_conf.linuxbridge.ini.j2"
                  {% elif neutron_plugin_agent == 'openvswitch' %}
-                 "config/neutron/templates/ml2_conf.openvswitch.conf.j2"
+                 "config/neutron/templates/ml2_conf.openvswitch.ini.j2"
                  {% endif %}]
         dest: /etc/neutron/plugins/ml2/ml2_conf.ini
         owner: neutron
