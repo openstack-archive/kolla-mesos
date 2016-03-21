@@ -71,22 +71,25 @@ def _get_config_tasks(config_path, tasks):
 
 
 def get_tasks(config_path):
-    """Get list of tasks
+    """Get list of tasks.
 
     Reads through all the kolla mesos services config files located in
     config_path and parses the requirements and resister options.
 
-    Returns a dictionary of all the values registered by tasks
-    {
-    taskpath1: {
-      'requires': [require1, require2...]
-      'register': register_path
-      }
-    }
+    :returns: a dictionary of all the values registered by tasks
 
-    taskpath examples -
-      'keystone/keystone/db_sync',
-      'keystone/keystone_ansible_tasks/create_database',
+    Below is an example of what can be returned::
+
+        {
+        taskpath1: {
+          'requires': [require1, require2...]
+          'register': register_path
+          }
+        }
+
+        taskpath examples -
+          'keystone/keystone/db_sync',
+          'keystone/keystone_ansible_tasks/create_database',
     """
 
     tasks = {}
@@ -111,22 +114,25 @@ def get_service_tasks(service_name, service_dir):
 
 
 def get_status(tasks):
-    """Get status from zookeeper
+    """Get status from zookeeper.
 
-    Returns the status for each task
-    {
-        task1: {
-            'register': (register_path, reg_status)
-            'requirements': {
-                reqt1_path: req_status
-                reqt2_path: req_status
-                ...
+    :returns: the status for each task
+
+    Below is an example of what can be returned::
+
+        {
+            task1: {
+                'register': (register_path, reg_status)
+                'requirements': {
+                    reqt1_path: reqt_status
+                    reqt2_path: reqt_status
+                    ...
+                }
             }
         }
-
-    Where:
-        reg_status = 'done', 'running', 'waiting'
-        req_status = '', 'done'
+        Where:
+            reg_status = 'done', 'running', 'waiting'
+            reqt_status = '', 'done'
     """
     status = {}
     with zk_utils.connection() as zk:

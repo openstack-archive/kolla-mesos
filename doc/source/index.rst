@@ -46,9 +46,7 @@ Code documentation
 .. toctree::
    :maxdepth: 1
 
-   deploy
-   chronos
-   marathon
+   api/autoindex
 
 Indices and tables
 ==================
