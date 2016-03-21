@@ -123,9 +123,8 @@ the registry::
 
     sudo kolla-build --profile mesos
 
-``kolla-build`` accepts arguments as documented in :doc:`image-building`. It
-builds Docker images and pushes them to the local registry if the *push*
-option is enabled (in Vagrant this is the default behaviour).
+``kolla-build`` builds Docker images and pushes them to the local registry if
+the *push* option is enabled (in Vagrant this is the default behaviour).
 
 
 Setting up Mesos cluster
