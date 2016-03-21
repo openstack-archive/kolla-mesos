@@ -15,25 +15,26 @@ from oslo_config import cfg
 
 CONF = cfg.CONF
 profiles_opts = [
+    # TODO(nihilifer): Add ceph and mongodb when implemented.
     cfg.ListOpt('infra',
-                default=['ceph', 'data', 'mariadb', 'haproxy', 'keepalived',
-                         'kolla-toolbox', 'memcached', 'mongodb',
-                         'openvswitch', 'rabbitmq']),
+                default=['mariadb', 'memcached', 'rabbitmq']),
+    # TODO(nihilifer): Add ceilometer, head and swift when implemented.
     cfg.ListOpt('main',
-                default=['cinder', 'ceilometer', 'glance', 'heat', 'horizon',
-                         'keystone', 'neutron', 'nova', 'swift']),
-    cfg.ListOpt('aux',
-                default=['designate', 'gnocchi', 'ironic', 'magnum', 'zaqar']),
+                default=['cinder', 'glance', 'horizon', 'keystone', 'neutron',
+                         'nova']),
+    # TODO(nihilifer): Enable this profile when any of its services will be
+    # implemented.
+    # cfg.ListOpt('aux',
+    #             default=['designate', 'gnocchi', 'ironic', 'magnum',
+    #                      'zaqar']),
+    # TODO(nihilifer): Add heat when implemented.
     cfg.ListOpt('default',
-                default=['data', 'kolla-toolbox', 'glance', 'haproxy', 'heat',
-                         'horizon', 'keepalived', 'keystone', 'memcached',
-                         'mariadb', 'neutron', 'nova', 'openvswitch',
-                         'rabbitmq']),
+                default=['glance', 'horizon', 'keystone', 'memcached',
+                         'mariadb', 'neutron', 'nova', 'rabbitmq']),
+    # TODO(nihilifer): Add ceph when implemented.
     cfg.ListOpt('gate',
-                default=['ceph', 'cinder', 'data', 'dind', 'glance', 'haproxy',
-                         'heat', 'horizon', 'keepalived', 'keystone',
-                         'kolla-toolbox', 'mariadb', 'memcached', 'neutron',
-                         'nova', 'openvswitch', 'rabbitmq'])
+                default=['cinder', 'glance', 'horizon', 'keystone', 'mariadb',
+                         'memcached', 'neutron', 'nova', 'rabbitmq'])
 ]
 profiles_opt_group = cfg.OptGroup(name='profiles',
                                   title='Common sets of images')

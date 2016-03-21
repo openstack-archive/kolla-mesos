@@ -24,7 +24,6 @@ PROFILES_TEXT_CONFIG = """
 [profiles]
 infra = test1, test2
 main = test1
-aux = test1, test2, test3
 default = test1, test2, test3, test4, test5
 gate = test1, test2, test3, test4
 """
@@ -35,7 +34,6 @@ class TestProfilesConfig(base.BaseTestCase):
     def _asserts(self):
         self.assertEqual(['test1', 'test2'], CONF.profiles.infra)
         self.assertEqual(['test1'], CONF.profiles.main)
-        self.assertEqual(['test1', 'test2', 'test3'], CONF.profiles.aux)
         self.assertEqual(['test1', 'test2', 'test3', 'test4',
                          'test5'], CONF.profiles.default)
         self.assertEqual(['test1', 'test2', 'test3',
@@ -43,8 +41,7 @@ class TestProfilesConfig(base.BaseTestCase):
 
     def test_cli_config(self):
         argv = ['--profiles-infra', 'test1,test2',
-                '--profiles-main', 'test1', '--profiles-aux',
-                'test1,test2,test3', '--profiles-default',
+                '--profiles-main', 'test1', '--profiles-default',
                 'test1,test2,test3,test4,test5', '--profiles-gate',
                 'test1,test2,test3,test4']
         CONF(argv, project='kolla-mesos')
