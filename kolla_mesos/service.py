@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
 import functools
 import itertools
 import json
@@ -468,34 +469,33 @@ def _load_variables_from_zk(zk):
 def _load_variables_from_file(service_dir, project_name):
     config_dir = os.path.join(service_dir, '..', 'config')
     with open(file_utils.find_config_file('passwords.yml'), 'r') as gf:
-        global_vars = yaml.load(gf)
+        jvars = yaml.load(gf)
     with open(file_utils.find_config_file('globals.yml'), 'r') as gf:
-        global_vars.update(yaml.load(gf))
+        jvars.update(yaml.load(gf))
+    global_vars = copy.deepcopy(jvars)
+    # Apply the basic variables that aren't defined in any config file.
+    jvars.update({
+        'deployment_id': CONF.kolla.deployment_id,
+        'node_config_directory': '',
+        'timestamp': str(time.time())
+    })
+    # Apply the dynamic variables after reading raw variables.
+    config.apply_deployment_vars(jvars)
+    config.get_marathon_framework(jvars)
     # all.yml file uses some its variables to template itself by jinja2,
     # so its raw content is used to template the file
     all_yml_name = os.path.join(config_dir, 'all.yml')
-    with open(all_yml_name) as af:
-        raw_vars = yaml.load(af)
-    raw_vars.update(global_vars)
-    jvars = yaml.load(jinja_utils.jinja_render(all_yml_name, raw_vars))
-    jvars.update(global_vars)
+    jvars.update(jinja_utils.yaml_jinja_render(all_yml_name, jvars))
 
     proj_yml_name = os.path.join(config_dir, project_name,
                                  'defaults', 'main.yml')
     if os.path.exists(proj_yml_name):
-        proj_vars = yaml.load(jinja_utils.jinja_render(proj_yml_name,
-                                                       jvars))
-        jvars.update(proj_vars)
+        jvars.update(jinja_utils.yaml_jinja_render(proj_yml_name, jvars))
     else:
         LOG.warning('Path missing %s' % proj_yml_name)
-    # Add deployment_id
-    jvars.update({'deployment_id': CONF.kolla.deployment_id})
-    # override node_config_directory to empty
-    jvars.update({'node_config_directory': ''})
-    # Add timestamp
-    jvars.update({'timestamp': str(time.time())})
-    config.apply_deployment_vars(jvars)
-    config.get_marathon_framework(jvars)
+
+    # Re-apply the global variables to ensure they weren't overriden.
+    jvars.update(global_vars)
     return jvars
 
 
