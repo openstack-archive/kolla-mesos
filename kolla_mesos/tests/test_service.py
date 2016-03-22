@@ -32,6 +32,30 @@ class TestAPI(base.BaseTestCase):
         self.addCleanup(self.client.close)
         cfg.CONF.set_override('deployment_id', 'did', group='kolla')
 
+    def test_jvars_dict(self):
+        jvars = service.JvarsDict(non_global1='old_value',
+                                  non_global2='old_value')
+        jvars.set_global_vars({'global1': 'old_value',
+                               'global2': 'old_value'})
+
+        jvars.update({'global1': 'new_value',
+                      'global2': 'new_value',
+                      'non_global1': 'new_value',
+                      'non_global2': 'new_value'})
+        self.assertDictEqual({'global1': 'old_value',
+                              'global2': 'old_value',
+                              'non_global1': 'new_value',
+                              'non_global2': 'new_value'}, jvars)
+
+        jvars['global1'] = 'newer_value'
+        jvars['global2'] = 'newer_value'
+        jvars['non_global1'] = 'newer_value'
+        jvars['non_global2'] = 'newer_value'
+        self.assertDictEqual({'global1': 'old_value',
+                              'global2': 'old_value',
+                              'non_global1': 'newer_value',
+                              'non_global2': 'newer_value'}, jvars)
+
     @mock.patch.object(service.config, 'get_marathon_framework')
     @mock.patch.object(service.config, 'apply_deployment_vars')
     @mock.patch.object(service.MarathonApp, 'run')

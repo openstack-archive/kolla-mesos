@@ -126,6 +126,16 @@ openstack_region_name: "RegionOne"
 # Valid options are [ novnc, spice ]
 nova_console: "novnc"
 
+
+####################
+# Constraints
+####################
+controller_constraints: '[["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "controller"]]'
+compute_constraints: '[["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "compute"]]'
+controller_compute_constraints: '[["hostname", "UNIQUE"], ["openstack_role", "LIKE", "(controller|compute)"]]'
+storage_constraints: '[["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "storage"]]'
+
+
 ####################
 # Mesos-dns hosts
 ####################
