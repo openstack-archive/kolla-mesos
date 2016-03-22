@@ -195,7 +195,7 @@ class TemplateFunctions(object):
         return str(socket.inet_ntoa(fcntl.ioctl(
             s.fileno(),
             0x8915,  # SIOCGIFADDR
-            struct.pack('256s', ifname[:15])
+            struct.pack('256s', ifname[:15].encode('utf-8'))
         )[20:24]))
 
     def list_ips_by_service(self, name, port=None, separator=',', prefix=None):
