@@ -10,15 +10,37 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import collections
 import logging
 import os
 
 import jinja2
 from jinja2 import meta
+import six
+import yaml
 
 from kolla_mesos.common import type_utils
 
 LOG = logging.getLogger(__name__)
+
+
+# Customize PyYAML library to return the OrderedDict. That is needed, because
+# when iterating on dict, we reuse its previous values when processing the
+# next values and the order has to be preserved.
+
+def ordered_dict_constructor(loader, node):
+    """OrderedDict constructor for PyYAML."""
+    return collections.OrderedDict(loader.construct_pairs(node))
+
+
+def ordered_dict_representer(dumper, data):
+    """Representer for PyYAML which is able to work with OrderedDict."""
+    return dumper.represent_dict(data.items())
+
+
+yaml.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
+                     ordered_dict_constructor)
+yaml.add_representer(collections.OrderedDict, ordered_dict_representer)
 
 
 def jinja_render(fullpath, global_config, extra=None):
@@ -51,3 +73,30 @@ def jinja_find_required_variables(fullpath):
                                               os.path.basename(fullpath))[0]
     parsed_content = myenv.parse(template_source)
     return meta.find_undeclared_variables(parsed_content)
+
+
+def dict_jinja_render(raw_dict, jvars):
+    """Renders dict with jinja2 using provided variables and itself.
+
+    By using itself, we mean reusing the previous values from dict for the
+    potential render of the next value in dict.
+    """
+    for key, value in raw_dict.items():
+        if isinstance(value, six.string_types):
+            value = jinja_render_str(value, jvars)
+        elif isinstance(value, dict):
+            value = dict_jinja_render(value, jvars)
+        jvars[key] = value
+
+
+def yaml_jinja_render(filename, jvars):
+    """Parses YAML file and templates it with jinja2.
+
+    1. YAML file is rendered by jinja2 based on the provided variables.
+    2. Rendered file is parsed.
+    3. The every element dictionary being a result of parsing is rendered again
+       with itself.
+    """
+    with open(filename, 'r') as yaml_file:
+        raw_dict = yaml.load(yaml_file)
+    dict_jinja_render(raw_dict, jvars)

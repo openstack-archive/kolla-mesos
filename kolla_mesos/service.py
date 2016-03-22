@@ -465,37 +465,58 @@ def _load_variables_from_zk(zk):
     return variables
 
 
+class JvarsDict(dict):
+    """Dict which can contain the 'global_vars' which are always preserved.
+
+    They cannot be be overriden by any update nor single item setting.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super(JvarsDict, self).__init__(*args, **kwargs)
+        self.global_vars = {}
+
+    def __setitem__(self, key, value):
+        if key in self.global_vars:
+            return
+        return super(JvarsDict, self).__setitem__(key, value)
+
+    def update(self, other_dict):
+        filtered_dict = {key: value for key, value in other_dict.items()
+                         if key not in self.global_vars}
+        super(JvarsDict, self).update(filtered_dict)
+
+    def set_global_vars(self, global_vars):
+        self.update(global_vars)
+        self.global_vars = global_vars
+
+
 def _load_variables_from_file(service_dir, project_name):
     config_dir = os.path.join(service_dir, '..', 'config')
-    with open(file_utils.find_config_file('passwords.yml'), 'r') as gf:
-        global_vars = yaml.load(gf)
+    jvars = JvarsDict()
     with open(file_utils.find_config_file('globals.yml'), 'r') as gf:
-        global_vars.update(yaml.load(gf))
+        jvars.set_global_vars(yaml.load(gf))
+    with open(file_utils.find_config_file('passwords.yml'), 'r') as gf:
+        jvars.update(yaml.load(gf))
+    # Apply the basic variables that aren't defined in any config file.
+    jvars.update({
+        'deployment_id': CONF.kolla.deployment_id,
+        'node_config_directory': '',
+        'timestamp': str(time.time())
+    })
+    # Apply the dynamic variables after reading raw variables.
+    config.apply_deployment_vars(jvars)
+    config.get_marathon_framework(jvars)
     # all.yml file uses some its variables to template itself by jinja2,
     # so its raw content is used to template the file
     all_yml_name = os.path.join(config_dir, 'all.yml')
-    with open(all_yml_name) as af:
-        raw_vars = yaml.load(af)
-    raw_vars.update(global_vars)
-    jvars = yaml.load(jinja_utils.jinja_render(all_yml_name, raw_vars))
-    jvars.update(global_vars)
+    jinja_utils.yaml_jinja_render(all_yml_name, jvars)
 
     proj_yml_name = os.path.join(config_dir, project_name,
                                  'defaults', 'main.yml')
     if os.path.exists(proj_yml_name):
-        proj_vars = yaml.load(jinja_utils.jinja_render(proj_yml_name,
-                                                       jvars))
-        jvars.update(proj_vars)
+        jinja_utils.yaml_jinja_render(proj_yml_name, jvars)
     else:
         LOG.warning('Path missing %s' % proj_yml_name)
-    # Add deployment_id
-    jvars.update({'deployment_id': CONF.kolla.deployment_id})
-    # override node_config_directory to empty
-    jvars.update({'node_config_directory': ''})
-    # Add timestamp
-    jvars.update({'timestamp': str(time.time())})
-    config.apply_deployment_vars(jvars)
-    config.get_marathon_framework(jvars)
     return jvars
 
 
