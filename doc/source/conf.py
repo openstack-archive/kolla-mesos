@@ -15,16 +15,21 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.abspath('../..'))
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.abspath(os.path.join(BASE_DIR, "..", ".."))
+
+sys.path.insert(0, ROOT)
+sys.path.insert(0, BASE_DIR)
 # -- General configuration ----------------------------------------------------
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = [
     'sphinx.ext.autodoc',
-    #'sphinx.ext.intersphinx',
-    'oslosphinx'
-]
+    'sphinx.ext.todo',
+    'sphinx.ext.coverage',
+    'sphinx.ext.viewcode',
+    'oslosphinx']
 
 # autodoc generation is a bit aggressive and a nuisance when doing heavy
 # text edit cycles.
@@ -33,12 +38,19 @@ extensions = [
 # The suffix of source filenames.
 source_suffix = '.rst'
 
+# The encoding of source files.
+# source_encoding = 'utf-8-sig'
+
 # The master toctree document.
 master_doc = 'index'
 
 # General information about the project.
 project = u'kolla-mesos'
 copyright = u'2013, OpenStack Foundation'
+
+# List of patterns, relative to source directory, that match files and
+# directories to ignore when looking for source files.
+exclude_patterns = ['**/#*', '**~', '**/#*#']
 
 # If true, '()' will be appended to :func: etc. cross-reference text.
 add_function_parentheses = True
@@ -49,6 +61,13 @@ add_module_names = True
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
+
+# A list of ignored prefixes for module index sorting.
+# modindex_common_prefix = []
+
+primary_domain = 'py'
+nitpicky = False
+
 
 # -- Options for HTML output --------------------------------------------------
 
@@ -73,3 +92,14 @@ latex_documents = [
 
 # Example configuration for intersphinx: refer to the Python standard library.
 #intersphinx_mapping = {'http://docs.python.org/': None}
+
+
+# -- Options for manual page output -------------------------------------------
+
+# One entry per manual page. List of tuples
+# (source start file, name, description, authors, manual section).
+man_pages = [
+    ('man/kolla-mesos', 'kolla-mesos',
+     u'Shell to access kolla-mesos.',
+     [u'Kolla-Mesos Developers'], 1),
+]
