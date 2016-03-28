@@ -24,7 +24,9 @@ from oslo_log import log
 from kolla_mesos.common import file_utils
 from kolla_mesos.common import utils
 
+PROJECT = 'kolla-mesos'
 VERSION = '1.0'
+
 CONF = cfg.CONF
 CONF.import_group('kolla', 'kolla_mesos.config.kolla')
 CONF.import_group('profiles', 'kolla_mesos.config.profiles')
@@ -34,6 +36,13 @@ CONF.import_group('chronos', 'kolla_mesos.config.chronos')
 CONF.import_group('mesos', 'kolla_mesos.config.mesos')
 CONF.import_opt('workers', 'kolla_mesos.config.multiprocessing_cli')
 
+log.register_options(CONF)
+log.set_defaults(
+    default_log_levels='dcos.http=WARNING,'
+                       'dcos.util=WARNING,'
+                       'kazoo.client=WARNING,'
+                       'requests.packages.urllib3.connectionpool=WARNING')
+
 cli_opts = [
     cfg.StrOpt('service-dir',
                default=utils.env(
@@ -42,8 +51,6 @@ cli_opts = [
                help='Directory with services, (Env: KM_SERVICE_DIR)'),
 ]
 CONF.register_cli_opts(cli_opts)
-
-CMD_LIST = ('--version', '-v', '--verbose', '-q', '--quiet', '--debug')
 
 
 class KollaMesosInteractiveApp(interactive.InteractiveApp):
@@ -67,7 +74,6 @@ class KollaMesosInteractiveApp(interactive.InteractiveApp):
         return interactive.InteractiveApp.do_help(self, arg)
 
 
-# TODO(apavlov): implement custom --help
 class KollaMesosShell(app.App):
     def __init__(self):
         super(KollaMesosShell, self).__init__(
@@ -78,28 +84,68 @@ class KollaMesosShell(app.App):
             interactive_app_factory=KollaMesosInteractiveApp
         )
 
+    def configure_logging(self):
+        return
+
     def initialize_app(self, argv):
         self.options.service_dir = CONF.service_dir
-        if self.options.verbose_level > 1:
-            CONF.log_opt_values(log.getLogger('kolla-mesos'),
-                                log.DEBUG)
+
+    def print_help(self):
+        outputs = []
+        max_len = 0
+        self.stdout.write('\nCommands :\n')
+
+        for name, ep in sorted(self.command_manager):
+            factory = ep.load()
+            cmd = factory(self, None)
+            one_liner = cmd.get_description().split('\n')[0]
+            outputs.append((name, one_liner))
+            max_len = max(len(name), max_len)
+
+        for name, one_liner in outputs:
+            self.stdout.write('  %s  %s\n' % (name.ljust(max_len), one_liner))
 
 
 def _separate_args(argv):
+    conf_opts = _config_opts_map()
     config_args = []
     command_args = argv[:]
     while command_args:
-        if command_args[0].startswith('-'):
-            if (len(command_args) == 1 or command_args[1].startswith('-')
-                    or command_args[0] in CMD_LIST):
-                config_args.append(command_args[0])
-                command_args.remove(command_args[0])
-            else:
-                config_args.extend(command_args[:2])
-                command_args = command_args[2:]
+        nargs = conf_opts.get(command_args[0])
+        if nargs:
+            config_args.extend(command_args[:nargs])
+            command_args = command_args[nargs:]
         else:
             break
     return config_args, command_args
+
+
+def _config_opts_map():
+    opts = {'--help': 1, '-h': 1, '--config-dir': 2, '--config-file': 2,
+            '--version': 1}
+    for opt in CONF._all_cli_opts():
+        if opt[1]:
+            arg = '%s-%s' % (opt[1].name, opt[0].name)
+        else:
+            arg = opt[0].name
+
+        if isinstance(opt[0], cfg.BoolOpt):
+            nargs = 1
+            opts['--no%s' % arg] = 1
+        else:
+            nargs = 2
+        opts['--%s' % arg] = nargs
+
+        if opt[0].short:
+            opts['-%s' % opt[0].short] = nargs
+
+        for dep_opt in opt[0].deprecated_opts:
+            if getattr(dep_opt, 'group'):
+                opts['--%s-%s' % (dep_opt.group, dep_opt.name)] = nargs
+            else:
+                opts['--%s' % dep_opt.name] = nargs
+
+    return opts
 
 
 def main(argv=sys.argv[1:]):
@@ -108,16 +154,18 @@ def main(argv=sys.argv[1:]):
     need_help = (['help'] == command_args or '-h' in config_args or
                  '--help' in config_args)
     if need_help:
-        CONF([], project='kolla-mesos')
+        CONF([], project=PROJECT, version=VERSION)
         CONF.print_help()
-        return KollaMesosShell().run(['help'])
+        return KollaMesosShell().print_help()
 
-    for com in CMD_LIST:
-        if com in config_args:
-            config_args.remove(com)
-            command_args.insert(0, com)
+    CONF(config_args, project=PROJECT, version=VERSION)
+    log.setup(CONF, PROJECT, VERSION)
 
-    CONF(config_args, project='kolla-mesos')
+    if '-d' in config_args or '--debug' in config_args:
+        command_args.insert(0, '--debug')
+        CONF.log_opt_values(
+            log.getLogger(PROJECT), log.INFO)
+
     return KollaMesosShell().run(command_args)
 
 
