@@ -11,6 +11,7 @@
 # limitations under the License.
 
 
+import logging as log
 import os.path
 import shlex
 import sys
@@ -19,7 +20,6 @@ from cliff import app
 from cliff import commandmanager
 from cliff import interactive
 from oslo_config import cfg
-from oslo_log import log
 
 from kolla_mesos.common import file_utils
 from kolla_mesos.common import utils
@@ -78,6 +78,18 @@ class KollaMesosShell(app.App):
             interactive_app_factory=KollaMesosInteractiveApp
         )
 
+    def configure_logging(self):
+        super(KollaMesosShell, self).configure_logging()
+        log_level = {0: log.ERROR,
+                     1: log.WARNING,
+                     2: log.INFO
+                     }.get(self.options.verbose_level, log.DEBUG)
+        log.getLogger('requests.packages.urllib3.connectionpool').setLevel(
+            log_level)
+        log.getLogger('dcos.http').setLevel(log_level)
+        log.getLogger('dcos.util').setLevel(log_level)
+        log.getLogger('kazoo.client').setLevel(log_level)
+
     def initialize_app(self, argv):
         self.options.service_dir = CONF.service_dir
         if self.options.verbose_level > 1:
@@ -91,7 +103,7 @@ def _separate_args(argv):
     while command_args:
         if command_args[0].startswith('-'):
             if (len(command_args) == 1 or command_args[1].startswith('-')
-                    or command_args[0] in CMD_LIST):
+                    or any(s in command_args[0] for s in CMD_LIST)):
                 config_args.append(command_args[0])
                 command_args.remove(command_args[0])
             else:
@@ -113,9 +125,10 @@ def main(argv=sys.argv[1:]):
         return KollaMesosShell().run(['help'])
 
     for com in CMD_LIST:
-        if com in config_args:
-            config_args.remove(com)
-            command_args.insert(0, com)
+        for arg in config_args[:]:
+            if com in arg:
+                config_args.remove(arg)
+                command_args.insert(0, arg)
 
     CONF(config_args, project='kolla-mesos')
     return KollaMesosShell().run(command_args)
