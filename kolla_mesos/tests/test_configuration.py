@@ -20,12 +20,14 @@ from kolla_mesos.tests import base
 from kolla_mesos.tests.fakes import mesos as fake_mesos
 
 CONF = cfg.CONF
+CONF.import_group('mesos', 'kolla_mesos.config.mesos')
 
 
 class TestConfiguration(base.BaseTestCase):
 
     def setUp(self):
         super(TestConfiguration, self).setUp()
+        CONF.set_override('host', 'http://127.0.0.1:5050', group='mesos')
         self.client = fake_client.FakeClient()
         self.client.start()
         self.addCleanup(self.client.stop)
