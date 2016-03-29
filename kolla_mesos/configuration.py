@@ -155,13 +155,13 @@ def apply_deployment_vars(jvars):
             'controller_compute_constraints':
             controller_compute_constraints,
             'storage_constraints': storage_constraints
-        })
+        }, force=True)
     jvars.update({
         'controller_nodes': str(controller_nodes),
         'compute_nodes': str(compute_nodes),
         'storage_nodes': str(storage_nodes),
         'all_nodes': str(all_nodes)
-    })
+    }, force=True)
 
 
 def get_marathon_framework(jvars):

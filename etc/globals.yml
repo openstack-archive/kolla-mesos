@@ -43,14 +43,6 @@ compute_nodes: "1"
 storage_nodes: "1"
 
 ####################
-# Constraints
-####################
-controller_constraints: '[["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "controller"]]'
-compute_constraints: '[["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "compute"]]'
-controller_compute_constraints: '[["hostname", "UNIQUE"], ["openstack_role", "LIKE", "(controller|compute)"]]'
-storage_constraints: '[["hostname", "UNIQUE"], ["openstack_role", "CLUSTER", "storage"]]'
-
-####################
 # OpenStack options
 ####################
 openstack_release: "2.0.0"
