@@ -12,9 +12,6 @@ service:
     command: /usr/local/bin/kolla_apache_wrapper.sh
     dependencies:
       - path: horizon/bootstrap
-    {% if enable_memcached | bool %}
-      - path: memcached/daemon
-    {% endif %}
     files:
       apache_wrapper.sh:
         source: config/common/apache_wrapper.sh.j2
@@ -28,6 +25,10 @@ service:
 commands:
   bootstrap:
     command: kolla_extend_start
+    dependencies:
+    {% if enable_memcached | bool %}
+      - path: memcached/daemon
+    {% endif %}
     env:
       KOLLA_BOOTSTRAP:
     files:
