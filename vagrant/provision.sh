@@ -50,6 +50,10 @@ EOF
     sed -i -r "s|(ExecStart)=(.+)|\1=/usr/bin/docker daemon --insecure-registry ${REGISTRY} --registry-mirror=http://${REGISTRY}|" /usr/lib/systemd/system/docker.service
     sed -i 's|^MountFlags=.*|MountFlags=shared|' /usr/lib/systemd/system/docker.service
 
+    # Add user vagrant to group docker
+    # This allows execution of docker commands without sudo
+    usermod -aG docker vagrant
+
     # Start services
     systemctl daemon-reload
     systemctl enable docker
