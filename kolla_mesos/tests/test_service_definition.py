@@ -101,7 +101,7 @@ class TestValidate(base.BaseTestCase):
                 'run_by': template,
                 'waiters': {}},
             'memcached/daemon': {
-                'waiters': {'daemon': 'test/horizon/daemon'}},
+                'waiters': {'bootstrap': 'test/horizon/bootstrap'}},
             'test/horizon/bootstrap': {
                 'name': 'bootstrap',
                 'registered_by': 'bootstrap',
