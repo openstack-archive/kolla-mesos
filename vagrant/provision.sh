@@ -98,7 +98,7 @@ function configure_operator {
             -p ${REGISTRY_PORT}:5000 \
             -e STORAGE_PATH=/var/lib/registry \
             -v /data/host/registry-storage:/var/lib/registry \
-            distribution/registry
+            registry:2
     fi
 }
 
