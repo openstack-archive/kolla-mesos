@@ -29,11 +29,14 @@ class Run(command.Command):
     def get_parser(self, prog_name):
         parser = super(Run, self).get_parser(prog_name)
         parser.add_argument('service')
+        parser.add_argument('--force', action='store_true',
+                            default=False)
         return parser
 
     def take_action(self, parsed_args):
         service.run_service(parsed_args.service,
-                            CONF.service_dir)
+                            CONF.service_dir,
+                            force=parsed_args.force)
 
 
 class Kill(command.Command):

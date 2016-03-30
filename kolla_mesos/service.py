@@ -198,7 +198,7 @@ class Runner(object):
         raise exception.KollaNotSupportedException(
             operation='get_live_deployment_file', entity=self.type_name)
 
-    def run(self):
+    def run(self, force=False):
         raise exception.KollaNotSupportedException(operation='run',
                                                    entity=self.type_name)
 
@@ -315,8 +315,8 @@ class MarathonApp(Runner):
                                                  self._conf['service'][opt])
 
     @execute_if_enabled
-    def run(self):
-        self._client().add_app(self.app_def)
+    def run(self, force=False):
+        self._client().add_app(self.app_def, force)
         LOG.info('Marathon app "%s" is started' %
                  self.app_def['id'])
 
@@ -402,8 +402,8 @@ class ChronosTask(Runner):
         chronos_env.append({"name": key, "value": value})
 
     @execute_if_enabled
-    def run(self):
-        self._client().add_job(self.app_def)
+    def run(self, force=False):
+        self._client().add_job(self.app_def, force)
         LOG.info('Chronos job "%s" is started' %
                  self.app_def['name'])
 
@@ -575,9 +575,9 @@ def _build_runner(service_name, service_dir, variables=None):
 # Public API below
 ##################
 
-def run_service(service_name, service_dir, variables=None):
+def run_service(service_name, service_dir, variables=None, force=False):
     runner = _build_runner(service_name, service_dir, variables=variables)
-    runner.run()
+    runner.run(force)
 
 
 def update_service(service_name, service_dir, variables=None):

@@ -29,8 +29,14 @@ LOG = log.getLogger(__name__)
 class Run(command.Command):
     """Run the services in the configured profile."""
 
+    def get_parser(self, prog_name):
+        parser = super(Run, self).get_parser(prog_name)
+        parser.add_argument('--force', action='store_true',
+                            default=False)
+        return parser
+
     def take_action(self, parsed_args):
-        deployment.run_deployment()
+        deployment.run_deployment(parsed_args.force)
         deployment.write_openrc('%s-openrc' % CONF.kolla.deployment_id)
 
 

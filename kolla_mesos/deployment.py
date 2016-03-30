@@ -44,13 +44,13 @@ def write_openrc(out_filename):
         LOG.info('Written OpenStack env to "%s"', out_filename)
 
 
-def run_deployment():
+def run_deployment(force=False):
     for proj in set(getattr(CONF.profiles, CONF.kolla.profile)):
         proj_dir = os.path.join(CONF.service_dir, proj)
         for fn in os.listdir(proj_dir):
             full_path = os.path.join(proj_dir, fn)
             if fn.endswith('.j2') and os.path.isfile(full_path):
-                service.run_service(fn, CONF.service_dir)
+                service.run_service(fn, CONF.service_dir, force=force)
 
 
 def get_deployment():

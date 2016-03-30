@@ -50,11 +50,13 @@ class Client(object):
 
     @retry_utils.retry_if_not_rollback(stop_max_attempt_number=5,
                                        wait_fixed=1000)
-    def add_job(self, job_resource):
+    def add_job(self, job_resource, force=False):
         """Add job to Chronos.
 
         :param job_resource: data about job to run on Chronos
         :type job_resource: dict
+        :param force: replace already existing job
+        :type force: bool
         """
         job_name = job_resource['name']
 
@@ -69,7 +71,7 @@ class Client(object):
             if response.status_code not in [200, 204]:
                 raise exception.ChronosException('Failed to add job')
         else:
-            if CONF.force:
+            if force:
                 LOG.info('Deployment found and --force flag is used. '
                          'Destroying previous deployment and re-creating it.')
                 raise exception.ChronosRollback()

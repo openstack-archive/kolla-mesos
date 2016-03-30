@@ -38,7 +38,7 @@ class Client(marathon.Client):
 
     @retry_utils.retry_if_not_rollback(stop_max_attempt_number=5,
                                        wait_fixed=1000)
-    def add_app(self, app_resource):
+    def add_app(self, app_resource, force=False):
         app_id = app_resource['id']
 
         # Check if the app already exists
@@ -47,7 +47,7 @@ class Client(marathon.Client):
         except dcos_exc.DCOSException:
             return super(Client, self).add_app(app_resource)
         else:
-            if CONF.force:
+            if force:
                 LOG.info('Deployment found and --force flag is used. '
                          'Destroying previous deployment and re-creating it.')
                 raise kolla_mesos_exc.MarathonRollback()
