@@ -38,7 +38,7 @@ class CommandsTest(base.BaseTestCase):
 
     @fake_mesos.FakeMesosStateTaggedSlaves()
     def test_get_tasks_sanity(self):
-        var = '/kolla/test/status'
+        var = '/kolla/test/status/global'
         exp = {'register': '%s/cinder-api/db_sync' % var,
                'requires': [
                    '%s/cinder_ansible_tasks/create_database' % var,
@@ -51,7 +51,7 @@ class CommandsTest(base.BaseTestCase):
 
     @fake_mesos.FakeMesosStateTaggedSlaves()
     def test_get_service_tasks_sanity(self):
-        var = '/kolla/test/status'
+        var = '/kolla/test/status/global'
         exp = {'register': '%s/cinder-api/db_sync' % var,
                'requires': [
                    '%s/cinder_ansible_tasks/create_database' % var,
@@ -73,7 +73,7 @@ class CommandsTest(base.BaseTestCase):
         # just get what we want for the test
         test_tasks = {'cinder-api/db_sync':
                       tasks['cinder-api/db_sync']}
-        var = '/kolla/test/status'
+        var = '/kolla/test/status/global'
         exp = {
             'register': ('%s/cinder-api/db_sync' % var, 'waiting'),
             'requirements': {
@@ -102,7 +102,7 @@ class CommandsTest(base.BaseTestCase):
         # just get what we want for the test
         test_tasks = {'cinder-api/db_sync':
                       tasks['cinder-api/db_sync']}
-        var = '/kolla/test/status'
+        var = '/kolla/test/status/global'
         at = '%s/cinder_ansible_tasks' % var
         exp = {
             'register': ('%s/cinder-api/db_sync' % var, ''),
@@ -131,7 +131,7 @@ class CommandsTest(base.BaseTestCase):
         # just get what we want for the test
         test_tasks = {'cinder-api/db_sync':
                       tasks['cinder-api/db_sync']}
-        var = '/kolla/test/status'
+        var = '/kolla/test/status/global'
         at = '%s/cinder_ansible_tasks' % var
         exp = {
             'register': ('%s/cinder-api/db_sync' % var, 'done'),
