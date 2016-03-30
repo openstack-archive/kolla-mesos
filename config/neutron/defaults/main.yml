@@ -48,9 +48,9 @@ openvswitch_db_image_full: "{{ openvswitch_db_image }}:{{ openvswitch_db_tag }}"
 ####################
 # Openstack
 ####################
-neutron_public_address: "{{ kolla_external_address }}"
-neutron_admin_address: "{{ kolla_internal_address }}"
-neutron_internal_address: "{{ kolla_internal_address }}"
+neutron_admin_endpoint: "http://{{ neutron_server_host }}:{{ neutron_server_port }}"
+neutron_internal_endpoint: "http://{{ neutron_server_host }}:{{ neutron_server_port }}"
+neutron_public_endpoint: "http://{{ neutron_server_host }}:{{ neutron_server_port }}"
 
 neutron_logging_verbose: "{{ openstack_logging_verbose }}"
 neutron_logging_debug: "{{ openstack_logging_debug }}"
@@ -59,7 +59,7 @@ neutron_keystone_user: "neutron"
 
 neutron_bridge_name: "br-ex"
 
-openstack_neutron_auth: "{'auth_url':'{{ openstack_auth_v2.auth_url }}','username':'{{ openstack_auth_v2.username }}','password':'{{ openstack_auth_v2.password }}','project_name':'{{ openstack_auth_v2.project_name }}'}"
+openstack_neutron_auth: "{'auth_url':'{{ openstack_auth_url }}','username':'{{ openstack_username }}','password':'{{ openstack_password }}','project_name':'{{ openstack_project_name }}'}"
 
 nova_api_host: "nova-api-nova-openstack-{{ deployment_id }}.{{ marathon_framework }}.{{ mesos_dns_domain }}"
 
