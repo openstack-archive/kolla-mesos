@@ -29,14 +29,16 @@ CONF.import_group('kolla', 'kolla_mesos.config.kolla')
 
 
 def _get_task_from_cmd(role, cmd, cmd_info):
-    reg = '/kolla/%s/status/%s/%s' % (CONF.kolla.deployment_id, role, cmd)
+    reg = '/kolla/%s/status/global/%s/%s' % (CONF.kolla.deployment_id,
+                                             role, cmd)
     task = {'register': reg, 'requires': []}
     for dep in cmd_info.get('dependencies', []):
         path = dep['path']
         scope = dep.get('scope', 'global')
         if scope == 'global':
             task['requires'].append(
-                '/kolla/%s/status/%s' % (CONF.kolla.deployment_id, path))
+                '/kolla/%s/status/global/%s' % (CONF.kolla.deployment_id,
+                                                path))
         elif scope == 'local':
             task['requires'].append(
                 '/kolla/%s/status/%s/%s' % (CONF.kolla.deployment_id,
