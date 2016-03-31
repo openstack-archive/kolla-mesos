@@ -38,7 +38,8 @@ MESOS_STATE_TAGGED_SLAVES = {
     ],
     'frameworks': [
         {'name': 'chronos_autodetect'},
-        {'name': 'marathon_autodetect'}
+        {'name': 'marathon_autodetect'},
+        {'name': 'another_framework'}
     ]
 }
 MESOS_STATE_UNTAGGED_SLAVES = {
@@ -55,7 +56,8 @@ MESOS_STATE_NO_SLAVES = {
 MESOS_STATE_FRAMEWORKS = {
     'frameworks': [
         {'name': 'chronos_autodetect'},
-        {'name': 'marathon_autodetect'}
+        {'name': 'marathon_autodetect'},
+        {'name': 'another_framework'}
     ]
 }
 

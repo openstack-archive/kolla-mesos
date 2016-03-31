@@ -62,9 +62,9 @@ def get_number_of_nodes(mesos_client):
 def get_marathon(mesos_client):
     frameworks = mesos_client.get_frameworks()
     frameworks_names = map(operator.itemgetter('name'), frameworks)
+    marathon_framework = None
     for framework_name in frameworks_names:
         if "marathon" in framework_name:
             marathon_framework = framework_name
-        else:
-            marathon_framework = None
+            break
     return marathon_framework
