@@ -1,0 +1,11 @@
+Code-Review+1: Lukasz Oles <loles@mirantis.com>
+Code-Review+1: Artur Zarzycki <azarzycki@mirantis.com>
+Code-Review+2: Michal Rostecki <michal.rostecki@gmail.com>
+Code-Review+2: Proskurin Kirill <kproskurin@mirantis.com>
+Workflow+1: Proskurin Kirill <kproskurin@mirantis.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Thu, 31 Mar 2016 14:40:33 +0000
+Reviewed-on: https://review.openstack.org/297054
+Project: openstack/kolla-mesos
+Branch: refs/heads/master
