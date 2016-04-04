@@ -57,7 +57,8 @@ class Show(show.ShowOne):
 
     def take_action(self, parsed_args):
         client = chronos.Client()
-        job = client.get_job(CONF.action.job_name)
+        job_name = "%s-%s" % (CONF.kolla.deployment_id, parsed_args.job_name)
+        job = client.get_job(job_name)
         return (('Name', 'Mem', 'CPUs', 'Disk', 'Last success',
                  'Last error', 'Command', 'Container', 'Environment',),
                 (job['name'], job['mem'], job['cpus'], job['disk'],
