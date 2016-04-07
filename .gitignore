@@ -64,3 +64,4 @@ vagrant/vagrantkey*
 
 # generated openrc
 openrc
+*-openrc
