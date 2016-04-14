@@ -1,0 +1,9 @@
+Code-Review+2: Proskurin Kirill <kproskurin@mirantis.com>
+Code-Review+2: Ryan Hallisey <rhallise@redhat.com>
+Workflow+1: Ryan Hallisey <rhallise@redhat.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Thu, 14 Apr 2016 11:30:31 +0000
+Reviewed-on: https://review.openstack.org/302970
+Project: openstack/kolla-mesos
+Branch: refs/heads/master
