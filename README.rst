@@ -4,9 +4,10 @@ kolla-mesos
 
 Mesos Deployment for kolla
 
-Please feel here a long description which must be at least 3 lines wrapped on
-80 cols, so that distribution package maintainers can use it in their packages.
-Note that this is a hard requirement.
+The kolla-mesos repository is an experimental repository to add Mesos
+style deployment to Kolla in addition to Ansible deployment.  This work
+has been HALTED and this repository will likely end in the attic in case
+someone wants to continue development in the future.
 
 * Free software: Apache license
 * Documentation: http://docs.openstack.org/developer/kolla-mesos
