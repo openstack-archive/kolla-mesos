@@ -1,4 +1,0 @@
----
-mesos_dns_image: "{{ docker_registry ~ '/' if docker_registry else '' }}{{ docker_namespace }}/{{ kolla_base_distro }}-{{ kolla_install_type }}-mesos-dns"
-mesos_dns_tag: "{{ openstack_release }}"
-mesos_dns_image_full: "{{ mesos_dns_image }}:{{ mesos_dns_tag }}"

@@ -1,19 +1,16 @@
-===============================
-kolla-mesos
-===============================
+This project is no longer maintained.
 
-Mesos Deployment for kolla
+The contents of this repository are still available in the Git
+source code management system.  To see the contents of this
+repository before it reached its end of life, please check out the
+previous commit with "git checkout HEAD^1".
 
-Please feel here a long description which must be at least 3 lines wrapped on
-80 cols, so that distribution package maintainers can use it in their packages.
-Note that this is a hard requirement.
+For an altnerative, consider the new development taking place at
+http://github.com/openstack/kolla related to kubernetes.  WHile not
+a Mesos implementation, it Kubernetes still bheaves as an underlay
+and is where most of the community interest currently revolves around.
 
-* Free software: Apache license
-* Documentation: http://docs.openstack.org/developer/kolla-mesos
-* Source: http://git.openstack.org/cgit/openstack/kolla-mesos
-* Bugs: http://bugs.launchpad.net/kolla
+For any further questions, please email
+openstack-dev@lists.openstack.org with the tag line [kolla] or join
+#openstack-kolla on Freenode.
 
-Features
---------
-
-* TODO
