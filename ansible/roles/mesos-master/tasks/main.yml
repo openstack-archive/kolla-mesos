@@ -1,3 +1,0 @@
----
-- include: start.yml
-  when: inventory_hostname in groups['mesos-master']
