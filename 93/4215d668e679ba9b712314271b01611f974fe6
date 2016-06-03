@@ -1,0 +1,9 @@
+Code-Review+2: Michal Jastrzebski (inc0) <michal.jastrzebski@intel.com>
+Code-Review+2: Jeffrey Zhang <jeffrey.zhang@99cloud.net>
+Workflow+1: Jeffrey Zhang <jeffrey.zhang@99cloud.net>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Fri, 03 Jun 2016 02:43:06 +0000
+Reviewed-on: https://review.openstack.org/311792
+Project: openstack/kolla-mesos
+Branch: refs/heads/master
